@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<!--
+  메인 페이지 템플릿
+  연결 컨트롤러: MainController (GET /)
+  사용 모델 변수:
+    - notices   : List<NoticeDto>   (최신 공지사항 5개)
+    - posts     : List<PostDto>     (인기 게시글 5개)
+    - schedules : List<ScheduleDto> (다가오는 일정)
+    - today     : String            (오늘 날짜 문자열)
+    - currentPage: "main"
+-->
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>학과정보통합서비스</title>
+
+    <!-- Bootstrap 5.3 CSS CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+    <!-- Font Awesome 6.5 CDN (아이콘) -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+          rel="stylesheet">
+    <!-- 커스텀 CSS: static/css/custom.css -->
+    <link th:href="@{/css/custom.css}" rel="stylesheet">
+</head>
+<body>
+
+<!-- 네비게이션 바 삽입: layout/base.html의 navbar fragment -->
+<div th:replace="~{layout/base :: navbar}"></div>
+
+
+<!-- ===== 히어로 배너 섹션 ===== -->
+<!-- MainController에서 today, schedules 변수를 받아 표시 -->
+<section class="hero-banner">
+    <div class="container text-center">
+
+        <!-- 학과명 타이틀 -->
+        <h1 class="hero-title">
+            <i class="fas fa-graduation-cap me-3"></i>컴퓨터공학과 정보 포털
+        </h1>
+
+        <!-- 오늘 날짜: MainController에서 today 변수로 전달 -->
+        <p class="hero-subtitle" th:text="${today}">날짜 로딩 중...</p>
+
+        <!-- D-Day 배지: 14일 이내 일정만 표시 -->
+        <div class="d-flex justify-content-center flex-wrap gap-2 mt-3">
+            <span class="d-day-badge"
+                  th:each="s : ${schedules}"
+                  th:if="${s.dday >= 0 and s.dday <= 14}">
+                <i class="fas fa-clock me-1"></i>
+                <span th:text="${s.title}">일정명</span>
+                <strong class="ms-1"
+                        th:text="${s.dday == 0} ? 'D-Day' : 'D-' + ${s.dday}">D-0</strong>
+            </span>
+        </div>
+    </div>
+</section>
+<!-- ===== 히어로 배너 섹션 끝 ===== -->
+
+
+<!-- ===== 메인 콘텐츠 영역 ===== -->
+<main class="container my-4">
+
+    <!-- 공지사항 + 인기게시글 2열 그리드 -->
+    <div class="row g-4 mb-4">
+
+        <!-- 최신 공지사항 카드: MainController의 notices(List<NoticeDto>) 렌더링 -->
+        <div class="col-md-6">
+            <div class="content-card h-100">
+                <div class="content-card-header notice-header">
+                    <span><i class="fas fa-bullhorn me-2"></i>최신 공지사항</span>
+                    <!-- 더보기 버튼: 공지사항 목록 페이지(/notice)로 이동 -->
+                    <a th:href="@{/notice}" class="btn btn-sm btn-outline-light">
+                        더보기 <i class="fas fa-chevron-right ms-1"></i>
+                    </a>
+                </div>
+
+                <ul class="list-group list-group-flush">
+                    <!-- notices 리스트 반복 출력 -->
+                    <li class="list-group-item notice-item"
+                        th:each="notice : ${notices}">
+                        <!-- 제목 클릭 시 /notice로 이동 (팀원이 상세 URL로 교체 예정) -->
+                        <a th:href="@{/notice}" class="notice-link"
+                           th:text="${notice.title}">공지 제목</a>
+                        <small class="text-muted float-end"
+                               th:text="${notice.date}">날짜</small>
+                    </li>
+                    <!-- 공지사항이 없을 때 표시 -->
+                    <li class="list-group-item text-muted text-center py-4"
+                        th:if="${#lists.isEmpty(notices)}">
+                        <i class="fas fa-inbox me-2"></i>공지사항이 없습니다.
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 인기 게시글 카드: MainController의 posts(List<PostDto>) 렌더링 -->
+        <div class="col-md-6">
+            <div class="content-card h-100">
+                <div class="content-card-header board-header">
+                    <span><i class="fas fa-fire me-2"></i>인기 게시글</span>
+                    <!-- 더보기 버튼: 게시판 목록 페이지(/board)로 이동 -->
+                    <a th:href="@{/board}" class="btn btn-sm btn-outline-light">
+                        더보기 <i class="fas fa-chevron-right ms-1"></i>
+                    </a>
+                </div>
+
+                <ul class="list-group list-group-flush">
+                    <!-- posts 리스트 반복 출력 -->
+                    <li class="list-group-item notice-item"
+                        th:each="post : ${posts}">
+                        <!-- 제목 클릭 시 /board로 이동 (팀원이 상세 URL로 교체 예정) -->
+                        <a th:href="@{/board}" class="notice-link"
+                           th:text="${post.title}">게시글 제목</a>
+                        <small class="text-muted float-end">
+                            <i class="fas fa-thumbs-up me-1 text-primary"></i>
+                            <span th:text="${post.likes}">0</span>
+                        </small>
+                    </li>
+                    <!-- 게시글이 없을 때 표시 -->
+                    <li class="list-group-item text-muted text-center py-4"
+                        th:if="${#lists.isEmpty(posts)}">
+                        <i class="fas fa-inbox me-2"></i>게시글이 없습니다.
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <!-- 2열 그리드 끝 -->
+
+
+    <!-- 다가오는 일정 (풀폭): MainController의 schedules(List<ScheduleDto>) 렌더링 -->
+    <div class="content-card mb-4">
+        <div class="content-card-header schedule-header">
+            <span><i class="fas fa-calendar-alt me-2"></i>다가오는 일정</span>
+            <!-- 전체보기 버튼: 일정 페이지(/schedule)로 이동 -->
+            <a th:href="@{/schedule}" class="btn btn-sm btn-outline-light">
+                전체보기 <i class="fas fa-chevron-right ms-1"></i>
+            </a>
+        </div>
+        <div class="p-3">
+            <!-- schedules 리스트 배지 형태로 출력 -->
+            <div class="d-flex flex-wrap gap-2" th:if="${!#lists.isEmpty(schedules)}">
+                <span class="schedule-badge" th:each="s : ${schedules}">
+                    <i class="fas fa-circle-dot me-1"></i>
+                    <span th:text="${s.date}">날짜</span>
+                    <strong class="ms-1" th:text="${s.title}">일정명</strong>
+                </span>
+            </div>
+            <!-- 일정이 없을 때 표시 -->
+            <p class="text-muted mb-0" th:if="${#lists.isEmpty(schedules)}">
+                <i class="fas fa-calendar-xmark me-2"></i>등록된 일정이 없습니다.
+            </p>
+        </div>
+    </div>
+
+
+    <!-- 빠른 바로가기 버튼 그룹 -->
+    <div class="row g-3 text-center">
+        <!-- 공지사항 바로가기 -->
+        <div class="col-6 col-md-3">
+            <a th:href="@{/notice}" class="shortcut-btn">
+                <i class="fas fa-bullhorn fa-2x d-block mb-2"></i>공지사항
+            </a>
+        </div>
+        <!-- 게시판 바로가기 -->
+        <div class="col-6 col-md-3">
+            <a th:href="@{/board}" class="shortcut-btn">
+                <i class="fas fa-comments fa-2x d-block mb-2"></i>게시판
+            </a>
+        </div>
+        <!-- 일정 바로가기 -->
+        <div class="col-6 col-md-3">
+            <a th:href="@{/schedule}" class="shortcut-btn">
+                <i class="fas fa-calendar-alt fa-2x d-block mb-2"></i>일정
+            </a>
+        </div>
+        <!-- 학과정보 바로가기 -->
+        <div class="col-6 col-md-3">
+            <a th:href="@{/department}" class="shortcut-btn">
+                <i class="fas fa-university fa-2x d-block mb-2"></i>학과정보
+            </a>
+        </div>
+    </div>
+
+</main>
+<!-- ===== 메인 콘텐츠 영역 끝 ===== -->
+
+
+<!-- 푸터 삽입: layout/base.html의 footer fragment -->
+<div th:replace="~{layout/base :: footer}"></div>
+
+<!-- Bootstrap 5.3 JS CDN (모바일 햄버거 메뉴 동작에 필요) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
