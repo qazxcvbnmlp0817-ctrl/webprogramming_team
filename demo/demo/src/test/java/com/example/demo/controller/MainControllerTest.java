@@ -29,6 +29,7 @@ class MainControllerTest {
                 .andExpect(model().attributeExists("notices"))
                 .andExpect(model().attributeExists("posts"))
                 .andExpect(model().attributeExists("schedules"))
-                .andExpect(model().attributeExists("today"));
+                .andExpect(model().attributeExists("today"))
+                .andExpect(model().attribute("currentPage", "main"));
     }
 }
