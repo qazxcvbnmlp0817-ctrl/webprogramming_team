@@ -1,0 +1,21 @@
+# ===== DB 비밀정보 (절대 git에 올리지 말 것) =====
+application-secret.properties
+
+# ===== Java 빌드 산출물 =====
+target/
+*.class
+*.jar
+*.war
+
+# ===== IDE 설정 =====
+.idea/
+*.iml
+.vscode/
+*.eclipse
+
+# ===== OS 파일 =====
+.DS_Store
+Thumbs.db
+
+# ===== 브레인스토밍 임시 파일 =====
+.superpowers/
