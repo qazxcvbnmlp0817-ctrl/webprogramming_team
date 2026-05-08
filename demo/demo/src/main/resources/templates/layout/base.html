@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<!--
+  공통 레이아웃 fragment 파일
+  이 파일은 직접 렌더링되지 않습니다.
+  사용법:
+    네비게이션바 삽입: <div th:replace="~{layout/base :: navbar}"></div>
+    푸터 삽입:        <div th:replace="~{layout/base :: footer}"></div>
+-->
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head><title>공통 레이아웃 (fragment 전용)</title></head>
+<body>
+
+<!-- ========================================
+     네비게이션 바 fragment
+     각 페이지에서 th:replace로 삽입됩니다.
+     currentPage 변수로 활성 메뉴를 하이라이트합니다.
+     ======================================== -->
+<nav class="navbar navbar-expand-lg sticky-top" th:fragment="navbar" id="mainNav">
+    <div class="container">
+
+        <!-- 브랜드 로고: 클릭 시 메인 페이지로 이동 -->
+        <a class="navbar-brand fw-bold" th:href="@{/}">
+            <i class="fas fa-graduation-cap me-2"></i>학과정보통합서비스
+        </a>
+
+        <!-- 모바일 햄버거 버튼 -->
+        <button class="navbar-toggler" type="button"
+                data-bs-toggle="collapse" data-bs-target="#navMenu"
+                aria-controls="navMenu" aria-expanded="false" aria-label="메뉴 열기">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- 네비게이션 메뉴 -->
+        <div class="collapse navbar-collapse" id="navMenu">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+
+                <!-- 공지사항 메뉴: /notice로 이동, 현재 페이지면 active 클래스 추가 -->
+                <li class="nav-item">
+                    <a class="nav-link"
+                       th:href="@{/notice}"
+                       th:classappend="${currentPage == 'notice'} ? ' active' : ''">
+                        <i class="fas fa-bullhorn me-1"></i>공지사항
+                    </a>
+                </li>
+
+                <!-- 게시판 메뉴: /board로 이동 -->
+                <li class="nav-item">
+                    <a class="nav-link"
+                       th:href="@{/board}"
+                       th:classappend="${currentPage == 'board'} ? ' active' : ''">
+                        <i class="fas fa-comments me-1"></i>게시판
+                    </a>
+                </li>
+
+                <!-- 일정 메뉴: /schedule로 이동 -->
+                <li class="nav-item">
+                    <a class="nav-link"
+                       th:href="@{/schedule}"
+                       th:classappend="${currentPage == 'schedule'} ? ' active' : ''">
+                        <i class="fas fa-calendar-alt me-1"></i>일정
+                    </a>
+                </li>
+
+                <!-- 학과정보 메뉴: /department로 이동 -->
+                <li class="nav-item">
+                    <a class="nav-link"
+                       th:href="@{/department}"
+                       th:classappend="${currentPage == 'department'} ? ' active' : ''">
+                        <i class="fas fa-university me-1"></i>학과정보
+                    </a>
+                </li>
+            </ul>
+
+            <!-- 로그인 버튼: 네비게이션 바 오른쪽 끝 -->
+            <a class="btn btn-outline-light btn-sm px-3" th:href="@{/login}">
+                <i class="fas fa-sign-in-alt me-1"></i>로그인
+            </a>
+        </div>
+    </div>
+</nav>
+<!-- ===== 네비게이션 바 fragment 끝 ===== -->
+
+
+<!-- ========================================
+     푸터 fragment
+     각 페이지에서 th:replace로 삽입됩니다.
+     ======================================== -->
+<footer class="site-footer mt-5" th:fragment="footer">
+    <div class="container text-center py-3">
+        <p class="mb-1">
+            <i class="fas fa-graduation-cap me-1"></i>
+            <strong>컴퓨터공학과</strong> 정보통합서비스
+        </p>
+        <p class="mb-0 small">© 2025 Department Information Portal. All rights reserved.</p>
+    </div>
+</footer>
+<!-- ===== 푸터 fragment 끝 ===== -->
+
+</body>
+</html>
