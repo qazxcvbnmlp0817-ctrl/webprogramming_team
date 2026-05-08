@@ -11,7 +11,7 @@ public class ScheduleDto {
     private final Long id;
     private final String title;  // 일정 이름
     private final String date;   // 일정 날짜 (yyyy-MM-dd 형식)
-    private final int dday;      // D-Day 계산값 (오늘 기준, 0=당일, 음수=지남)
+    private final int dday;      // D-Day 계산값 (주의: 더미 데이터에서는 정적 값 — 실제 연동 시 서비스에서 ChronoUnit.DAYS.between(LocalDate.now(), eventDate)로 계산할 것)
 
     public ScheduleDto(Long id, String title, String date, int dday) {
         this.id = id;
