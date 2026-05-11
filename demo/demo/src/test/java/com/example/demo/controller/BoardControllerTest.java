@@ -22,4 +22,20 @@ class BoardControllerTest {
                 .andExpect(view().name("board/list"))
                 .andExpect(model().attribute("currentPage", "board"));
     }
+
+    @Test
+    @DisplayName("게시판 GET /board → posts 모델 속성 존재")
+    void 게시판_posts_속성_존재() throws Exception {
+        mockMvc.perform(get("/board"))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeExists("posts"));
+    }
+
+    @Test
+    @DisplayName("게시판 GET /board → featured 모델 속성 존재")
+    void 게시판_featured_속성_존재() throws Exception {
+        mockMvc.perform(get("/board"))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeExists("featured"));
+    }
 }

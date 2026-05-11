@@ -9,19 +9,32 @@ package com.example.demo.dto;
 public class PostDto {
 
     private final Long id;
-    private final String title;   // 게시글 제목
-    private final String author;  // 작성자
-    private final int likes;      // 좋아요 수 (인기순 정렬 기준)
+    private final String title;      // 게시글 제목
+    private final String author;     // 작성자
+    private final int likes;         // 좋아요 수
+    private final String category;   // 카테고리 (자유게시판·질문·스터디·취업후기)
+    private final int viewCount;     // 조회수
+    private final String date;       // 작성일 (yyyy-MM-dd)
+    private final boolean featured;  // 대표 게시글 여부
 
-    public PostDto(Long id, String title, String author, int likes) {
-        this.id = id;
-        this.title = title;
-        this.author = author;
-        this.likes = likes;
+    public PostDto(Long id, String title, String author, int likes,
+                   String category, int viewCount, String date, boolean featured) {
+        this.id       = id;
+        this.title    = title;
+        this.author   = author;
+        this.likes    = likes;
+        this.category = category;
+        this.viewCount = viewCount;
+        this.date     = date;
+        this.featured = featured;
     }
 
-    public Long getId()     { return id; }
+    public Long getId()       { return id; }
     public String getTitle()  { return title; }
     public String getAuthor() { return author; }
     public int getLikes()     { return likes; }
+    public String getCategory()  { return category; }
+    public int getViewCount()    { return viewCount; }
+    public String getDate()      { return date; }
+    public boolean isFeatured()  { return featured; }
 }

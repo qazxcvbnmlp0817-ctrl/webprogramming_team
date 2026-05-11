@@ -1,32 +1,245 @@
 <!DOCTYPE html>
 <!--
-  일정 페이지 (플레이스홀더)
+  일정 페이지
   연결 컨트롤러: ScheduleController (GET /schedule)
-  TODO: [팀원-일정 담당] 이 파일에 일정 UI를 구현해주세요
+  스타일: Tailwind CSS (Bootstrap 미사용)
+  모델 변수:
+    - currentPage : "schedule"
+    - schedules   : List<ScheduleDto> (일정 목록, dday 오름차순)
 -->
 <html xmlns:th="http://www.thymeleaf.org" lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>일정 | 학과정보통합서비스</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome 아이콘 -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-    <link th:href="@{/css/custom.css}" rel="stylesheet">
+    <style>
+        /* 활성 필터 탭 스타일 */
+        .active-tab { background-color: #000; color: #fff; }
+        .filter-tab:not(.active-tab) { background-color: #fff; color: #000; }
+    </style>
 </head>
-<body>
-    <div th:replace="~{layout/base :: navbar}"></div>
+<body class="bg-white text-black font-sans">
 
-    <main class="placeholder-page">
-        <i class="fas fa-calendar-alt placeholder-icon"></i>
-        <h2>일정</h2>
-        <p>🚧 이 페이지는 팀원이 구현 예정입니다.</p>
-        <p class="text-muted small">담당: ScheduleController → schedule/list.html</p>
-        <a th:href="@{/}" class="btn btn-primary mt-2">
-            <i class="fas fa-home me-1"></i>메인으로 돌아가기
+<!-- ===== 고정 네비게이션 바 ===== -->
+<nav class="fixed top-0 left-0 w-full bg-black text-white z-50 border-b border-gray-800">
+    <div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+
+        <!-- 로고: 메인 페이지로 이동 -->
+        <a th:href="@{/}" class="font-bold text-lg tracking-tight hover:opacity-80 transition">
+            학과정보통합서비스
         </a>
-    </main>
 
-    <div th:replace="~{layout/base :: footer}"></div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        <!-- 데스크탑 메뉴 (md 이상에서 표시) -->
+        <ul class="hidden md:flex gap-8 text-sm font-medium">
+            <li><a th:href="@{/notice}"     class="pb-1 hover:opacity-70 transition border-b-2 border-transparent">공지사항</a></li>
+            <li><a th:href="@{/board}"      class="pb-1 hover:opacity-70 transition border-b-2 border-transparent">게시판</a></li>
+            <!-- 일정: 현재 페이지 → 흰색 언더라인 활성 표시 -->
+            <li><a th:href="@{/schedule}"   class="pb-1 hover:opacity-70 transition border-b-2 border-white">일정</a></li>
+            <li><a th:href="@{/department}" class="pb-1 hover:opacity-70 transition border-b-2 border-transparent">학과정보</a></li>
+        </ul>
+
+        <!-- 검색 입력 + 로그인 버튼 (데스크탑) -->
+        <div class="hidden md:flex items-center gap-3">
+            <div class="flex items-center border border-gray-600 rounded px-2 py-1 gap-2">
+                <i class="fas fa-search text-xs opacity-70"></i>
+                <input type="text" placeholder="일정 검색..."
+                       class="bg-transparent text-white text-sm outline-none placeholder-gray-500 w-32">
+            </div>
+            <a th:href="@{/login}"
+               class="border border-white text-white text-sm px-3 py-1 rounded hover:bg-white hover:text-black transition">
+                로그인
+            </a>
+        </div>
+
+        <!-- 모바일 햄버거 버튼 -->
+        <button onclick="toggleMenu()" class="md:hidden text-white focus:outline-none">
+            <i class="fas fa-bars text-xl"></i>
+        </button>
+    </div>
+
+    <!-- 모바일 드롭다운 메뉴 -->
+    <div id="mobileMenu" class="hidden md:hidden bg-black border-t border-gray-700 px-4 py-4 flex flex-col gap-4 text-sm">
+        <a th:href="@{/notice}"      class="hover:opacity-70">공지사항</a>
+        <a th:href="@{/board}"       class="hover:opacity-70">게시판</a>
+        <a th:href="@{/schedule}"    class="border-b border-white pb-1 font-medium">일정</a>
+        <a th:href="@{/department}"  class="hover:opacity-70">학과정보</a>
+        <a th:href="@{/login}"
+           class="mt-2 border border-white text-center py-1 rounded hover:bg-white hover:text-black transition">
+            로그인
+        </a>
+    </div>
+</nav>
+<!-- ===== 네비게이션 바 끝 ===== -->
+
+<!-- 네비게이션 바 높이(56px)만큼 상단 여백 -->
+<div class="pt-14"></div>
+
+<main class="max-w-6xl mx-auto px-4 py-8">
+
+    <!-- ===== 카테고리 필터 탭 ===== -->
+    <!-- 클릭 시 filterSchedules(category) 호출 → 해당 카테고리 행만 표시 -->
+    <div class="flex flex-wrap gap-2 mb-6">
+        <button onclick="filterSchedules('전체')" data-cat="전체"
+                class="filter-tab active-tab px-4 py-1.5 text-sm border border-black font-medium transition">전체</button>
+        <button onclick="filterSchedules('학사')" data-cat="학사"
+                class="filter-tab px-4 py-1.5 text-sm border border-black font-medium transition">학사</button>
+        <button onclick="filterSchedules('행사')" data-cat="행사"
+                class="filter-tab px-4 py-1.5 text-sm border border-black font-medium transition">행사</button>
+        <button onclick="filterSchedules('시험')" data-cat="시험"
+                class="filter-tab px-4 py-1.5 text-sm border border-black font-medium transition">시험</button>
+        <button onclick="filterSchedules('기타')" data-cat="기타"
+                class="filter-tab px-4 py-1.5 text-sm border border-black font-medium transition">기타</button>
+    </div>
+    <!-- ===== 필터 탭 끝 ===== -->
+
+    <!-- ===== 2단 레이아웃: 일정 목록(좌) + 사이드바(우) ===== -->
+    <div class="flex flex-col lg:flex-row gap-8">
+
+        <!-- ===== 왼쪽: 일정 목록 영역 ===== -->
+        <!-- JS(groupByMonth)가 월별 헤더를 DOM에 삽입함 -->
+        <div class="flex-1" id="scheduleList">
+            <!-- schedules(List<ScheduleDto>) 반복 렌더링 -->
+            <!-- data-category, data-month 속성: JS 필터링·그룹화에 사용 -->
+            <div th:each="schedule : ${schedules}"
+                 th:attr="data-category=${schedule.category}, data-month=${#strings.substring(schedule.date, 0, 7)}, data-date=${schedule.date}"
+                 class="schedule-item flex items-start gap-4 py-4 border-b border-gray-200 hover:bg-gray-50 transition">
+
+                <!-- 날짜 블록 -->
+                <div class="flex-shrink-0 w-16 text-center">
+                    <!-- 월/일 표시: date에서 파싱 -->
+                    <div class="text-2xl font-bold leading-none"
+                         th:text="${#strings.substring(schedule.date, 8, 10)}">00</div>
+                    <div class="text-xs text-gray-500 mt-0.5"
+                         th:text="${#strings.substring(schedule.date, 5, 7) + '월'}">00월</div>
+                </div>
+
+                <!-- 일정 제목 + 배지 -->
+                <div class="flex-1 min-w-0">
+                    <p class="font-semibold leading-snug" th:text="${schedule.title}">일정 제목</p>
+                    <div class="flex items-center gap-2 mt-1.5 flex-wrap">
+                        <!-- D-Day 배지: 0이면 D-Day, 양수면 D-N -->
+                        <span class="text-xs font-bold px-2 py-0.5 bg-black text-white"
+                              th:text="${schedule.dday == 0 ? 'D-Day' : 'D-' + schedule.dday}">D-0</span>
+                        <!-- 카테고리 배지 -->
+                        <span class="text-xs border border-black px-1.5 py-0.5 font-medium"
+                              th:text="${schedule.category}">카테고리</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 일정이 없을 때 표시 -->
+            <div th:if="${#lists.isEmpty(schedules)}" class="py-16 text-center text-gray-400">
+                <i class="fas fa-calendar-xmark text-3xl mb-3 block"></i>
+                등록된 일정이 없습니다.
+            </div>
+        </div>
+        <!-- ===== 일정 목록 영역 끝 ===== -->
+
+        <!-- ===== 오른쪽: 사이드바 ===== -->
+        <aside class="lg:w-72 flex-shrink-0 flex flex-col gap-6">
+
+            <!-- 이번 달 일정 수 위젯 (더미 — 팀원이 DB 연동 후 교체) -->
+            <div class="border-2 border-black">
+                <div class="bg-black text-white px-4 py-2 text-sm font-bold">이번 달 일정</div>
+                <ul class="divide-y divide-gray-200 text-sm">
+                    <li class="flex justify-between px-4 py-2">
+                        <span>전체</span><span class="font-medium">12</span>
+                    </li>
+                    <li class="flex justify-between px-4 py-2">
+                        <span>학사</span><span class="font-medium">5</span>
+                    </li>
+                    <li class="flex justify-between px-4 py-2">
+                        <span>행사</span><span class="font-medium">2</span>
+                    </li>
+                    <li class="flex justify-between px-4 py-2">
+                        <span>시험</span><span class="font-medium">3</span>
+                    </li>
+                    <li class="flex justify-between px-4 py-2">
+                        <span>기타</span><span class="font-medium">2</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- D-Day 임박 TOP 5 위젯 (dday 오름차순 상위 5개) -->
+            <div class="border-2 border-black">
+                <div class="bg-black text-white px-4 py-2 text-sm font-bold">D-Day 임박 TOP 5</div>
+                <ul class="divide-y divide-gray-200 text-sm">
+                    <li th:each="schedule, iterStat : ${schedules}"
+                        th:if="${iterStat.index < 5}"
+                        class="px-4 py-2 hover:bg-gray-50">
+                        <p class="font-medium leading-snug" th:text="${schedule.title}">일정 제목</p>
+                        <div class="flex items-center gap-2 mt-0.5">
+                            <span class="text-xs font-bold px-1.5 py-0.5 bg-black text-white"
+                                  th:text="${schedule.dday == 0 ? 'D-Day' : 'D-' + schedule.dday}">D-0</span>
+                            <span class="text-xs text-gray-500" th:text="${schedule.date}">날짜</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </aside>
+        <!-- ===== 사이드바 끝 ===== -->
+
+    </div>
+    <!-- ===== 2단 레이아웃 끝 ===== -->
+
+</main>
+
+<!-- ===== 자바스크립트 ===== -->
+<script>
+    /* 햄버거 메뉴 토글 (모바일) */
+    function toggleMenu() {
+        document.getElementById('mobileMenu').classList.toggle('hidden');
+    }
+
+    /* 월별 헤더 삽입: 새로운 월이 시작되는 행 앞에 헤더 DOM 요소를 추가 */
+    function groupByMonth() {
+        const items = document.querySelectorAll('.schedule-item');
+        let currentMonth = null;
+
+        items.forEach(item => {
+            const month = item.dataset.month; // "2026-05" 형식
+            if (month !== currentMonth) {
+                currentMonth = month;
+                const [year, mon] = month.split('-');
+                const header = document.createElement('div');
+                header.className = 'month-header text-base font-bold py-3 px-1 mt-4 border-b-2 border-black flex items-center gap-2';
+                header.innerHTML = `<i class="fas fa-caret-right"></i>${year}년 ${mon}월`;
+                header.dataset.month = month;
+                item.parentNode.insertBefore(header, item);
+            }
+        });
+    }
+
+    /* 카테고리 필터: 선택된 카테고리의 schedule-item만 표시, 월 헤더도 재정렬 */
+    function filterSchedules(category) {
+        /* 탭 활성 스타일 전환 */
+        document.querySelectorAll('.filter-tab').forEach(btn => {
+            btn.classList.toggle('active-tab', btn.dataset.cat === category);
+        });
+
+        /* 일정 항목 표시/숨김 */
+        document.querySelectorAll('.schedule-item').forEach(item => {
+            const show = category === '전체' || item.dataset.category === category;
+            item.classList.toggle('hidden', !show);
+        });
+
+        /* 월 헤더: 해당 월에 표시되는 항목이 없으면 헤더도 숨김 */
+        document.querySelectorAll('.month-header').forEach(header => {
+            const month = header.dataset.month;
+            const hasVisible = [...document.querySelectorAll(`.schedule-item[data-month="${month}"]`)]
+                .some(el => !el.classList.contains('hidden'));
+            header.classList.toggle('hidden', !hasVisible);
+        });
+    }
+
+    /* 페이지 로드 시 월별 그룹 헤더 삽입 */
+    document.addEventListener('DOMContentLoaded', groupByMonth);
+</script>
+<!-- ===== 자바스크립트 끝 ===== -->
+
 </body>
 </html>

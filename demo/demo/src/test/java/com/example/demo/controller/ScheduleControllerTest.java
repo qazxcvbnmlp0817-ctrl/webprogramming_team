@@ -22,4 +22,12 @@ class ScheduleControllerTest {
                 .andExpect(view().name("schedule/list"))
                 .andExpect(model().attribute("currentPage", "schedule"));
     }
+
+    @Test
+    @DisplayName("일정 GET /schedule → schedules 모델 속성 존재")
+    void 일정_schedules_속성_존재() throws Exception {
+        mockMvc.perform(get("/schedule"))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeExists("schedules"));
+    }
 }
