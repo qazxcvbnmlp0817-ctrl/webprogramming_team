@@ -22,4 +22,13 @@ class NoticeControllerTest {
                 .andExpect(view().name("notice/list"))
                 .andExpect(model().attribute("currentPage", "notice"));
     }
+
+    @Test
+    @DisplayName("공지사항 모델에 notices 리스트 포함")
+    void notices_모델_속성_포함() throws Exception {
+        mockMvc.perform(get("/notice"))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeExists("notices"))
+                .andExpect(model().attributeExists("featured"));
+    }
 }
