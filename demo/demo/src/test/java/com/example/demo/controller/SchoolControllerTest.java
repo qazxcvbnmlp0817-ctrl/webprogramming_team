@@ -20,12 +20,24 @@ class SchoolControllerTest {
     MockMvc mockMvc;
 
     @Test
-    @DisplayName("GET /schools → 200 OK, 모델에 schools 포함")
+    @DisplayName("GET /schools (대학교 세션 있음) → 200 OK, 모델에 schools 포함")
     void showSchools_returns200_withSchoolsInModel() throws Exception {
-        mockMvc.perform(get("/schools"))
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("selectedUniversityId",   1L);
+        session.setAttribute("selectedUniversityName", "목포대학교");
+
+        mockMvc.perform(get("/schools").session(session))
                 .andExpect(status().isOk())
                 .andExpect(view().name("school/index"))
                 .andExpect(model().attributeExists("schools"));
+    }
+
+    @Test
+    @DisplayName("GET /schools (대학교 세션 없음) → /universities 리다이렉트")
+    void showSchools_noUniversitySession_redirectsToUniversities() throws Exception {
+        mockMvc.perform(get("/schools"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/universities"));
     }
 
     @Test

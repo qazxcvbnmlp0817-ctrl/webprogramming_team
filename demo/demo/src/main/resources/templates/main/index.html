@@ -35,7 +35,7 @@
         <!-- 데스크탑 메뉴 (md 이상에서 표시) -->
         <ul class="hidden md:flex gap-8 text-sm font-medium">
             <li>
-                <a th:href="@{/schools}"
+                <a th:href="${selectedUniversityId != null} ? @{/universities/{id}(id=${selectedUniversityId})} : @{/universities}"
                    class="pb-1 hover:opacity-70 transition border-b-2 border-transparent text-gray-300">
                     <i class="fas fa-exchange-alt mr-1 text-xs"></i>학과 변경
                 </a>
@@ -67,7 +67,8 @@
 
     <!-- 모바일 드롭다운 메뉴 -->
     <div id="mobileMenu" class="hidden md:hidden bg-black border-t border-gray-700 px-4 py-4 flex flex-col gap-4 text-sm">
-        <a th:href="@{/schools}" class="hover:opacity-70 text-gray-300">
+        <a th:href="${selectedUniversityId != null} ? @{/universities/{id}(id=${selectedUniversityId})} : @{/universities}"
+           class="hover:opacity-70 text-gray-300">
             <i class="fas fa-exchange-alt mr-1 text-xs"></i>학과 변경
         </a>
         <a th:href="@{/notice}"      class="hover:opacity-70">공지사항</a>

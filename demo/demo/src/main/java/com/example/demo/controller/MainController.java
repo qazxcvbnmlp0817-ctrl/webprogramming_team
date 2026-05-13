@@ -26,12 +26,15 @@ public class MainController {
     @GetMapping("/")
     public String index(Model model, HttpSession session) {
 
-        // 세션에 학과가 선택되지 않았으면 학교 선택 페이지로 리다이렉트
+        // 학과 미선택 시 대학교 선택 페이지(Entry Point)로 리다이렉트
         String deptName = (String) session.getAttribute("selectedDeptName");
         if (deptName == null) {
-            return "redirect:/schools";
+            return "redirect:/universities";
         }
         model.addAttribute("selectedDeptName", deptName);
+
+        model.addAttribute("selectedUniversityId", session.getAttribute("selectedUniversityId"));
+        model.addAttribute("selectedSchoolId",     session.getAttribute("selectedSchoolId"));
 
         // 더미 공지사항 데이터 (최신순 5개)
         // TODO: [팀원-공지사항] noticeService.getTop5() 로 교체

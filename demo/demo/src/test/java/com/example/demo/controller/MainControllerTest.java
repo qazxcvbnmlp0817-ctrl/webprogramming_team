@@ -38,11 +38,11 @@ class MainControllerTest {
     }
 
     @Test
-    @DisplayName("GET / 세션 없음 → /schools 리다이렉트")
-    void 세션없이_루트접근_학교선택으로_리다이렉트() throws Exception {
+    @DisplayName("GET / 세션 없음 → /universities 리다이렉트")
+    void 세션없이_루트접근_대학교선택으로_리다이렉트() throws Exception {
         mockMvc.perform(get("/"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/schools"));
+                .andExpect(redirectedUrl("/universities"));
     }
 
     @Test

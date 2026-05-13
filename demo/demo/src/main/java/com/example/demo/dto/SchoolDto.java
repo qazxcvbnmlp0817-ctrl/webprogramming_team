@@ -19,4 +19,8 @@ public class SchoolDto {
     public String getName()               { return name; }
     public String getDescription()        { return description; }
     public List<FacultyDto> getFaculties() { return faculties; }
+
+    public int getTotalDeptCount() {
+        return faculties.stream().mapToInt(f -> f.getDepts().size()).sum();
+    }
 }
