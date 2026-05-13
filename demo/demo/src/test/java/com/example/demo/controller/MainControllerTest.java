@@ -4,6 +4,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -22,7 +23,10 @@ class MainControllerTest {
     @Test
     @DisplayName("메인 페이지 GET / → 200 OK, main/index 뷰 반환")
     void 메인페이지_정상_로드() throws Exception {
-        mockMvc.perform(get("/"))
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("selectedDeptName", "컴퓨터공학과");
+
+        mockMvc.perform(get("/").session(session))
                 .andExpect(status().isOk())
                 .andExpect(view().name("main/index"))
                 // 더미 데이터 3종이 모델에 담겨 있는지 확인
@@ -31,5 +35,28 @@ class MainControllerTest {
                 .andExpect(model().attributeExists("schedules"))
                 .andExpect(model().attributeExists("today"))
                 .andExpect(model().attribute("currentPage", "main"));
+    }
+
+    @Test
+    @DisplayName("GET / 세션 없음 → /schools 리다이렉트")
+    void 세션없이_루트접근_학교선택으로_리다이렉트() throws Exception {
+        mockMvc.perform(get("/"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/schools"));
+    }
+
+    @Test
+    @DisplayName("GET / 세션 있음 → 200 OK, main/index 뷰 반환")
+    void 세션있으면_메인페이지_정상_로드() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("selectedDeptName", "컴퓨터공학과");
+
+        mockMvc.perform(get("/").session(session))
+                .andExpect(status().isOk())
+                .andExpect(view().name("main/index"))
+                .andExpect(model().attributeExists("notices"))
+                .andExpect(model().attributeExists("posts"))
+                .andExpect(model().attributeExists("schedules"))
+                .andExpect(model().attribute("selectedDeptName", "컴퓨터공학과"));
     }
 }

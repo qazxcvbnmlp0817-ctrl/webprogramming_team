@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import com.example.demo.dto.NoticeDto;
 import com.example.demo.dto.PostDto;
 import com.example.demo.dto.ScheduleDto;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,7 +24,14 @@ import java.util.Locale;
 public class MainController {
 
     @GetMapping("/")
-    public String index(Model model) {
+    public String index(Model model, HttpSession session) {
+
+        // 세션에 학과가 선택되지 않았으면 학교 선택 페이지로 리다이렉트
+        String deptName = (String) session.getAttribute("selectedDeptName");
+        if (deptName == null) {
+            return "redirect:/schools";
+        }
+        model.addAttribute("selectedDeptName", deptName);
 
         // 더미 공지사항 데이터 (최신순 5개)
         // TODO: [팀원-공지사항] noticeService.getTop5() 로 교체
