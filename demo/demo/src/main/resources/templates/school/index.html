@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<!--
+  학교·학부·학과 선택 페이지 (스텁 — Task 4에서 완성)
+  연결 컨트롤러: SchoolController (GET /schools)
+-->
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>학과 선택 | 학과정보통합서비스</title>
+</head>
+<body>
+    <div th:each="school : ${schools}" th:text="${school.name}"></div>
+</body>
+</html>
