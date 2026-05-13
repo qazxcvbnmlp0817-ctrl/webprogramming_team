@@ -34,6 +34,12 @@
 
         <!-- 데스크탑 메뉴 (md 이상에서 표시) -->
         <ul class="hidden md:flex gap-8 text-sm font-medium">
+            <li>
+                <a th:href="@{/schools}"
+                   class="pb-1 hover:opacity-70 transition border-b-2 border-transparent text-gray-300">
+                    <i class="fas fa-exchange-alt mr-1 text-xs"></i>학과 변경
+                </a>
+            </li>
             <li><a th:href="@{/notice}"     class="pb-1 hover:opacity-70 transition border-b-2 border-transparent">공지사항</a></li>
             <li><a th:href="@{/board}"      class="pb-1 hover:opacity-70 transition border-b-2 border-transparent">게시판</a></li>
             <li><a th:href="@{/schedule}"   class="pb-1 hover:opacity-70 transition border-b-2 border-transparent">일정</a></li>
@@ -61,6 +67,9 @@
 
     <!-- 모바일 드롭다운 메뉴 -->
     <div id="mobileMenu" class="hidden md:hidden bg-black border-t border-gray-700 px-4 py-4 flex flex-col gap-4 text-sm">
+        <a th:href="@{/schools}" class="hover:opacity-70 text-gray-300">
+            <i class="fas fa-exchange-alt mr-1 text-xs"></i>학과 변경
+        </a>
         <a th:href="@{/notice}"      class="hover:opacity-70">공지사항</a>
         <a th:href="@{/board}"       class="hover:opacity-70">게시판</a>
         <a th:href="@{/schedule}"    class="hover:opacity-70">일정</a>
@@ -81,7 +90,8 @@
     <div class="max-w-6xl mx-auto text-center">
         <!-- 학과명 -->
         <h1 class="text-3xl md:text-4xl font-bold mb-2">
-            <i class="fas fa-graduation-cap mr-3"></i>컴퓨터공학과 정보 포털
+            <i class="fas fa-graduation-cap mr-3"></i>
+            <span th:text="${selectedDeptName + ' 정보 포털'}">학과 정보 포털</span>
         </h1>
         <!-- 오늘 날짜: MainController에서 today 변수로 전달 -->
         <p class="text-gray-400 text-sm md:text-base mb-6" th:text="${today}">날짜 로딩 중...</p>
