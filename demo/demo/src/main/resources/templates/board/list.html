@@ -21,6 +21,9 @@
         /* 활성 필터 탭 스타일 */
         .active-tab { background-color: #000; color: #fff; }
         .filter-tab:not(.active-tab) { background-color: #fff; color: #000; }
+        /* 활성 정렬 버튼 스타일 */
+        .active-sort { background-color: #000; color: #fff; }
+        .sort-btn:not(.active-sort) { background-color: #fff; color: #000; }
     </style>
 </head>
 <body class="bg-white text-black font-sans">
@@ -109,30 +112,55 @@
     </section>
     <!-- ===== Featured 끝 ===== -->
 
-    <!-- ===== 카테고리 필터 탭 ===== -->
-    <!-- 클릭 시 filterPosts(category) 호출 → 해당 카테고리 행만 표시 -->
-    <div class="flex flex-wrap gap-2 mb-6">
-        <button onclick="filterPosts('전체')" data-cat="전체"
-                class="filter-tab active-tab px-4 py-1.5 text-sm border border-black font-medium transition">전체</button>
-        <button onclick="filterPosts('자유게시판')" data-cat="자유게시판"
-                class="filter-tab px-4 py-1.5 text-sm border border-black font-medium transition">자유게시판</button>
-        <button onclick="filterPosts('질문')" data-cat="질문"
-                class="filter-tab px-4 py-1.5 text-sm border border-black font-medium transition">질문</button>
-        <button onclick="filterPosts('스터디')" data-cat="스터디"
-                class="filter-tab px-4 py-1.5 text-sm border border-black font-medium transition">스터디</button>
-        <button onclick="filterPosts('취업후기')" data-cat="취업후기"
-                class="filter-tab px-4 py-1.5 text-sm border border-black font-medium transition">취업후기</button>
+    <!-- ===== 제목 검색창 ===== -->
+    <div class="mb-4">
+        <div class="flex items-center border border-black">
+            <i class="fas fa-search px-3 text-gray-400"></i>
+            <input id="search-input"
+                   type="text"
+                   placeholder="제목으로 검색..."
+                   oninput="setSearch(this.value)"
+                   class="flex-1 py-2 pr-4 text-sm outline-none bg-white">
+        </div>
     </div>
-    <!-- ===== 필터 탭 끝 ===== -->
+    <!-- ===== 검색창 끝 ===== -->
+
+    <!-- ===== 카테고리 필터 탭 + 정렬 버튼 ===== -->
+    <div class="flex flex-wrap items-center gap-y-2 mb-6">
+        <!-- 왼쪽: 카테고리 버튼 -->
+        <div class="flex flex-wrap gap-2">
+            <button onclick="setCategory('전체')" data-cat="전체"
+                    class="filter-tab active-tab px-4 py-1.5 text-sm border border-black font-medium transition">전체</button>
+            <button onclick="setCategory('자유게시판')" data-cat="자유게시판"
+                    class="filter-tab px-4 py-1.5 text-sm border border-black font-medium transition">자유게시판</button>
+            <button onclick="setCategory('질문')" data-cat="질문"
+                    class="filter-tab px-4 py-1.5 text-sm border border-black font-medium transition">질문</button>
+            <button onclick="setCategory('스터디')" data-cat="스터디"
+                    class="filter-tab px-4 py-1.5 text-sm border border-black font-medium transition">스터디</button>
+            <button onclick="setCategory('취업후기')" data-cat="취업후기"
+                    class="filter-tab px-4 py-1.5 text-sm border border-black font-medium transition">취업후기</button>
+        </div>
+        <!-- 오른쪽: 정렬 버튼 -->
+        <div class="flex gap-2 ml-auto">
+            <button onclick="setSort('최신순')" data-sort="최신순"
+                    class="sort-btn active-sort px-3 py-1.5 text-sm border border-black font-medium transition">최신순</button>
+            <button onclick="setSort('추천순')" data-sort="추천순"
+                    class="sort-btn px-3 py-1.5 text-sm border border-black font-medium transition">추천순</button>
+            <button onclick="setSort('댓글순')" data-sort="댓글순"
+                    class="sort-btn px-3 py-1.5 text-sm border border-black font-medium transition">댓글순</button>
+        </div>
+    </div>
+    <!-- ===== 필터 탭 + 정렬 버튼 끝 ===== -->
 
     <!-- ===== 2단 레이아웃: 게시글 목록(좌) + 사이드바(우) ===== -->
     <div class="flex flex-col lg:flex-row gap-8">
 
         <!-- ===== 왼쪽: 게시글 목록 영역 ===== -->
         <div class="flex-1">
-            <!-- posts(List<PostDto>) 반복 렌더링 -->
+            <!-- 게시글 아이템만 감싸는 컨테이너 (정렬 시 DOM 재배치 대상) -->
+            <div id="post-list">
             <div th:each="post : ${posts}"
-                 th:attr="data-category=${post.category}"
+                 th:attr="data-category=${post.category},data-title=${post.title},data-date=${post.date},data-likes=${post.likes},data-comments=${post.commentCount}"
                  class="post-item flex gap-4 py-4 border-b border-gray-200 hover:bg-gray-50 transition cursor-pointer">
 
                 <!-- 썸네일 플레이스홀더 (팀원이 교체 예정) -->
@@ -145,7 +173,7 @@
                     <a th:href="@{/board}"
                        class="font-semibold text-black hover:underline block leading-snug line-clamp-2"
                        th:text="${post.title}">게시글 제목</a>
-                    <!-- 메타 정보: 카테고리 배지 · 날짜 · 좋아요 · 조회수 -->
+                    <!-- 메타 정보: 카테고리 배지 · 날짜 · 좋아요 · 댓글 · 조회수 -->
                     <div class="flex items-center flex-wrap gap-3 mt-1.5 text-xs text-gray-500">
                         <span class="border border-black text-black px-1.5 py-0.5 font-medium"
                               th:text="${post.category}">카테고리</span>
@@ -155,12 +183,17 @@
                             <span th:text="${post.likes}">0</span>
                         </span>
                         <span>
+                            <i class="fas fa-comment mr-0.5"></i>
+                            <span th:text="${post.commentCount}">0</span>
+                        </span>
+                        <span>
                             <i class="fas fa-eye mr-0.5"></i>
                             <span th:text="${post.viewCount}">0</span>
                         </span>
                     </div>
                 </div>
             </div>
+            </div><!-- #post-list 끝 -->
 
             <!-- 게시글이 없을 때 표시 -->
             <div th:if="${#lists.isEmpty(posts)}" class="py-16 text-center text-gray-400">
@@ -187,23 +220,23 @@
                 <div class="bg-black text-white px-4 py-2 text-sm font-bold">카테고리</div>
                 <ul class="divide-y divide-gray-200 text-sm">
                     <li class="flex justify-between px-4 py-2 hover:bg-gray-50 cursor-pointer"
-                        onclick="filterPosts('전체')">
+                        onclick="setCategory('전체')">
                         <span>전체</span><span class="font-medium">9</span>
                     </li>
                     <li class="flex justify-between px-4 py-2 hover:bg-gray-50 cursor-pointer"
-                        onclick="filterPosts('자유게시판')">
+                        onclick="setCategory('자유게시판')">
                         <span>자유게시판</span><span class="font-medium">3</span>
                     </li>
                     <li class="flex justify-between px-4 py-2 hover:bg-gray-50 cursor-pointer"
-                        onclick="filterPosts('질문')">
+                        onclick="setCategory('질문')">
                         <span>질문</span><span class="font-medium">1</span>
                     </li>
                     <li class="flex justify-between px-4 py-2 hover:bg-gray-50 cursor-pointer"
-                        onclick="filterPosts('스터디')">
+                        onclick="setCategory('스터디')">
                         <span>스터디</span><span class="font-medium">2</span>
                     </li>
                     <li class="flex justify-between px-4 py-2 hover:bg-gray-50 cursor-pointer"
-                        onclick="filterPosts('취업후기')">
+                        onclick="setCategory('취업후기')">
                         <span>취업후기</span><span class="font-medium">3</span>
                     </li>
                 </ul>
@@ -242,17 +275,60 @@
         document.getElementById('mobileMenu').classList.toggle('hidden');
     }
 
-    /* 카테고리 필터: 선택된 카테고리의 post-item만 표시 */
-    function filterPosts(category) {
-        /* 탭 활성 스타일 전환 */
+    /* 현재 필터/정렬 상태 */
+    let activeCategory = '전체';
+    let activeSort     = '최신순';
+    let searchQuery    = '';
+
+    /* 카테고리 선택 */
+    function setCategory(category) {
+        activeCategory = category;
         document.querySelectorAll('.filter-tab').forEach(btn => {
             btn.classList.toggle('active-tab', btn.dataset.cat === category);
         });
+        applyFilters();
+    }
 
-        /* 게시글 항목 표시/숨김 */
-        document.querySelectorAll('.post-item').forEach(item => {
-            const show = category === '전체' || item.dataset.category === category;
-            item.classList.toggle('hidden', !show);
+    /* 정렬 기준 선택 */
+    function setSort(sort) {
+        activeSort = sort;
+        document.querySelectorAll('.sort-btn').forEach(btn => {
+            btn.classList.toggle('active-sort', btn.dataset.sort === sort);
+        });
+        applyFilters();
+    }
+
+    /* 검색어 입력 */
+    function setSearch(query) {
+        searchQuery = query.trim().toLowerCase();
+        applyFilters();
+    }
+
+    /* 카테고리 + 정렬 + 검색을 동시에 적용 */
+    function applyFilters() {
+        const container = document.getElementById('post-list');
+        const items     = Array.from(document.querySelectorAll('.post-item'));
+
+        /* 1. 카테고리 + 검색어 필터 */
+        const filtered = items.filter(item => {
+            const catOk    = activeCategory === '전체' || item.dataset.category === activeCategory;
+            const searchOk = searchQuery === '' || item.dataset.title.toLowerCase().includes(searchQuery);
+            return catOk && searchOk;
+        });
+
+        /* 2. 정렬 */
+        filtered.sort((a, b) => {
+            if (activeSort === '최신순') return b.dataset.date.localeCompare(a.dataset.date);
+            if (activeSort === '추천순') return parseInt(b.dataset.likes)    - parseInt(a.dataset.likes);
+            if (activeSort === '댓글순') return parseInt(b.dataset.comments) - parseInt(a.dataset.comments);
+            return 0;
+        });
+
+        /* 3. 전체 숨김 후 필터된 항목만 정렬 순서로 DOM 재배치 */
+        items.forEach(item => item.classList.add('hidden'));
+        filtered.forEach(item => {
+            item.classList.remove('hidden');
+            container.appendChild(item);
         });
     }
 </script>
