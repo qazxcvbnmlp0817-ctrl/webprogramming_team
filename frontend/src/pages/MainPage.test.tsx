@@ -13,6 +13,7 @@ vi.mock('../api/universities', () => ({
     ],
     schedules: [
       { id: 1, title: '중간고사', date: '2026-05-15', dday: 20, category: '시험' },
+      { id: 2, title: '기말고사', date: '2026-06-10', dday: 1,  category: '시험' },
     ],
     today: '2026-05-14 (목)',
   }),
@@ -51,5 +52,13 @@ test('다가오는 일정 섹션이 렌더링된다', async () => {
   renderPage()
   await waitFor(() => {
     expect(screen.getByText('중간고사')).toBeInTheDocument()
+  })
+})
+
+test('D-14 이내 일정이 hero 배너에 D-Day 배지로 표시된다', async () => {
+  renderPage()
+  await waitFor(() => {
+    const badges = screen.getAllByText('D-1')
+    expect(badges.length).toBeGreaterThan(0)
   })
 })
