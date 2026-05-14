@@ -9,17 +9,17 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/** 학과정보 페이지 컨트롤러 테스트 — 연결: DepartmentController → department/index.html */
-@WebMvcTest(DepartmentController.class)
+// 학과정보 페이지는 React SPA에서 처리. SPA 폴백 경로 테스트.
+@WebMvcTest({DepartmentController.class, SpaController.class})
 class DepartmentControllerTest {
+
     @Autowired MockMvc mockMvc;
 
     @Test
-    @DisplayName("학과정보 GET /department → 200 OK, department/index 뷰")
-    void 학과정보페이지_정상_로드() throws Exception {
+    @DisplayName("GET /department → SPA index.html 포워딩")
+    void departmentRoute_forwardsToSpa() throws Exception {
         mockMvc.perform(get("/department"))
                 .andExpect(status().isOk())
-                .andExpect(view().name("department/index"))
-                .andExpect(model().attribute("currentPage", "department"));
+                .andExpect(forwardedUrl("/index.html"));
     }
 }

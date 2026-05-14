@@ -9,26 +9,25 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/** 공지사항 페이지 컨트롤러 테스트 — 연결: NoticeController → notice/list.html */
 @WebMvcTest(NoticeController.class)
 class NoticeControllerTest {
+
     @Autowired MockMvc mockMvc;
 
     @Test
-    @DisplayName("공지사항 GET /notice → 200 OK, notice/list 뷰")
-    void 공지사항페이지_정상_로드() throws Exception {
-        mockMvc.perform(get("/notice"))
+    @DisplayName("GET /api/notices → 200 OK, JSON에 featured·notices 포함")
+    void apiNotices_returns200_withData() throws Exception {
+        mockMvc.perform(get("/api/notices"))
                 .andExpect(status().isOk())
-                .andExpect(view().name("notice/list"))
-                .andExpect(model().attribute("currentPage", "notice"));
+                .andExpect(jsonPath("$.featured").isMap())
+                .andExpect(jsonPath("$.notices").isArray());
     }
 
     @Test
-    @DisplayName("공지사항 모델에 notices 리스트 포함")
-    void notices_모델_속성_포함() throws Exception {
-        mockMvc.perform(get("/notice"))
+    @DisplayName("GET /api/notices → featured.featured 값은 true")
+    void apiNotices_featured_isTrue() throws Exception {
+        mockMvc.perform(get("/api/notices"))
                 .andExpect(status().isOk())
-                .andExpect(model().attributeExists("notices"))
-                .andExpect(model().attributeExists("featured"));
+                .andExpect(jsonPath("$.featured.featured").value(true));
     }
 }

@@ -4,16 +4,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/**
- * 메인 페이지 컨트롤러 테스트
- * 연결 컨트롤러: MainController → templates/main/index.html
- */
 @WebMvcTest(MainController.class)
 class MainControllerTest {
 
@@ -21,42 +16,21 @@ class MainControllerTest {
     MockMvc mockMvc;
 
     @Test
-    @DisplayName("메인 페이지 GET / → 200 OK, main/index 뷰 반환")
-    void 메인페이지_정상_로드() throws Exception {
-        MockHttpSession session = new MockHttpSession();
-        session.setAttribute("selectedDeptName", "컴퓨터공학과");
-
-        mockMvc.perform(get("/").session(session))
+    @DisplayName("GET /api/main → 200 OK, JSON에 notices·posts·schedules 포함")
+    void apiMain_returns200_withData() throws Exception {
+        mockMvc.perform(get("/api/main"))
                 .andExpect(status().isOk())
-                .andExpect(view().name("main/index"))
-                // 더미 데이터 3종이 모델에 담겨 있는지 확인
-                .andExpect(model().attributeExists("notices"))
-                .andExpect(model().attributeExists("posts"))
-                .andExpect(model().attributeExists("schedules"))
-                .andExpect(model().attributeExists("today"))
-                .andExpect(model().attribute("currentPage", "main"));
+                .andExpect(jsonPath("$.notices").isArray())
+                .andExpect(jsonPath("$.posts").isArray())
+                .andExpect(jsonPath("$.schedules").isArray())
+                .andExpect(jsonPath("$.today").isString());
     }
 
     @Test
-    @DisplayName("GET / 세션 없음 → /universities 리다이렉트")
-    void 세션없이_루트접근_대학교선택으로_리다이렉트() throws Exception {
-        mockMvc.perform(get("/"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/universities"));
-    }
-
-    @Test
-    @DisplayName("GET / 세션 있음 → 200 OK, main/index 뷰 반환")
-    void 세션있으면_메인페이지_정상_로드() throws Exception {
-        MockHttpSession session = new MockHttpSession();
-        session.setAttribute("selectedDeptName", "컴퓨터공학과");
-
-        mockMvc.perform(get("/").session(session))
+    @DisplayName("GET /api/main?deptName=컴퓨터공학과 → selectedDeptName 반환")
+    void apiMain_withDeptName_returnsDeptName() throws Exception {
+        mockMvc.perform(get("/api/main").param("deptName", "컴퓨터공학과"))
                 .andExpect(status().isOk())
-                .andExpect(view().name("main/index"))
-                .andExpect(model().attributeExists("notices"))
-                .andExpect(model().attributeExists("posts"))
-                .andExpect(model().attributeExists("schedules"))
-                .andExpect(model().attribute("selectedDeptName", "컴퓨터공학과"));
+                .andExpect(jsonPath("$.selectedDeptName").value("컴퓨터공학과"));
     }
 }

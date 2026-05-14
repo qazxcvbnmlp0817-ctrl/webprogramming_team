@@ -9,33 +9,25 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/** 게시판 페이지 컨트롤러 테스트 — 연결: BoardController → board/list.html */
 @WebMvcTest(BoardController.class)
 class BoardControllerTest {
+
     @Autowired MockMvc mockMvc;
 
     @Test
-    @DisplayName("게시판 GET /board → 200 OK, board/list 뷰")
-    void 게시판페이지_정상_로드() throws Exception {
-        mockMvc.perform(get("/board"))
+    @DisplayName("GET /api/posts → 200 OK, JSON에 featured·posts 포함")
+    void apiPosts_returns200_withData() throws Exception {
+        mockMvc.perform(get("/api/posts"))
                 .andExpect(status().isOk())
-                .andExpect(view().name("board/list"))
-                .andExpect(model().attribute("currentPage", "board"));
+                .andExpect(jsonPath("$.featured").isMap())
+                .andExpect(jsonPath("$.posts").isArray());
     }
 
     @Test
-    @DisplayName("게시판 GET /board → posts 모델 속성 존재")
-    void 게시판_posts_속성_존재() throws Exception {
-        mockMvc.perform(get("/board"))
+    @DisplayName("GET /api/posts → posts 목록 9개 반환")
+    void apiPosts_returnsNinePosts() throws Exception {
+        mockMvc.perform(get("/api/posts"))
                 .andExpect(status().isOk())
-                .andExpect(model().attributeExists("posts"));
-    }
-
-    @Test
-    @DisplayName("게시판 GET /board → featured 모델 속성 존재")
-    void 게시판_featured_속성_존재() throws Exception {
-        mockMvc.perform(get("/board"))
-                .andExpect(status().isOk())
-                .andExpect(model().attributeExists("featured"));
+                .andExpect(jsonPath("$.posts.length()").value(9));
     }
 }
