@@ -33,3 +33,21 @@ test('햄버거 버튼 클릭 시 모바일 메뉴가 나타난다', () => {
   fireEvent.click(screen.getByRole('button', { name: '메뉴 열기' }))
   expect(screen.getByTestId('mobile-menu')).toBeInTheDocument()
 })
+
+test('학교 변경 버튼이 렌더링된다', () => {
+  renderNavbar()
+  expect(screen.getAllByText('학교 변경').length).toBeGreaterThan(0)
+})
+
+test('학교 변경 버튼이 /universities로 연결된다', () => {
+  renderNavbar()
+  const links = screen.getAllByText('학교 변경')
+  expect(links[0].closest('a')).toHaveAttribute('href', '/universities')
+})
+
+test('모바일 메뉴에 학교 변경 항목이 있다', () => {
+  renderNavbar()
+  fireEvent.click(screen.getByRole('button', { name: '메뉴 열기' }))
+  const mobileMenu = screen.getByTestId('mobile-menu')
+  expect(mobileMenu).toHaveTextContent('학교 변경')
+})
