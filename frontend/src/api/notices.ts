@@ -1,4 +1,4 @@
-import { NoticeDto } from '../types/notice'
+import type { NoticeDto } from '../types/notice'
 
 export async function fetchNotices(): Promise<{ featured: NoticeDto; notices: NoticeDto[] }> {
   const res = await fetch('/api/notices')

@@ -1,4 +1,4 @@
-import { ScheduleDto } from '../types/schedule'
+import type { ScheduleDto } from '../types/schedule'
 
 export async function fetchSchedules(): Promise<ScheduleDto[]> {
   const res = await fetch('/api/schedules')

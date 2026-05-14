@@ -1,7 +1,7 @@
-import { UniversityDto } from '../types/university'
-import { NoticeDto } from '../types/notice'
-import { PostDto } from '../types/post'
-import { ScheduleDto } from '../types/schedule'
+import type { UniversityDto } from '../types/university'
+import type { NoticeDto } from '../types/notice'
+import type { PostDto } from '../types/post'
+import type { ScheduleDto } from '../types/schedule'
 
 export async function fetchUniversities(): Promise<UniversityDto[]> {
   const res = await fetch('/api/universities')

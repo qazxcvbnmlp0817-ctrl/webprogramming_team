@@ -1,4 +1,4 @@
-import { PostDto } from '../types/post'
+import type { PostDto } from '../types/post'
 
 export async function fetchPosts(): Promise<{ featured: PostDto; posts: PostDto[] }> {
   const res = await fetch('/api/posts')
