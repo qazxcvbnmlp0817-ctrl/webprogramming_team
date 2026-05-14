@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import type { ScheduleDto } from '../types/schedule'
 
 const DAYS = ['일', '월', '화', '수', '목', '금', '토']
@@ -54,8 +54,20 @@ export default function MiniCalendar({ schedules }: Props) {
     setPopoverPos(null)
   }
 
+  const eventsByDate = useMemo(() => {
+    const map = new Map<string, ScheduleDto[]>()
+    schedules.forEach(s => {
+      if (isNaN(new Date(s.date).getTime())) return
+      const arr = map.get(s.date) ?? []
+      arr.push(s)
+      map.set(s.date, arr)
+    })
+    return map
+  }, [schedules])
+
   const grid = buildCalendarGrid(year, month)
-  const popoverEvents = hoveredDate ? getEventsForDate(schedules, hoveredDate) : []
+  const popoverEvents = hoveredDate ? (eventsByDate.get(hoveredDate) ?? []) : []
+  const [, popMonth, popDay] = hoveredDate ? hoveredDate.split('-') : ['', '', '']
 
   return (
     <div className="border-2 border-black flex flex-col">
@@ -77,7 +89,7 @@ export default function MiniCalendar({ schedules }: Props) {
             {row.map((day, ci) => {
               if (day === null) return <div key={ci} className="min-h-[44px]" />
               const dateStr = toDateStr(year, month, day)
-              const events  = getEventsForDate(schedules, dateStr)
+              const events  = eventsByDate.get(dateStr) ?? []
               const isToday = dateStr === todayStr
               const dots    = Math.min(events.length, 3)
               const extra   = events.length > 3 ? events.length - 3 : 0
@@ -118,7 +130,7 @@ export default function MiniCalendar({ schedules }: Props) {
           className="fixed z-50 bg-white border-2 border-black shadow-lg p-3 min-w-[180px]"
           style={{ left: popoverPos.x, top: popoverPos.y }}
         >
-          <p className="text-xs font-bold mb-2">{month}월 {Number(hoveredDate.slice(8))}일</p>
+          <p className="text-xs font-bold mb-2">{Number(popMonth)}월 {Number(popDay)}일</p>
           <ul className="space-y-1">
             {popoverEvents.map(ev => (
               <li key={ev.id} className="text-xs">
