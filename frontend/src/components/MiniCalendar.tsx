@@ -28,8 +28,10 @@ export default function MiniCalendar({ schedules }: Props) {
   const now = new Date()
   const todayStr = toDateStr(now.getFullYear(), now.getMonth() + 1, now.getDate())
 
-  const [year, setYear]   = useState(now.getFullYear())
-  const [month, setMonth] = useState(now.getMonth() + 1)
+  const [year, setYear]         = useState(now.getFullYear())
+  const [month, setMonth]       = useState(now.getMonth() + 1)
+  const [hoveredDate, setHoveredDate] = useState<string | null>(null)
+  const [popoverPos, setPopoverPos]   = useState<{ x: number; y: number } | null>(null)
 
   function prevMonth() {
     if (month === 1) { setYear(y => y - 1); setMonth(12) }
@@ -40,7 +42,20 @@ export default function MiniCalendar({ schedules }: Props) {
     else setMonth(m => m + 1)
   }
 
+  function openPopover(e: React.MouseEvent, dateStr: string) {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    const x = Math.min(rect.left, window.innerWidth - 210)
+    setHoveredDate(dateStr)
+    setPopoverPos({ x, y: rect.bottom + 4 })
+  }
+
+  function closePopover() {
+    setHoveredDate(null)
+    setPopoverPos(null)
+  }
+
   const grid = buildCalendarGrid(year, month)
+  const popoverEvents = hoveredDate ? getEventsForDate(schedules, hoveredDate) : []
 
   return (
     <div className="border-2 border-black flex flex-col">
@@ -62,18 +77,57 @@ export default function MiniCalendar({ schedules }: Props) {
             {row.map((day, ci) => {
               if (day === null) return <div key={ci} className="min-h-[44px]" />
               const dateStr = toDateStr(year, month, day)
+              const events  = getEventsForDate(schedules, dateStr)
               const isToday = dateStr === todayStr
+              const dots    = Math.min(events.length, 3)
+              const extra   = events.length > 3 ? events.length - 3 : 0
+
               return (
-                <div key={ci} data-testid={`cell-${dateStr}`} className="flex flex-col items-center py-1 min-h-[44px]">
+                <div
+                  key={ci}
+                  data-testid={`cell-${dateStr}`}
+                  className={`flex flex-col items-center py-1 min-h-[44px] ${events.length > 0 ? 'cursor-pointer' : ''}`}
+                  onMouseEnter={e => { if (events.length > 0) openPopover(e, dateStr) }}
+                  onMouseLeave={closePopover}
+                  onClick={e => {
+                    if (events.length === 0) return
+                    hoveredDate === dateStr ? closePopover() : openPopover(e, dateStr)
+                  }}
+                >
                   <span className={`text-xs font-medium w-6 h-6 flex items-center justify-center ${isToday ? 'bg-black text-white rounded-full' : ''}`}>
                     {day}
                   </span>
+                  {events.length > 0 && (
+                    <div className="flex items-center gap-0.5 mt-0.5">
+                      {Array.from({ length: dots }).map((_, i) => (
+                        <span key={i} className="w-1 h-1 rounded-full bg-black" />
+                      ))}
+                      {extra > 0 && <span className="text-[10px] text-gray-500">+{extra}</span>}
+                    </div>
+                  )}
                 </div>
               )
             })}
           </div>
         ))}
       </div>
+
+      {hoveredDate && popoverPos && popoverEvents.length > 0 && (
+        <div
+          data-testid="calendar-popover"
+          className="fixed z-50 bg-white border-2 border-black shadow-lg p-3 min-w-[180px]"
+          style={{ left: popoverPos.x, top: popoverPos.y }}
+        >
+          <p className="text-xs font-bold mb-2">{month}월 {Number(hoveredDate.slice(8))}일</p>
+          <ul className="space-y-1">
+            {popoverEvents.map(ev => (
+              <li key={ev.id} className="text-xs">
+                • {ev.title} <span className="text-gray-500">({ev.category})</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   )
 }
