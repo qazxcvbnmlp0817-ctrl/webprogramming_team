@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 
 const NAV_LINKS = [
-  { to: '/notice', label: '공지사항' },
-  { to: '/board', label: '게시판' },
-  { to: '/schedule', label: '일정' },
+  { to: '/notice',     label: '공지사항' },
+  { to: '/board',      label: '게시판' },
+  { to: '/schedule',   label: '일정' },
   { to: '/department', label: '학과정보' },
 ]
 
@@ -35,8 +35,14 @@ export default function Navbar() {
           ))}
         </ul>
 
-        {/* 로그인 버튼 */}
+        {/* 데스크탑 우측 버튼 */}
         <div className="hidden md:flex items-center gap-3">
+          <Link
+            to="/universities"
+            className="border border-white text-white text-sm px-3 py-1 rounded hover:bg-white hover:text-black transition"
+          >
+            학교 변경
+          </Link>
           <Link
             to="/login"
             className="border border-white text-white text-sm px-3 py-1 rounded hover:bg-white hover:text-black transition"
@@ -73,9 +79,16 @@ export default function Navbar() {
             </Link>
           ))}
           <Link
+            to="/universities"
+            onClick={() => setMenuOpen(false)}
+            className="border border-white text-center py-1 rounded hover:bg-white hover:text-black transition"
+          >
+            학교 변경
+          </Link>
+          <Link
             to="/login"
             onClick={() => setMenuOpen(false)}
-            className="mt-2 border border-white text-center py-1 rounded hover:bg-white hover:text-black transition"
+            className="border border-white text-center py-1 rounded hover:bg-white hover:text-black transition"
           >
             로그인
           </Link>
