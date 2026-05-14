@@ -1,4 +1,4 @@
-interface FeaturedCardProps {
+export interface FeaturedCardProps {
   category: string
   title: string
   date: string

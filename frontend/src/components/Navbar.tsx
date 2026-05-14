@@ -49,7 +49,8 @@ export default function Navbar() {
         <button
           onClick={() => setMenuOpen(prev => !prev)}
           className="md:hidden text-white focus:outline-none"
-          aria-label="메뉴 열기"
+          aria-label={menuOpen ? '메뉴 닫기' : '메뉴 열기'}
+          aria-expanded={menuOpen}
         >
           <i className="fas fa-bars text-xl" />
         </button>
