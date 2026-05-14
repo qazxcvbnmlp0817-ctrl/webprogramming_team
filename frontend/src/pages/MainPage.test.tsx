@@ -12,7 +12,7 @@ vi.mock('../api/universities', () => ({
       { id: 1, title: '인기글 제목1', date: '2026-05-10', author: '홍길동', likes: 5, category: '자유게시판', viewCount: 10, featured: false, commentCount: 0 },
     ],
     schedules: [
-      { id: 1, title: '중간고사', date: '2026-05-15', dday: 1, category: '시험' },
+      { id: 1, title: '중간고사', date: '2026-05-15', dday: 20, category: '시험' },
     ],
     today: '2026-05-14 (목)',
   }),
