@@ -3,6 +3,10 @@ import type { ScheduleDto } from '../types/schedule'
 import { render, screen, fireEvent } from '@testing-library/react'
 import MiniCalendar from './MiniCalendar'
 
+function toDateStr(y: number, m: number, d: number) {
+  return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+}
+
 describe('buildCalendarGrid', () => {
   test('6행 7열(42칸)을 반환한다', () => {
     const grid = buildCalendarGrid(2026, 5)
@@ -90,5 +94,69 @@ describe('MiniCalendar 컴포넌트', () => {
     const before = header.textContent
     fireEvent.click(screen.getByRole('button', { name: '이전 달' }))
     expect(header.textContent).not.toBe(before)
+  })
+
+  test('이벤트 있는 날짜에 점이 렌더링된다', () => {
+    const today = new Date()
+    const todayStr = toDateStr(today.getFullYear(), today.getMonth() + 1, today.getDate())
+    render(<MiniCalendar schedules={[{ id: 1, title: '중간고사', date: todayStr, dday: 0, category: '시험' }]} />)
+    const cell = screen.getByTestId(`cell-${todayStr}`)
+    expect(cell.querySelector('.rounded-full.bg-black:not(.w-6)')).toBeTruthy()
+  })
+
+  test('이벤트 4개이면 점 3개와 +1이 표시된다', () => {
+    const today = new Date()
+    const todayStr = toDateStr(today.getFullYear(), today.getMonth() + 1, today.getDate())
+    const schedules = Array.from({ length: 4 }, (_, i) => ({
+      id: i + 1, title: `이벤트${i + 1}`, date: todayStr, dday: 0, category: '학사',
+    }))
+    render(<MiniCalendar schedules={schedules} />)
+    expect(screen.getByText('+1')).toBeInTheDocument()
+  })
+
+  test('이벤트 있는 셀에 마우스 올리면 팝오버가 나타난다', () => {
+    const today = new Date()
+    const todayStr = toDateStr(today.getFullYear(), today.getMonth() + 1, today.getDate())
+    render(<MiniCalendar schedules={[{ id: 1, title: '중간고사', date: todayStr, dday: 0, category: '시험' }]} />)
+    fireEvent.mouseEnter(screen.getByTestId(`cell-${todayStr}`))
+    expect(screen.getByTestId('calendar-popover')).toBeInTheDocument()
+    expect(screen.getByText(/중간고사/)).toBeInTheDocument()
+    expect(screen.getByText(/시험/)).toBeInTheDocument()
+  })
+
+  test('마우스가 셀을 떠나면 팝오버가 사라진다', () => {
+    const today = new Date()
+    const todayStr = toDateStr(today.getFullYear(), today.getMonth() + 1, today.getDate())
+    render(<MiniCalendar schedules={[{ id: 1, title: '중간고사', date: todayStr, dday: 0, category: '시험' }]} />)
+    const cell = screen.getByTestId(`cell-${todayStr}`)
+    fireEvent.mouseEnter(cell)
+    fireEvent.mouseLeave(cell)
+    expect(screen.queryByTestId('calendar-popover')).not.toBeInTheDocument()
+  })
+
+  test('이벤트 없는 셀에 마우스 올려도 팝오버가 나타나지 않는다', () => {
+    render(<MiniCalendar schedules={[]} />)
+    const today = new Date()
+    const todayStr = toDateStr(today.getFullYear(), today.getMonth() + 1, today.getDate())
+    fireEvent.mouseEnter(screen.getByTestId(`cell-${todayStr}`))
+    expect(screen.queryByTestId('calendar-popover')).not.toBeInTheDocument()
+  })
+
+  test('이벤트 있는 셀 클릭 시 팝오버가 나타난다', () => {
+    const today = new Date()
+    const todayStr = toDateStr(today.getFullYear(), today.getMonth() + 1, today.getDate())
+    render(<MiniCalendar schedules={[{ id: 1, title: '중간고사', date: todayStr, dday: 0, category: '시험' }]} />)
+    fireEvent.click(screen.getByTestId(`cell-${todayStr}`))
+    expect(screen.getByTestId('calendar-popover')).toBeInTheDocument()
+  })
+
+  test('팝오버 열린 상태에서 같은 셀 재클릭 시 팝오버가 닫힌다', () => {
+    const today = new Date()
+    const todayStr = toDateStr(today.getFullYear(), today.getMonth() + 1, today.getDate())
+    render(<MiniCalendar schedules={[{ id: 1, title: '중간고사', date: todayStr, dday: 0, category: '시험' }]} />)
+    const cell = screen.getByTestId(`cell-${todayStr}`)
+    fireEvent.click(cell)
+    fireEvent.click(cell)
+    expect(screen.queryByTestId('calendar-popover')).not.toBeInTheDocument()
   })
 })
