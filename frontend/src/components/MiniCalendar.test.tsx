@@ -1,5 +1,7 @@
 import { buildCalendarGrid, getEventsForDate } from './MiniCalendar'
 import type { ScheduleDto } from '../types/schedule'
+import { render, screen, fireEvent } from '@testing-library/react'
+import MiniCalendar from './MiniCalendar'
 
 describe('buildCalendarGrid', () => {
   test('6행 7열(42칸)을 반환한다', () => {
@@ -49,5 +51,44 @@ describe('getEventsForDate', () => {
       { id: 4, title: '오류', date: 'not-a-date', dday: 0, category: '기타' },
     ]
     expect(getEventsForDate(withInvalid, '2026-05-10')).toHaveLength(2)
+  })
+})
+
+describe('MiniCalendar 컴포넌트', () => {
+  test('연/월 헤더가 렌더링된다', () => {
+    render(<MiniCalendar schedules={[]} />)
+    expect(screen.getByText(/\d{4}년 \d{1,2}월/)).toBeInTheDocument()
+  })
+
+  test('요일 헤더 7개가 렌더링된다', () => {
+    render(<MiniCalendar schedules={[]} />)
+    for (const day of ['일', '월', '화', '수', '목', '금', '토']) {
+      expect(screen.getByText(day)).toBeInTheDocument()
+    }
+  })
+
+  test('오늘 날짜 셀에 bg-black 클래스가 적용된다', () => {
+    render(<MiniCalendar schedules={[]} />)
+    const today = new Date().getDate()
+    const todaySpan = screen.getAllByText(String(today)).find(el =>
+      el.className.includes('bg-black')
+    )
+    expect(todaySpan).toBeTruthy()
+  })
+
+  test('▶ 클릭 시 표시 달이 변경된다', () => {
+    render(<MiniCalendar schedules={[]} />)
+    const header = screen.getByText(/\d{4}년 \d{1,2}월/)
+    const before = header.textContent
+    fireEvent.click(screen.getByRole('button', { name: '다음 달' }))
+    expect(header.textContent).not.toBe(before)
+  })
+
+  test('◀ 클릭 시 표시 달이 변경된다', () => {
+    render(<MiniCalendar schedules={[]} />)
+    const header = screen.getByText(/\d{4}년 \d{1,2}월/)
+    const before = header.textContent
+    fireEvent.click(screen.getByRole('button', { name: '이전 달' }))
+    expect(header.textContent).not.toBe(before)
   })
 })
