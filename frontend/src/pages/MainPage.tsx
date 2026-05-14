@@ -49,20 +49,20 @@ export default function MainPage() {
       </section>
 
       <main className="max-w-6xl mx-auto px-4 py-10">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
 
-          {/* 캘린더 — 데스크탑: col 1-2 row 1 / 모바일: 1번째 */}
-          <div className="lg:col-span-2 lg:row-start-1">
+          {/* 캘린더 — 모바일: 1번째 / 데스크탑: 상단 왼쪽 */}
+          <div className="h-full">
             <MiniCalendar schedules={schedules} />
           </div>
 
-          {/* 다가오는 일정 — 데스크탑: col 1-2 row 2 / 모바일: 2번째 */}
-          <div className="lg:col-span-2 lg:row-start-2 border-2 border-black flex flex-col">
+          {/* 다가오는 일정 — 모바일: 2번째 / 데스크탑: 상단 오른쪽 (캘린더와 동일 높이) */}
+          <div className="border-2 border-black flex flex-col">
             <div className="bg-black text-white px-4 py-3 flex items-center justify-between">
               <span className="font-bold text-sm"><i className="fas fa-calendar-alt mr-2" />다가오는 일정</span>
               <Link to="/schedule" className="text-xs text-gray-300 hover:text-white transition">더보기 →</Link>
             </div>
-            <ul className="flex-1 divide-y divide-gray-100">
+            <ul className="flex-1 overflow-y-auto divide-y divide-gray-100">
               {schedules.length === 0 ? (
                 <li className="px-4 py-8 text-center text-gray-400 text-sm">
                   <i className="fas fa-calendar block mb-2" />등록된 일정이 없습니다.
@@ -81,8 +81,8 @@ export default function MainPage() {
             </ul>
           </div>
 
-          {/* 공지사항 — 데스크탑: col 3 row 1 / 모바일: 3번째 */}
-          <div className="lg:col-start-3 lg:row-start-1 border-2 border-black flex flex-col">
+          {/* 최신 공지사항 — 모바일: 3번째 / 데스크탑: 하단 왼쪽 */}
+          <div className="border-2 border-black flex flex-col">
             <div className="bg-black text-white px-4 py-3 flex items-center justify-between">
               <span className="font-bold text-sm"><i className="fas fa-bullhorn mr-2" />최신 공지사항</span>
               <Link to="/notice" className="text-xs text-gray-300 hover:text-white transition">더보기 →</Link>
@@ -101,8 +101,8 @@ export default function MainPage() {
             </ul>
           </div>
 
-          {/* 인기 게시글 — 데스크탑: col 3 row 2 / 모바일: 4번째 */}
-          <div className="lg:col-start-3 lg:row-start-2 border-2 border-black flex flex-col">
+          {/* 인기 게시글 — 모바일: 4번째 / 데스크탑: 하단 오른쪽 */}
+          <div className="border-2 border-black flex flex-col">
             <div className="bg-black text-white px-4 py-3 flex items-center justify-between">
               <span className="font-bold text-sm"><i className="fas fa-fire mr-2" />인기 게시글</span>
               <Link to="/board" className="text-xs text-gray-300 hover:text-white transition">더보기 →</Link>

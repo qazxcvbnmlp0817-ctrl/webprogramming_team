@@ -70,7 +70,7 @@ export default function MiniCalendar({ schedules }: Props) {
   const [, popMonth, popDay] = hoveredDate ? hoveredDate.split('-') : ['', '', '']
 
   return (
-    <div className="border-2 border-black flex flex-col">
+    <div className="border-2 border-black flex flex-col h-full">
       <div className="bg-black text-white px-4 py-3 flex items-center justify-between">
         <button onClick={prevMonth} aria-label="이전 달" className="hover:opacity-70 transition px-1">◀</button>
         <span className="font-bold text-sm">{year}년 {month}월</span>
@@ -87,7 +87,7 @@ export default function MiniCalendar({ schedules }: Props) {
         {grid.map((row, ri) => (
           <div key={ri} className="grid grid-cols-7">
             {row.map((day, ci) => {
-              if (day === null) return <div key={ci} className="min-h-[44px]" />
+              if (day === null) return <div key={ci} className="min-h-[60px]" />
               const dateStr = toDateStr(year, month, day)
               const events  = eventsByDate.get(dateStr) ?? []
               const isToday = dateStr === todayStr
@@ -98,7 +98,7 @@ export default function MiniCalendar({ schedules }: Props) {
                 <div
                   key={ci}
                   data-testid={`cell-${dateStr}`}
-                  className={`flex flex-col items-center py-1 min-h-[44px] ${events.length > 0 ? 'cursor-pointer' : ''}`}
+                  className={`flex flex-col items-center py-1 min-h-[60px] ${events.length > 0 ? 'cursor-pointer' : ''}`}
                   onMouseEnter={e => { if (events.length > 0) openPopover(e, dateStr) }}
                   onMouseLeave={closePopover}
                   onClick={e => {
