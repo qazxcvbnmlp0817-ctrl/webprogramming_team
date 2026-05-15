@@ -1,13 +1,14 @@
 import { useState, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import FilterTabs from '../components/FilterTabs'
 import Sidebar from '../components/Sidebar'
-import { fetchSchedules } from '../api/schedules'
-import { useDept } from '../context/DeptContext'
+import { fetchSchoolSchedules } from '../api/school'
 import { useDeptFetch } from '../hooks/useDeptFetch'
+import { useDept } from '../context/DeptContext'
 import type { ScheduleDto } from '../types/schedule'
 
-const SCHEDULE_TABS = ['전체', '학사', '행사', '시험', '기타']
+const TABS = ['전체', '학사', '행사', '시험', '기타']
 
 function groupByMonth(items: ScheduleDto[]): Map<string, ScheduleDto[]> {
   const map = new Map<string, ScheduleDto[]>()
@@ -19,16 +20,14 @@ function groupByMonth(items: ScheduleDto[]): Map<string, ScheduleDto[]> {
   return map
 }
 
-export default function SchedulePage() {
-  const { selectedDeptId, selectedDeptName } = useDept()
+export default function SchoolSchedulePage() {
+  const { selectedUniversityId, selectedUniversityName } = useDept()
   const [active, setActive] = useState('전체')
 
-  const { data: schedules = [], loading } = useDeptFetch(fetchSchedules, selectedDeptId)
-
+  const { data: schedules = [], loading } = useDeptFetch(fetchSchoolSchedules, selectedUniversityId)
   const filtered = active === '전체' ? schedules : schedules.filter(s => s.category === active)
   const grouped  = useMemo(() => groupByMonth(filtered), [filtered])
-
-  const categoryCounts = SCHEDULE_TABS.map(label => ({
+  const categoryCounts = TABS.map(label => ({
     label,
     count: label === '전체' ? schedules.length : schedules.filter(s => s.category === label).length,
   }))
@@ -39,13 +38,12 @@ export default function SchedulePage() {
       <div className="pt-14" />
 
       <section className="bg-black text-white py-8 px-4">
-        <div className="max-w-6xl mx-auto">
-          <h1 className="text-2xl font-bold">
-            <i className="fas fa-calendar-alt mr-2" />일정
-          </h1>
-          {selectedDeptName && (
-            <p className="text-gray-400 text-sm mt-1">{selectedDeptName} 일정</p>
-          )}
+        <div className="max-w-6xl mx-auto flex items-center gap-3">
+          <Link to={`/universities/${selectedUniversityId}`} className="text-gray-400 hover:text-white transition text-sm">
+            <i className="fas fa-arrow-left mr-1" />{selectedUniversityName ?? '학교 홈'}
+          </Link>
+          <span className="text-gray-600">›</span>
+          <h1 className="text-xl font-bold"><i className="fas fa-calendar-alt mr-2" />학교 일정</h1>
         </div>
       </section>
 
@@ -56,8 +54,7 @@ export default function SchedulePage() {
           </div>
         ) : (
           <>
-            <FilterTabs tabs={SCHEDULE_TABS} active={active} onChange={setActive} />
-
+            <FilterTabs tabs={TABS} active={active} onChange={setActive} />
             <div className="flex flex-col lg:flex-row gap-8">
               <div className="flex-1">
                 {filtered.length === 0 ? (
@@ -67,8 +64,7 @@ export default function SchedulePage() {
                 ) : Array.from(grouped.entries()).map(([month, items]) => (
                   <div key={month}>
                     <div className="text-base font-bold py-3 px-1 mt-4 border-b-2 border-black flex items-center gap-2">
-                      <i className="fas fa-caret-right" />
-                      {month.slice(0, 4)}년 {month.slice(5, 7)}월
+                      <i className="fas fa-caret-right" />{month.slice(0, 4)}년 {month.slice(5, 7)}월
                     </div>
                     {items.map(s => (
                       <div key={s.id} className="flex items-start gap-4 py-4 border-b border-gray-200 hover:bg-gray-50 transition">
@@ -90,16 +86,10 @@ export default function SchedulePage() {
                   </div>
                 ))}
               </div>
-
               <Sidebar
-                categoryWidget={{ title: '이번 달 일정', items: categoryCounts, onSelect: setActive }}
-                recentWidget={{
-                  title: 'D-Day 임박 TOP 5',
-                  items: schedules.slice(0, 5).map(s => ({
-                    title: s.title,
-                    sub: `${s.dday === 0 ? 'D-Day' : `D-${s.dday}`}  ${s.date}`,
-                  })),
-                }}
+                categoryWidget={{ title: '카테고리', items: categoryCounts, onSelect: setActive }}
+                recentWidget={{ title: 'D-Day 임박 TOP 5',
+                  items: schedules.slice(0, 5).map(s => ({ title: s.title, sub: `${s.dday === 0 ? 'D-Day' : `D-${s.dday}`}  ${s.date}` })) }}
               />
             </div>
           </>

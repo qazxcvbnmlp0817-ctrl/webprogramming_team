@@ -1,32 +1,74 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { useDept } from '../context/DeptContext'
 
-const NAV_LINKS = [
-  { to: '/notice',     label: '공지사항' },
-  { to: '/board',      label: '게시판' },
-  { to: '/schedule',   label: '일정' },
-  { to: '/department', label: '학과정보' },
+const SCHOOL_NAV = [
+  { to: '/school/notice',   label: '공지사항' },
+  { to: '/school/board',    label: '게시판' },
+  { to: '/school/schedule', label: '일정' },
+  { to: '/school/info',     label: '학교정보' },
+]
+
+const DEPT_NAV = [
+  { to: '/dept/notice',     label: '공지사항' },
+  { to: '/dept/board',      label: '게시판' },
+  { to: '/dept/schedule',   label: '일정' },
+  { to: '/dept/department', label: '학과정보' },
 ]
 
 export default function Navbar() {
   const { pathname } = useLocation()
+  const { selectedUniversityId, selectedUniversityName, selectedDeptName } = useDept()
   const [menuOpen, setMenuOpen] = useState(false)
+
+  const isSchool = pathname.startsWith('/school')
+  const navLinks = isSchool ? SCHOOL_NAV : DEPT_NAV
+  const schoolHomeLink = `/universities/${selectedUniversityId}`
 
   return (
     <nav className="fixed top-0 left-0 w-full bg-black text-white z-50 border-b border-gray-800">
       <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link to="/" className="font-bold text-lg tracking-tight hover:opacity-80 transition">
-          학과정보통합서비스
-        </Link>
+
+        {/* 로고 + 컨텍스트 배지 */}
+        <div className="flex items-center gap-3">
+          <Link
+            to={isSchool ? schoolHomeLink : '/'}
+            className="font-bold text-lg tracking-tight hover:opacity-80 transition"
+          >
+            학과정보통합서비스
+          </Link>
+          {isSchool && selectedUniversityName && (
+            <span className="hidden md:inline-flex items-center gap-1 text-xs text-gray-400 border border-gray-700 px-2 py-0.5 rounded">
+              <i className="fas fa-university text-[10px]" />
+              {selectedUniversityName}
+            </span>
+          )}
+          {!isSchool && selectedDeptName && (
+            <span className="hidden md:inline-flex items-center gap-1 text-xs text-gray-400 border border-gray-700 px-2 py-0.5 rounded">
+              <i className="fas fa-door-open text-[10px]" />
+              {selectedDeptName}
+            </span>
+          )}
+        </div>
 
         {/* 데스크탑 메뉴 */}
         <ul className="hidden md:flex gap-8 text-sm font-medium">
-          {NAV_LINKS.map(({ to, label }) => (
+          {isSchool && (
+            <li>
+              <Link
+                to={schoolHomeLink}
+                className="pb-1 hover:opacity-70 transition border-b-2 border-transparent text-gray-300"
+              >
+                학교홈
+              </Link>
+            </li>
+          )}
+          {navLinks.map(({ to, label }) => (
             <li key={to}>
               <Link
                 to={to}
-                className={`pb-1 hover:opacity-70 transition border-b-2 ${
-                  pathname === to ? 'border-white' : 'border-transparent'
+                className={`pb-1 hover:opacity-70 transition border-b-2 text-gray-300 ${
+                  pathname === to ? 'border-white font-semibold text-white' : 'border-transparent'
                 }`}
               >
                 {label}
@@ -68,12 +110,23 @@ export default function Navbar() {
           data-testid="mobile-menu"
           className="md:hidden bg-black border-t border-gray-700 px-4 py-4 flex flex-col gap-4 text-sm"
         >
-          {NAV_LINKS.map(({ to, label }) => (
+          {isSchool && (
+            <Link
+              to={schoolHomeLink}
+              onClick={() => setMenuOpen(false)}
+              className="hover:opacity-70 text-gray-300"
+            >
+              <i className="fas fa-arrow-left mr-1 text-xs" />학교홈
+            </Link>
+          )}
+          {navLinks.map(({ to, label }) => (
             <Link
               key={to}
               to={to}
               onClick={() => setMenuOpen(false)}
-              className={`hover:opacity-70 ${pathname === to ? 'border-b border-white pb-1 font-medium' : ''}`}
+              className={`hover:opacity-70 ${
+                pathname === to ? 'border-b border-white pb-1 font-medium text-white' : 'text-gray-300'
+              }`}
             >
               {label}
             </Link>

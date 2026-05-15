@@ -4,20 +4,20 @@ import Navbar from '../components/Navbar'
 import FeaturedCard from '../components/FeaturedCard'
 import Sidebar from '../components/Sidebar'
 import Pagination from '../components/Pagination'
-import { fetchPosts } from '../api/posts'
-import { useDept } from '../context/DeptContext'
+import { fetchSchoolPosts } from '../api/school'
 import { useDeptFetch } from '../hooks/useDeptFetch'
+import { useDept } from '../context/DeptContext'
 
-const BOARD_TABS   = ['전체', '자유게시판', '질문', '스터디', '취업후기']
+const TABS         = ['전체', '자유게시판', '질문', '스터디', '취업후기']
 const SORT_OPTIONS = ['최신순', '추천순', '댓글순']
 
-export default function BoardPage() {
-  const { selectedDeptId, selectedDeptName } = useDept()
+export default function SchoolBoardPage() {
+  const { selectedUniversityId, selectedUniversityName } = useDept()
   const [active, setActive] = useState('전체')
   const [sort, setSort]     = useState('최신순')
   const [search, setSearch] = useState('')
 
-  const { data, loading } = useDeptFetch(fetchPosts, selectedDeptId)
+  const { data, loading } = useDeptFetch(fetchSchoolPosts, selectedUniversityId)
   const featured = data?.featured ?? null
   const posts    = data?.posts    ?? []
 
@@ -33,7 +33,7 @@ export default function BoardPage() {
     return result
   }, [posts, active, sort, search])
 
-  const categoryCounts = BOARD_TABS.map(label => ({
+  const categoryCounts = TABS.map(label => ({
     label,
     count: label === '전체' ? posts.length : posts.filter(p => p.category === label).length,
   }))
@@ -44,13 +44,12 @@ export default function BoardPage() {
       <div className="pt-14" />
 
       <section className="bg-black text-white py-8 px-4">
-        <div className="max-w-6xl mx-auto">
-          <h1 className="text-2xl font-bold">
-            <i className="fas fa-comments mr-2" />게시판
-          </h1>
-          {selectedDeptName && (
-            <p className="text-gray-400 text-sm mt-1">{selectedDeptName} 게시판</p>
-          )}
+        <div className="max-w-6xl mx-auto flex items-center gap-3">
+          <Link to={`/universities/${selectedUniversityId}`} className="text-gray-400 hover:text-white transition text-sm">
+            <i className="fas fa-arrow-left mr-1" />{selectedUniversityName ?? '학교 홈'}
+          </Link>
+          <span className="text-gray-600">›</span>
+          <h1 className="text-xl font-bold"><i className="fas fa-comments mr-2" />학교 게시판</h1>
         </div>
       </section>
 
@@ -62,58 +61,33 @@ export default function BoardPage() {
         ) : (
           <>
             {featured && (
-              <FeaturedCard
-                category={featured.category}
-                title={featured.title}
-                date={featured.date}
-                meta={`❤ ${featured.likes}`}
-              />
+              <FeaturedCard category={featured.category} title={featured.title} date={featured.date} meta={`❤ ${featured.likes}`} />
             )}
-
             <div className="mb-4">
               <div className="flex items-center border border-black">
                 <i className="fas fa-search px-3 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="제목으로 검색..."
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  className="flex-1 py-2 pr-4 text-sm outline-none bg-white"
-                />
+                <input type="text" placeholder="제목으로 검색..." value={search} onChange={e => setSearch(e.target.value)}
+                  className="flex-1 py-2 pr-4 text-sm outline-none bg-white" />
               </div>
             </div>
-
             <div className="flex flex-wrap items-center gap-y-2 mb-6">
               <div className="flex flex-wrap gap-2">
-                {BOARD_TABS.map(tab => (
-                  <button
-                    key={tab}
-                    onClick={() => setActive(tab)}
-                    aria-pressed={active === tab}
-                    className={`px-4 py-1.5 text-sm border border-black font-medium transition ${
-                      active === tab ? 'bg-black text-white' : 'bg-white text-black'
-                    }`}
-                  >
+                {TABS.map(tab => (
+                  <button key={tab} onClick={() => setActive(tab)} aria-pressed={active === tab}
+                    className={`px-4 py-1.5 text-sm border border-black font-medium transition ${active === tab ? 'bg-black text-white' : 'bg-white text-black'}`}>
                     {tab}
                   </button>
                 ))}
               </div>
               <div className="flex gap-2 ml-auto">
                 {SORT_OPTIONS.map(opt => (
-                  <button
-                    key={opt}
-                    onClick={() => setSort(opt)}
-                    aria-pressed={sort === opt}
-                    className={`px-3 py-1.5 text-sm border border-black font-medium transition ${
-                      sort === opt ? 'bg-black text-white' : 'bg-white text-black'
-                    }`}
-                  >
+                  <button key={opt} onClick={() => setSort(opt)} aria-pressed={sort === opt}
+                    className={`px-3 py-1.5 text-sm border border-black font-medium transition ${sort === opt ? 'bg-black text-white' : 'bg-white text-black'}`}>
                     {opt}
                   </button>
                 ))}
               </div>
             </div>
-
             <div className="flex flex-col lg:flex-row gap-8">
               <div className="flex-1">
                 {filtered.map(post => (
@@ -122,7 +96,7 @@ export default function BoardPage() {
                       <i className="fas fa-image text-gray-400 text-sm" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <Link to="/dept/board" className="font-semibold text-black hover:underline block leading-snug line-clamp-2">{post.title}</Link>
+                      <p className="font-semibold text-black leading-snug line-clamp-2">{post.title}</p>
                       <div className="flex items-center flex-wrap gap-3 mt-1.5 text-xs text-gray-500">
                         <span className="border border-black text-black px-1.5 py-0.5 font-medium">{post.category}</span>
                         <span>{post.date}</span>
@@ -140,16 +114,10 @@ export default function BoardPage() {
                 )}
                 <Pagination current={1} total={10} onChange={() => {}} />
               </div>
-
               <Sidebar
                 categoryWidget={{ title: '카테고리', items: categoryCounts, onSelect: setActive }}
-                recentWidget={{
-                  title: '인기 게시글 TOP 5',
-                  items: [...posts].sort((a, b) => b.likes - a.likes).slice(0, 5).map(p => ({
-                    title: p.title,
-                    sub: `❤ ${p.likes}`,
-                  })),
-                }}
+                recentWidget={{ title: '인기 게시글 TOP 5',
+                  items: [...posts].sort((a, b) => b.likes - a.likes).slice(0, 5).map(p => ({ title: p.title, sub: `❤ ${p.likes}` })) }}
               />
             </div>
           </>

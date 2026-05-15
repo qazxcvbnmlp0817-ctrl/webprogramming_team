@@ -97,4 +97,159 @@ public class DummyDataHelper {
                 .findFirst()
                 .orElse(null);
     }
+
+    /** univId 기반 대학 전체 공지사항 */
+    public static List<NoticeDto> getUniversityNotices(Long univId) {
+        String univName = UNIVERSITIES.stream()
+                .filter(u -> u.getId().equals(univId))
+                .map(UniversityDto::getName)
+                .findFirst().orElse("대학교");
+        long base = univId * 1000;
+        return List.of(
+            new NoticeDto(base+1, "[공지] " + univName + " 2026년 1학기 학사 일정 안내",      "2026-05-11", univName + " 학사처", "학사", 520, true),
+            new NoticeDto(base+2, univName + " 2026년 하계 방학 기간 및 학사 운영 안내",       "2026-05-09", univName + " 학사처", "학사", 380, false),
+            new NoticeDto(base+3, univName + " 장학생 선발 공고 (교내 성적 장학금)",           "2026-05-07", univName + " 장학처", "장학", 295, false),
+            new NoticeDto(base+4, univName + " 2026 대학 축제 '목포제' 개최 안내",             "2026-05-05", univName + " 학생처", "행사", 210, false),
+            new NoticeDto(base+5, univName + " 취업지원센터 채용설명회 일정 공지",             "2026-05-03", univName + " 취업지원센터", "취업", 175, false),
+            new NoticeDto(base+6, univName + " 도서관 이용 시간 변경 안내",                    "2026-05-01", univName + " 도서관", "학사", 140, false),
+            new NoticeDto(base+7, univName + " 2026년 하계 계절학기 수강신청 안내",            "2026-04-29", univName + " 학사처", "학사", 118, false),
+            new NoticeDto(base+8, univName + " 교내 창업경진대회 참가 모집",                   "2026-04-27", univName + " 창업지원단", "행사",  93, false)
+        );
+    }
+
+    /** univId 기반 대학 전체 게시글 */
+    public static List<PostDto> getUniversityPosts(Long univId) {
+        String univName = UNIVERSITIES.stream()
+                .filter(u -> u.getId().equals(univId))
+                .map(UniversityDto::getName)
+                .findFirst().orElse("대학교");
+        long base = univId * 1000;
+        return List.of(
+            new PostDto(base+1, univName + " 재학생이 추천하는 교양 과목 모음",    "재학생A",  88, "자유게시판", 620, "2026-05-10", true,  42),
+            new PostDto(base+2, univName + " 기숙사 생활 꿀팁 공유",              "기숙사生",  72, "자유게시판", 530, "2026-05-08", false, 35),
+            new PostDto(base+3, "삼성 SDS 2026 상반기 인턴 합격 후기",           "졸업생B",   65, "취업후기",   480, "2026-05-06", false, 28),
+            new PostDto(base+4, univName + " 도서관 스터디룸 예약 꿀팁",          "재학생C",   50, "자유게시판", 390, "2026-05-04", false, 21),
+            new PostDto(base+5, "전공 불문 스터디 모집 (TOEIC 900+ 목표)",        "재학생D",   43, "스터디",     310, "2026-05-02", false, 15),
+            new PostDto(base+6, univName + " 학식 메뉴 개선 건의합니다",          "재학생E",   38, "자유게시판", 260, "2026-04-30", false, 55),
+            new PostDto(base+7, "공모전 같이 나갈 팀원 구합니다 (디자인·개발)",   "재학생F",   30, "스터디",     200, "2026-04-28", false, 18),
+            new PostDto(base+8, "교수님 추천서 부탁드리는 방법 질문",             "재학생G",   22, "질문",       160, "2026-04-26", false, 12),
+            new PostDto(base+9, "대학원 진학 vs 취업 고민 중입니다",              "재학생H",   18, "자유게시판", 140, "2026-04-24", false, 30)
+        );
+    }
+
+    /** univId 기반 대학 전체 일정 */
+    public static List<ScheduleDto> getUniversitySchedules(Long univId) {
+        long base = univId * 1000;
+        return List.of(
+            new ScheduleDto(base+1, "1학기 중간고사",          "2026-05-12",  1, "시험"),
+            new ScheduleDto(base+2, "수강신청 정정기간",        "2026-05-19",  8, "학사"),
+            new ScheduleDto(base+3, "대학 축제 목포제",         "2026-05-28", 17, "행사"),
+            new ScheduleDto(base+4, "1학기 기말고사",           "2026-06-16", 36, "시험"),
+            new ScheduleDto(base+5, "하계 방학 시작",           "2026-06-27", 47, "학사"),
+            new ScheduleDto(base+6, "계절학기 수강신청",        "2026-07-01", 51, "학사"),
+            new ScheduleDto(base+7, "졸업논문 최종 제출 마감",  "2026-07-10", 60, "학사"),
+            new ScheduleDto(base+8, "2학기 수강신청 시작",      "2026-07-21", 71, "학사")
+        );
+    }
+
+    /** 학과 ID로 학과명을 조회한다 */
+    public static String findDeptName(Long deptId) {
+        return UNIVERSITIES.stream()
+                .flatMap(u -> u.getSchools().stream())
+                .flatMap(s -> s.getFaculties().stream())
+                .flatMap(f -> f.getDepts().stream())
+                .filter(d -> d.getId().equals(deptId))
+                .map(DeptSelectionDto::getName)
+                .findFirst()
+                .orElse("학과");
+    }
+
+    /** deptId 기반 공지사항 목록 생성 */
+    public static List<NoticeDto> getNoticesByDept(Long deptId) {
+        String dept = findDeptName(deptId);
+        long base = deptId * 100;
+        return List.of(
+            new NoticeDto(base+1, "[긴급] " + dept + " 2026년 1학기 수강정정 기간 안내", "2026-05-11", dept + " 사무실", "학사", (int)(200 + deptId * 7), true),
+            new NoticeDto(base+2, dept + " 2026년 1학기 수강신청 일정 안내",              "2026-05-08", dept + " 사무실", "학사", (int)(100 + deptId * 5), false),
+            new NoticeDto(base+3, dept + " 졸업논문 제출 마감 안내",                      "2026-05-06", dept + " 사무실", "학사",  (int)(80 + deptId * 3), false),
+            new NoticeDto(base+4, dept + " 장학금 신청 안내 (5월 15일까지)",              "2026-05-04", "학생처",         "장학",  (int)(60 + deptId * 2), false),
+            new NoticeDto(base+5, dept + " 실험실 안전교육 일정 공지",                    "2026-05-02", dept + " 사무실", "학사",  (int)(40 + deptId),     false),
+            new NoticeDto(base+6, dept + " 산학협력 세미나 개최 안내",                    "2026-04-30", dept + " 사무실", "행사",  (int)(30 + deptId),     false),
+            new NoticeDto(base+7, dept + " 졸업작품 심사 일정 공지",                      "2026-04-28", dept + " 사무실", "학사",  (int)(25 + deptId),     false),
+            new NoticeDto(base+8, dept + " 교내 해커톤 참가 모집",                        "2026-04-25", "학생처",         "행사",  (int)(15 + deptId),     false)
+        );
+    }
+
+    /** deptId 기반 게시글 목록 생성 */
+    public static List<PostDto> getPostsByDept(Long deptId) {
+        String dept = findDeptName(deptId);
+        long base = deptId * 100;
+        return List.of(
+            new PostDto(base+1, dept + " 중간고사 족보 공유합니다",       "익명",   (int)(40+deptId*2), "자유게시판", (int)(300+deptId*5), "2026-05-01", true,  18),
+            new PostDto(base+2, dept + " 관련 기업 인턴십 합격 후기",     "졸업생", (int)(30+deptId),   "취업후기",  (int)(250+deptId*4), "2026-04-28", false, 25),
+            new PostDto(base+3, dept + " 스터디 같이 할 분 모집",         "재학생", (int)(20+deptId),   "스터디",    (int)(140+deptId*3), "2026-04-25", false,  7),
+            new PostDto(base+4, dept + " 졸업프로젝트 팀원 구합니다",     "4학년",  (int)(15+deptId),   "자유게시판",  (int)(90+deptId*2), "2026-04-20", false, 33),
+            new PostDto(base+5, dept + " 교수님 연구실 인턴 모집",        "교수",   (int)(10+deptId),   "취업후기",    (int)(70+deptId),   "2026-04-18", false,  3),
+            new PostDto(base+6, dept + " 전공 과목 질문있어요",           "1학년",   (int)(8+deptId),   "질문",        (int)(40+deptId),   "2026-04-15", false,  6),
+            new PostDto(base+7, dept + " 전공 스터디원 모집",             "2학년",   (int)(6+deptId),   "스터디",      (int)(30+deptId),   "2026-04-12", false,  4),
+            new PostDto(base+8, dept + " 취업 준비 팁 공유",              "3학년",   (int)(4+deptId),   "취업후기",    (int)(25+deptId),   "2026-04-10", false,  9),
+            new PostDto(base+9, dept + " 1학년 수강신청 추천 조합",       "선배",    (int)(3+deptId),   "자유게시판",  (int)(15+deptId),   "2026-04-08", false,  2)
+        );
+    }
+
+    /** deptId 기반 일정 목록 생성 */
+    public static List<ScheduleDto> getSchedulesByDept(Long deptId) {
+        String dept = findDeptName(deptId);
+        long base = deptId * 100;
+        return List.of(
+            new ScheduleDto(base+1, dept + " 중간고사 시작",      "2026-05-12",  1, "시험"),
+            new ScheduleDto(base+2, dept + " 프로젝트 발표",      "2026-05-20",  9, "학사"),
+            new ScheduleDto(base+3, dept + " 수강신청 변경기간",   "2026-05-25", 14, "학사"),
+            new ScheduleDto(base+4, dept + " 학과 축제",          "2026-06-01", 21, "행사"),
+            new ScheduleDto(base+5, dept + " 기말고사 시작",      "2026-06-16", 36, "시험"),
+            new ScheduleDto(base+6, dept + " 기말고사 종료",      "2026-06-20", 40, "시험"),
+            new ScheduleDto(base+7, dept + " 여름 방학 시작",     "2026-06-27", 47, "학사"),
+            new ScheduleDto(base+8, dept + " 졸업논문 제출 마감", "2026-07-15", 65, "학사")
+        );
+    }
+
+    /** 학과 ID로 DepartmentDetailDto를 반환한다 (더미 데이터) */
+    public static DepartmentDetailDto findDepartmentDetail(Long id) {
+        String deptName = UNIVERSITIES.stream()
+                .flatMap(u -> u.getSchools().stream())
+                .flatMap(s -> s.getFaculties().stream())
+                .flatMap(f -> f.getDepts().stream())
+                .filter(d -> d.getId().equals(id))
+                .map(DeptSelectionDto::getName)
+                .findFirst()
+                .orElse(null);
+
+        if (deptName == null) return null;
+
+        List<ProfessorDto> professors = List.of(
+            new ProfessorDto(id * 10 + 1, "김○○ 교수", deptName + " / 이론 및 기초", "prof1_" + id + "@mokpo.ac.kr"),
+            new ProfessorDto(id * 10 + 2, "이○○ 교수", deptName + " / 응용 및 실무", "prof2_" + id + "@mokpo.ac.kr"),
+            new ProfessorDto(id * 10 + 3, "박○○ 교수", deptName + " / 연구 및 개발", "prof3_" + id + "@mokpo.ac.kr")
+        );
+
+        List<CurriculumItemDto> curriculum = List.of(
+            new CurriculumItemDto(deptName + " 개론",  "1학년", true,  3),
+            new CurriculumItemDto("전공기초 실습",      "1학년", true,  2),
+            new CurriculumItemDto("심화 이론",          "2학년", true,  3),
+            new CurriculumItemDto("응용 프로젝트",      "2학년", false, 3),
+            new CurriculumItemDto("산학협력 세미나",    "3학년", false, 2),
+            new CurriculumItemDto("캡스톤 디자인",      "4학년", true,  4)
+        );
+
+        return new DepartmentDetailDto(
+            id, deptName,
+            deptName + "는 이론과 실무를 균형 있게 교육하여 해당 분야의 전문 인재를 양성합니다. " +
+            "다양한 교과 과정과 산학협력 프로그램을 통해 학생들의 실전 역량을 강화합니다.",
+            professors, curriculum,
+            "전남 목포시 영산로 1666 국립목포대학교 " + deptName + " 사무실",
+            "061-450-" + String.format("%04d", id * 100 % 10000),
+            deptName.substring(0, Math.min(2, deptName.length())) + "-dept@mokpo.ac.kr",
+            "평일 09:00 ~ 18:00 (점심 12:00 ~ 13:00)"
+        );
+    }
 }

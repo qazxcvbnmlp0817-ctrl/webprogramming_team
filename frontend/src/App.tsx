@@ -1,14 +1,18 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import type { ReactNode } from 'react'
 import { DeptProvider, useDept } from './context/DeptContext'
 import UniversityListPage from './pages/UniversityListPage'
 import UniversityShowPage from './pages/UniversityShowPage'
-import SchoolSelectPage from './pages/SchoolSelectPage'
 import MainPage from './pages/MainPage'
 import NoticePage from './pages/NoticePage'
 import BoardPage from './pages/BoardPage'
 import SchedulePage from './pages/SchedulePage'
 import DepartmentPage from './pages/DepartmentPage'
 import LoginPage from './pages/LoginPage'
+import SchoolNoticePage from './pages/SchoolNoticePage'
+import SchoolBoardPage from './pages/SchoolBoardPage'
+import SchoolSchedulePage from './pages/SchoolSchedulePage'
+import SchoolInfoPage from './pages/SchoolInfoPage'
 
 function ProtectedMain() {
   const { selectedDeptName } = useDept()
@@ -16,19 +20,45 @@ function ProtectedMain() {
   return <MainPage />
 }
 
+function ProtectedSchool({ children }: { children: ReactNode }) {
+  const { selectedUniversityId } = useDept()
+  if (!selectedUniversityId) return <Navigate to="/universities" replace />
+  return <>{children}</>
+}
+
 export default function App() {
   return (
     <DeptProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/universities" element={<UniversityListPage />} />
+          {/* 대학 목록 / 대학 홈 */}
+          <Route path="/universities"    element={<UniversityListPage />} />
           <Route path="/universities/:id" element={<UniversityShowPage />} />
-          <Route path="/universities/:universityId/schools" element={<SchoolSelectPage />} />
-          <Route path="/" element={<ProtectedMain />} />
-          <Route path="/notice" element={<NoticePage />} />
-          <Route path="/board" element={<BoardPage />} />
-          <Route path="/schedule" element={<SchedulePage />} />
-          <Route path="/department" element={<DepartmentPage />} />
+          <Route path="/universities/:id/schools" element={<Navigate to="/universities/:id" replace />} />
+
+          {/* 학교(school) 범위 페이지 — /school/* */}
+          <Route path="/school/notice"   element={<ProtectedSchool><SchoolNoticePage /></ProtectedSchool>} />
+          <Route path="/school/board"    element={<ProtectedSchool><SchoolBoardPage /></ProtectedSchool>} />
+          <Route path="/school/schedule" element={<ProtectedSchool><SchoolSchedulePage /></ProtectedSchool>} />
+          <Route path="/school/info"     element={<ProtectedSchool><SchoolInfoPage /></ProtectedSchool>} />
+
+          {/* 학과(dept) 범위 페이지 — /dept/* */}
+          <Route path="/"                element={<ProtectedMain />} />
+          <Route path="/dept/notice"     element={<NoticePage />} />
+          <Route path="/dept/board"      element={<BoardPage />} />
+          <Route path="/dept/schedule"   element={<SchedulePage />} />
+          <Route path="/dept/department" element={<DepartmentPage />} />
+
+          {/* 이전 경로 호환성 리다이렉트 */}
+          <Route path="/notice"     element={<Navigate to="/dept/notice"     replace />} />
+          <Route path="/board"      element={<Navigate to="/dept/board"      replace />} />
+          <Route path="/schedule"   element={<Navigate to="/dept/schedule"   replace />} />
+          <Route path="/department" element={<Navigate to="/dept/department" replace />} />
+          <Route path="/universities/:univId/notices"  element={<Navigate to="/school/notice"   replace />} />
+          <Route path="/universities/:univId/board"    element={<Navigate to="/school/board"    replace />} />
+          <Route path="/universities/:univId/schedule" element={<Navigate to="/school/schedule" replace />} />
+          <Route path="/universities/:univId/info"     element={<Navigate to="/school/info"     replace />} />
+
           <Route path="/login" element={<LoginPage />} />
         </Routes>
       </BrowserRouter>

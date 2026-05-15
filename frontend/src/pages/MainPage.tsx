@@ -9,20 +9,21 @@ import type { PostDto } from '../types/post'
 import type { ScheduleDto } from '../types/schedule'
 
 export default function MainPage() {
-  const { selectedDeptName } = useDept()
+  const { selectedDeptId, selectedDeptName } = useDept()
   const [notices, setNotices]     = useState<NoticeDto[]>([])
   const [posts, setPosts]         = useState<PostDto[]>([])
   const [schedules, setSchedules] = useState<ScheduleDto[]>([])
   const [today, setToday]         = useState('')
 
   useEffect(() => {
-    fetchMainData(selectedDeptName ?? '').then(data => {
+    if (!selectedDeptId) return
+    fetchMainData(selectedDeptId).then(data => {
       setNotices(data.notices)
       setPosts(data.posts)
       setSchedules(data.schedules)
       setToday(data.today)
     })
-  }, [selectedDeptName])
+  }, [selectedDeptId])
 
   return (
     <div className="bg-white text-black font-sans">
@@ -60,7 +61,7 @@ export default function MainPage() {
           <div className="border-2 border-black flex flex-col">
             <div className="bg-black text-white px-4 py-3 flex items-center justify-between">
               <span className="font-bold text-sm"><i className="fas fa-calendar-alt mr-2" />다가오는 일정</span>
-              <Link to="/schedule" className="text-xs text-gray-300 hover:text-white transition">더보기 →</Link>
+              <Link to="/dept/schedule" className="text-xs text-gray-300 hover:text-white transition">더보기 →</Link>
             </div>
             <ul className="flex-1 overflow-y-auto divide-y divide-gray-100">
               {schedules.length === 0 ? (
@@ -85,7 +86,7 @@ export default function MainPage() {
           <div className="border-2 border-black flex flex-col">
             <div className="bg-black text-white px-4 py-3 flex items-center justify-between">
               <span className="font-bold text-sm"><i className="fas fa-bullhorn mr-2" />최신 공지사항</span>
-              <Link to="/notice" className="text-xs text-gray-300 hover:text-white transition">더보기 →</Link>
+              <Link to="/dept/notice" className="text-xs text-gray-300 hover:text-white transition">더보기 →</Link>
             </div>
             <ul className="flex-1 divide-y divide-gray-100">
               {notices.length === 0 ? (
@@ -94,7 +95,7 @@ export default function MainPage() {
                 </li>
               ) : notices.map(n => (
                 <li key={n.id} className="px-4 py-3 hover:bg-gray-50 transition flex items-start justify-between gap-2">
-                  <Link to="/notice" className="text-sm font-medium hover:underline leading-snug flex-1 min-w-0 line-clamp-1">{n.title}</Link>
+                  <Link to="/dept/notice" className="text-sm font-medium hover:underline leading-snug flex-1 min-w-0 line-clamp-1">{n.title}</Link>
                   <span className="text-xs text-gray-400 flex-shrink-0 whitespace-nowrap">{n.date}</span>
                 </li>
               ))}
@@ -105,7 +106,7 @@ export default function MainPage() {
           <div className="border-2 border-black flex flex-col">
             <div className="bg-black text-white px-4 py-3 flex items-center justify-between">
               <span className="font-bold text-sm"><i className="fas fa-fire mr-2" />인기 게시글</span>
-              <Link to="/board" className="text-xs text-gray-300 hover:text-white transition">더보기 →</Link>
+              <Link to="/dept/board" className="text-xs text-gray-300 hover:text-white transition">더보기 →</Link>
             </div>
             <ul className="flex-1 divide-y divide-gray-100">
               {posts.length === 0 ? (
@@ -114,7 +115,7 @@ export default function MainPage() {
                 </li>
               ) : posts.map(p => (
                 <li key={p.id} className="px-4 py-3 hover:bg-gray-50 transition flex items-start justify-between gap-2">
-                  <Link to="/board" className="text-sm font-medium hover:underline leading-snug flex-1 min-w-0 line-clamp-1">{p.title}</Link>
+                  <Link to="/dept/board" className="text-sm font-medium hover:underline leading-snug flex-1 min-w-0 line-clamp-1">{p.title}</Link>
                   <span className="text-xs text-gray-400 flex-shrink-0 whitespace-nowrap">
                     <i className="fas fa-heart text-red-400 mr-0.5" />{p.likes}
                   </span>
@@ -126,10 +127,10 @@ export default function MainPage() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { to: '/notice',     icon: 'fa-bullhorn',     label: '공지사항' },
-            { to: '/board',      icon: 'fa-comments',     label: '게시판' },
-            { to: '/schedule',   icon: 'fa-calendar-alt', label: '일정' },
-            { to: '/department', icon: 'fa-university',   label: '학과정보' },
+            { to: '/dept/notice',     icon: 'fa-bullhorn',     label: '공지사항' },
+            { to: '/dept/board',      icon: 'fa-comments',     label: '게시판' },
+            { to: '/dept/schedule',   icon: 'fa-calendar-alt', label: '일정' },
+            { to: '/dept/department', icon: 'fa-university',   label: '학과정보' },
           ].map(({ to, icon, label }) => (
             <Link
               key={to}
