@@ -23,7 +23,8 @@ export default function SchedulePage() {
   const { selectedDeptId, selectedDeptName } = useDept()
   const [active, setActive] = useState('전체')
 
-  const { data: schedules = [], loading } = useDeptFetch(fetchSchedules, selectedDeptId)
+  const { data, loading } = useDeptFetch(fetchSchedules, selectedDeptId)
+  const schedules = data ?? []
 
   const filtered = active === '전체' ? schedules : schedules.filter(s => s.category === active)
   const grouped  = useMemo(() => groupByMonth(filtered), [filtered])

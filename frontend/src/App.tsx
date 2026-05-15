@@ -13,6 +13,7 @@ import SchoolNoticePage from './pages/SchoolNoticePage'
 import SchoolBoardPage from './pages/SchoolBoardPage'
 import SchoolSchedulePage from './pages/SchoolSchedulePage'
 import SchoolInfoPage from './pages/SchoolInfoPage'
+import SchoolDepartmentsPage from './pages/SchoolDepartmentsPage'
 
 function ProtectedMain() {
   const { selectedDeptName } = useDept()
@@ -37,10 +38,11 @@ export default function App() {
           <Route path="/universities/:id/schools" element={<Navigate to="/universities/:id" replace />} />
 
           {/* 학교(school) 범위 페이지 — /school/* */}
-          <Route path="/school/notice"   element={<ProtectedSchool><SchoolNoticePage /></ProtectedSchool>} />
-          <Route path="/school/board"    element={<ProtectedSchool><SchoolBoardPage /></ProtectedSchool>} />
-          <Route path="/school/schedule" element={<ProtectedSchool><SchoolSchedulePage /></ProtectedSchool>} />
-          <Route path="/school/info"     element={<ProtectedSchool><SchoolInfoPage /></ProtectedSchool>} />
+          <Route path="/school/departments" element={<ProtectedSchool><SchoolDepartmentsPage /></ProtectedSchool>} />
+          <Route path="/school/notice"      element={<ProtectedSchool><SchoolNoticePage /></ProtectedSchool>} />
+          <Route path="/school/board"       element={<ProtectedSchool><SchoolBoardPage /></ProtectedSchool>} />
+          <Route path="/school/schedule"    element={<ProtectedSchool><SchoolSchedulePage /></ProtectedSchool>} />
+          <Route path="/school/info"        element={<ProtectedSchool><SchoolInfoPage /></ProtectedSchool>} />
 
           {/* 학과(dept) 범위 페이지 — /dept/* */}
           <Route path="/"                element={<ProtectedMain />} />

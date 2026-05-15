@@ -24,7 +24,8 @@ export default function SchoolSchedulePage() {
   const { selectedUniversityId, selectedUniversityName } = useDept()
   const [active, setActive] = useState('전체')
 
-  const { data: schedules = [], loading } = useDeptFetch(fetchSchoolSchedules, selectedUniversityId)
+  const { data, loading } = useDeptFetch(fetchSchoolSchedules, selectedUniversityId)
+  const schedules = data ?? []
   const filtered = active === '전체' ? schedules : schedules.filter(s => s.category === active)
   const grouped  = useMemo(() => groupByMonth(filtered), [filtered])
   const categoryCounts = TABS.map(label => ({

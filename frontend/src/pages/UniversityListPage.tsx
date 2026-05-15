@@ -1,15 +1,23 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import type { UniversityDto } from '../types/university'
 import { fetchUniversities } from '../api/universities'
+import { useDept } from '../context/DeptContext'
 
 export default function UniversityListPage() {
   const [universities, setUniversities] = useState<UniversityDto[]>([])
   const [menuOpen, setMenuOpen] = useState(false)
+  const { setUniversityInfo } = useDept()
+  const navigate = useNavigate()
 
   useEffect(() => {
     fetchUniversities().then(setUniversities)
   }, [])
+
+  const handleSelect = (univ: UniversityDto) => {
+    setUniversityInfo(univ.id, univ.name)
+    navigate('/school/departments')
+  }
 
   return (
     <div className="bg-white text-black font-sans">
@@ -59,10 +67,10 @@ export default function UniversityListPage() {
       <main className="max-w-6xl mx-auto px-4 py-10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {universities.map(univ => (
-            <Link
+            <button
               key={univ.id}
-              to={`/universities/${univ.id}`}
-              className="group block border-2 border-black p-8 hover:bg-black hover:text-white transition cursor-pointer"
+              onClick={() => handleSelect(univ)}
+              className="group block w-full text-left border-2 border-black p-8 hover:bg-black hover:text-white transition cursor-pointer"
             >
               <div className="flex items-start gap-4">
                 <i className="fas fa-university text-3xl mt-0.5 flex-shrink-0" />
@@ -81,7 +89,7 @@ export default function UniversityListPage() {
                 <span>대학교 입장</span>
                 <i className="fas fa-arrow-right text-xs transition-transform group-hover:translate-x-1" />
               </div>
-            </Link>
+            </button>
           ))}
         </div>
       </main>

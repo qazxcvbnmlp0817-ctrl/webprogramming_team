@@ -3,10 +3,11 @@ import { Link, useLocation } from 'react-router-dom'
 import { useDept } from '../context/DeptContext'
 
 const SCHOOL_NAV = [
-  { to: '/school/notice',   label: '공지사항' },
-  { to: '/school/board',    label: '게시판' },
-  { to: '/school/schedule', label: '일정' },
-  { to: '/school/info',     label: '학교정보' },
+  { to: '/school/departments', label: '학과 선택' },
+  { to: '/school/notice',      label: '공지사항' },
+  { to: '/school/board',       label: '게시판' },
+  { to: '/school/schedule',    label: '일정' },
+  { to: '/school/info',        label: '학교정보' },
 ]
 
 const DEPT_NAV = [
@@ -21,7 +22,7 @@ export default function Navbar() {
   const { selectedUniversityId, selectedUniversityName, selectedDeptName } = useDept()
   const [menuOpen, setMenuOpen] = useState(false)
 
-  const isSchool = pathname.startsWith('/school')
+  const isSchool = pathname.startsWith('/school') || /^\/universities\/\d+/.test(pathname)
   const navLinks = isSchool ? SCHOOL_NAV : DEPT_NAV
   const schoolHomeLink = `/universities/${selectedUniversityId}`
 
@@ -53,16 +54,6 @@ export default function Navbar() {
 
         {/* 데스크탑 메뉴 */}
         <ul className="hidden md:flex gap-8 text-sm font-medium">
-          {isSchool && (
-            <li>
-              <Link
-                to={schoolHomeLink}
-                className="pb-1 hover:opacity-70 transition border-b-2 border-transparent text-gray-300"
-              >
-                학교홈
-              </Link>
-            </li>
-          )}
           {navLinks.map(({ to, label }) => (
             <li key={to}>
               <Link
@@ -110,15 +101,6 @@ export default function Navbar() {
           data-testid="mobile-menu"
           className="md:hidden bg-black border-t border-gray-700 px-4 py-4 flex flex-col gap-4 text-sm"
         >
-          {isSchool && (
-            <Link
-              to={schoolHomeLink}
-              onClick={() => setMenuOpen(false)}
-              className="hover:opacity-70 text-gray-300"
-            >
-              <i className="fas fa-arrow-left mr-1 text-xs" />학교홈
-            </Link>
-          )}
           {navLinks.map(({ to, label }) => (
             <Link
               key={to}
