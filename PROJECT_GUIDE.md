@@ -8,346 +8,331 @@
 
 **프로젝트명:** 학과정보통합서비스 (dept-portal)
 
-**목적:** 컴퓨터공학과의 공지사항, 게시판, 일정, 학과정보를 하나의 웹 포털로 통합하여 학생과 교직원이 편리하게 접근할 수 있도록 합니다.
+**목적:** 국립목포대학교 등 여러 대학교의 학과 공지사항, 게시판, 일정, 학과정보를 하나의 웹 포털로 통합하여 학생과 교직원이 편리하게 접근할 수 있도록 합니다.
 
-**현재 단계:** 뼈대(skeleton) 완성 단계. 모든 페이지의 UI와 더미 데이터가 구현되어 있으며, 팀원이 실제 DB 연동 및 서비스 로직을 추가하면 됩니다.
+**현재 단계:** 프론트엔드 UI 및 REST API 뼈대 완성. 모든 페이지 UI와 더미 데이터가 구현되어 있으며, 팀원이 실제 DB 연동 및 서비스 로직을 추가하면 됩니다.
 
 ---
 
 ## 2. 기술 스택
 
-| 분류 | 기술 | 버전 | 역할 |
-|------|------|------|------|
-| 언어 | Java | 17 | 백엔드 전체 |
-| 프레임워크 | Spring Boot | 4.0.6 | 웹 애플리케이션 서버 |
-| 웹 MVC | Spring Web MVC | (Spring Boot 내장) | URL 라우팅, 컨트롤러 처리 |
-| 템플릿 엔진 | Thymeleaf | (Spring Boot 내장) | 서버사이드 HTML 렌더링 |
-| DB ORM | Spring Data JPA / Hibernate | (Spring Boot 내장) | DB 연동용 (현재 비활성화) |
-| DB | Oracle AI Database | - | 실제 데이터 저장소 (현재 미연동) |
-| JDBC 드라이버 | ojdbc11 | 23.9.0.25.07 | Oracle DB 접속 |
-| CSS 프레임워크 | Tailwind CSS | CDN (최신) | 모든 페이지 스타일링 |
-| 아이콘 | Font Awesome | 6.5.0 (CDN) | 아이콘 |
-| 빌드 도구 | Maven (mvnw) | (Spring Boot 내장) | 빌드, 의존성 관리, 테스트 실행 |
-| 테스트 프레임워크 | JUnit 5 + MockMvc | (Spring Boot 내장) | 컨트롤러 슬라이스 테스트 |
-| 버전 관리 | Git | - | 팀 협업 |
-
-**프론트엔드 방식:** 별도의 JS 프레임워크(React 등) 없음. Thymeleaf로 서버에서 HTML을 완성하여 브라우저에 전달하는 전통적인 SSR(Server-Side Rendering) 방식. 클라이언트 측 JS는 카테고리 필터, 모바일 메뉴 토글 등 최소한의 인터랙션에만 사용.
+| 분류 | 기술 | 역할 |
+|------|------|------|
+| 백엔드 언어 | Java 17 | 백엔드 전체 |
+| 백엔드 프레임워크 | Spring Boot | REST API 서버, 정적 파일 서빙 |
+| 프론트엔드 언어 | TypeScript + React 19 | UI 전체 |
+| 프론트엔드 빌드 | Vite | 개발 서버, 프로덕션 빌드 |
+| CSS 프레임워크 | Tailwind CSS (npm) | 모든 페이지 스타일링 |
+| 아이콘 | Font Awesome 6.5 (CDN) | 아이콘 |
+| 클라이언트 라우팅 | React Router v7 | SPA 페이지 전환 |
+| 빌드 도구 (백엔드) | Maven (mvnw) | 빌드, 의존성 관리 |
+| DB ORM | Spring Data JPA / Hibernate | DB 연동용 (현재 비활성화) |
+| DB | Oracle AI Database | 실제 데이터 저장소 (현재 미연동) |
+| JDBC 드라이버 | ojdbc11 | Oracle DB 접속 |
+| 버전 관리 | Git | 팀 협업 |
 
 ---
 
-## 3. 프로젝트 디렉터리 구조
+## 3. 아키텍처 — 프론트/백 분리 구조
+
+이 프로젝트는 **React SPA + Spring Boot REST API** 구조입니다. Thymeleaf는 사용하지 않습니다.
+
+```
+브라우저
+  │
+  └─── HTTP 요청
+         │
+         ├── /api/*  ──────────────▶  Spring Boot (Java)
+         │                             REST API 응답 (JSON)
+         │
+         └── 그 외 경로 ──────────▶  Spring Boot가 index.html 반환
+                                       브라우저에서 React가 실행되어
+                                       클라이언트 측에서 페이지 렌더링
+```
+
+### 개발 모드 (두 서버 동시 실행)
+
+```
+브라우저 → localhost:5173 (Vite 개발 서버)
+                │  소스 파일(.tsx)을 실시간 변환 서빙
+                │  파일 저장 시 즉시 화면 반영 (HMR)
+                │
+                └── /api/* 요청만 → localhost:8080 (Spring Boot) 으로 중계
+```
+
+### 운영/확인 모드 (Spring Boot 하나만 실행)
+
+```
+npm run build 실행
+      ↓
+frontend/src/*.tsx  →  demo/src/main/resources/static/ (JS/CSS/HTML로 변환)
+      ↓
+Spring Boot(8080)만 실행
+      ├── /api/*       → Java 컨트롤러
+      └── 그 외 경로  → static/index.html (React 앱)
+```
+
+> **핵심:** `npm run build`는 React 소스코드를 Spring Boot가 서빙할 수 있는 정적 파일로 패키징합니다.
+> 프론트엔드 코드를 수정했을 때만 다시 실행하면 됩니다.
+
+---
+
+## 4. 앱 실행 방법
+
+### 방법 A — VS Code에서 Spring Boot만 실행 (권장, 간단)
+
+프론트엔드 빌드 파일이 이미 `static/` 폴더에 포함되어 있습니다.
+
+1. VS Code에서 `DemoApplication.java` 실행 (Run 버튼)
+2. `http://localhost:8080` 접속
+
+> React 코드를 수정했다면 먼저 `npm run build`를 실행한 뒤 Spring Boot를 재시작해야 반영됩니다.
+
+### 방법 B — 개발 모드 (프론트엔드 즉시 반영)
+
+```bash
+# 터미널 1: 백엔드
+cd demo/demo
+./mvnw spring-boot:run          # Windows: mvnw.cmd spring-boot:run
+
+# 터미널 2: 프론트엔드
+cd frontend
+npm install                     # 처음 한 번만
+npm run dev
+```
+
+`http://localhost:5173` 접속. `.tsx` 파일 저장 시 브라우저가 즉시 반영됩니다.
+
+### 프론트엔드 빌드 (8080에 반영)
+
+```bash
+cd frontend
+npm run build
+# → demo/demo/src/main/resources/static/ 에 빌드 결과 저장
+# → Spring Boot 재시작 후 http://localhost:8080 에서 확인
+```
+
+### 작업 상황별 정리
+
+| 상황 | 해야 할 것 |
+|------|-----------|
+| Java만 수정 | Spring Boot 재시작만 |
+| React/TS 수정 후 8080으로 확인 | `npm run build` → Spring Boot 재시작 |
+| React/TS 수정 중 (즉시 확인) | 방법 B로 5173 사용 |
+
+---
+
+## 5. 프로젝트 디렉터리 구조
 
 ```
 webprogramming_team-main/
 │
-├── demo/demo/                          ← Spring Boot 프로젝트 루트
-│   ├── pom.xml                         ← Maven 빌드 설정 (의존성 목록)
-│   ├── mvnw / mvnw.cmd                 ← Maven Wrapper (./mvnw test 등으로 실행)
-│   │
+├── frontend/                           ← React 프론트엔드
+│   ├── package.json                    ← npm 의존성 목록
+│   ├── vite.config.ts                  ← Vite 설정 (빌드 출력 경로, 프록시)
+│   ├── tsconfig.json
+│   └── src/
+│       ├── main.tsx                    ← React 앱 진입점
+│       ├── App.tsx                     ← 전체 라우팅 정의
+│       │
+│       ├── context/
+│       │   └── DeptContext.tsx         ← 전역 상태 (선택된 대학/학과 정보)
+│       │
+│       ├── hooks/
+│       │   └── useDeptFetch.ts         ← 범용 데이터 fetching 훅
+│       │
+│       ├── api/                        ← 백엔드 API 호출 함수
+│       │   ├── universities.ts         ← /api/universities
+│       │   ├── departments.ts          ← /api/departments/:id
+│       │   ├── notices.ts              ← /api/notices
+│       │   ├── posts.ts                ← /api/posts
+│       │   ├── schedules.ts            ← /api/schedules
+│       │   └── school.ts               ← /api/school/*
+│       │
+│       ├── types/                      ← TypeScript 타입 정의
+│       │   ├── university.ts
+│       │   ├── department.ts
+│       │   ├── notice.ts
+│       │   ├── post.ts
+│       │   └── schedule.ts
+│       │
+│       ├── pages/                      ← 각 URL에 대응하는 페이지 컴포넌트
+│       │   ├── UniversityListPage.tsx  ← /universities
+│       │   ├── UniversityShowPage.tsx  ← /universities/:id
+│       │   ├── SchoolDepartmentsPage.tsx ← /school/departments
+│       │   ├── SchoolNoticePage.tsx    ← /school/notice
+│       │   ├── SchoolBoardPage.tsx     ← /school/board
+│       │   ├── SchoolSchedulePage.tsx  ← /school/schedule
+│       │   ├── SchoolInfoPage.tsx      ← /school/info
+│       │   ├── MainPage.tsx            ← / (학과 메인)
+│       │   ├── NoticePage.tsx          ← /dept/notice
+│       │   ├── BoardPage.tsx           ← /dept/board
+│       │   ├── SchedulePage.tsx        ← /dept/schedule
+│       │   ├── DepartmentPage.tsx      ← /dept/department
+│       │   └── LoginPage.tsx           ← /login
+│       │
+│       └── components/                 ← 재사용 컴포넌트
+│           ├── Navbar.tsx              ← 상단 네비게이션 바
+│           ├── FeaturedCard.tsx
+│           ├── FilterTabs.tsx
+│           ├── Sidebar.tsx
+│           └── Pagination.tsx
+│
+├── demo/demo/                          ← Spring Boot 백엔드
+│   ├── pom.xml
+│   ├── mvnw / mvnw.cmd
 │   └── src/
 │       ├── main/
 │       │   ├── java/com/example/demo/
-│       │   │   │
-│       │   │   ├── DemoApplication.java         ← 앱 진입점 (main 메서드)
-│       │   │   │
-│       │   │   ├── controller/                  ← URL 처리 컨트롤러
-│       │   │   │   ├── MainController.java      ← GET /
-│       │   │   │   ├── NoticeController.java    ← GET /notice
-│       │   │   │   ├── BoardController.java     ← GET /board
-│       │   │   │   ├── ScheduleController.java  ← GET /schedule
-│       │   │   │   ├── DepartmentController.java← GET /department
-│       │   │   │   └── AuthController.java      ← GET /login
-│       │   │   │
-│       │   │   └── dto/                         ← 데이터 전송 객체
-│       │   │       ├── NoticeDto.java           ← 공지사항 데이터 구조
-│       │   │       ├── PostDto.java             ← 게시글 데이터 구조
-│       │   │       └── ScheduleDto.java         ← 일정 데이터 구조
-│       │   │
+│       │   │   ├── DemoApplication.java
+│       │   │   ├── controller/
+│       │   │   │   ├── SpaController.java        ← SPA 라우트 → index.html 포워딩
+│       │   │   │   ├── UniversityController.java ← GET /api/universities
+│       │   │   │   ├── DepartmentController.java ← GET /api/departments/:id
+│       │   │   │   ├── NoticeController.java     ← GET /api/notices
+│       │   │   │   ├── BoardController.java      ← GET /api/posts
+│       │   │   │   ├── ScheduleController.java   ← GET /api/schedules
+│       │   │   │   ├── SchoolController.java     ← GET /api/school/*
+│       │   │   │   └── AuthController.java       ← GET /login (레거시)
+│       │   │   ├── dto/                          ← API 응답 데이터 구조
+│       │   │   └── util/
+│       │   │       └── DummyDataHelper.java      ← 모든 더미 데이터 집중 관리
 │       │   └── resources/
-│       │       ├── application.properties       ← 앱 설정 (포트, DB 제외 설정 등)
-│       │       ├── application-secret.properties← DB 접속 정보 (Git 미포함, 각자 생성)
-│       │       │
-│       │       ├── static/
-│       │       │   └── css/custom.css           ← 레거시 CSS (현재 미사용, 잔존 파일)
-│       │       │
-│       │       └── templates/                   ← Thymeleaf HTML 템플릿
-│       │           ├── layout/base.html         ← 공통 레이아웃 fragment (레거시, 미사용)
-│       │           ├── main/index.html          ← 메인 페이지
-│       │           ├── notice/list.html         ← 공지사항 목록 페이지
-│       │           ├── board/list.html          ← 게시판 목록 페이지
-│       │           ├── schedule/list.html       ← 일정 목록 페이지
-│       │           ├── department/index.html    ← 학과정보 페이지
-│       │           └── auth/login.html          ← 로그인 페이지
-│       │
-│       └── test/java/com/example/demo/
-│           ├── DemoApplicationTests.java        ← 전체 앱 통합 테스트 (DB 필요)
-│           └── controller/                      ← 컨트롤러 슬라이스 테스트 (DB 불필요)
-│               ├── MainControllerTest.java
-│               ├── NoticeControllerTest.java
-│               ├── BoardControllerTest.java
-│               ├── ScheduleControllerTest.java
-│               ├── DepartmentControllerTest.java
-│               └── AuthControllerTest.java
+│       │       ├── application.properties
+│       │       └── static/                       ← npm run build 결과물 (자동 생성)
+│       └── test/
 │
-├── docs/superpowers/                   ← 개발 문서 (설계 스펙, 구현 계획)
-│   ├── specs/                          ← 페이지별 디자인 명세서
-│   └── plans/                          ← 구현 계획서
-│
-├── PROMPTS.md                          ← 세션 간 컨텍스트 유지용 프롬프트 기록
+├── docs/                               ← 설계 문서
 ├── PROJECT_GUIDE.md                    ← 이 파일
-├── db-config-template.txt             ← Oracle DB 연결 설정 가이드 (민감정보 제외)
-└── README.md                           ← 기본 리드미
+├── PROMPTS.md                          ← 세션 간 작업 기록
+└── README.md
 ```
 
 ---
 
-## 4. URL 라우팅 구조
+## 6. URL 라우팅 구조
 
-| URL | 컨트롤러 | 렌더링 템플릿 | 설명 |
-|-----|---------|--------------|------|
-| `GET /` | MainController | `main/index.html` | 메인 대시보드 |
-| `GET /notice` | NoticeController | `notice/list.html` | 공지사항 목록 |
-| `GET /board` | BoardController | `board/list.html` | 게시판 목록 |
-| `GET /schedule` | ScheduleController | `schedule/list.html` | 일정 목록 |
-| `GET /department` | DepartmentController | `department/index.html` | 학과정보 |
-| `GET /login` | AuthController | `auth/login.html` | 로그인 폼 |
+### 프론트엔드 라우트 (React Router)
 
-모든 컨트롤러는 `@Controller` + `@GetMapping`으로 선언된 Spring MVC 방식입니다. 컨트롤러가 Model에 데이터를 담아 반환하면 Thymeleaf가 해당 HTML 파일에 데이터를 주입해 완성된 페이지를 브라우저로 전송합니다.
+| URL | 페이지 | 설명 |
+|-----|--------|------|
+| `/universities` | UniversityListPage | 대학교 목록 선택 |
+| `/universities/:id` | UniversityShowPage | 대학교 홈 |
+| `/school/departments` | SchoolDepartmentsPage | 학부·학과 선택 |
+| `/school/notice` | SchoolNoticePage | 대학 공지사항 |
+| `/school/board` | SchoolBoardPage | 대학 게시판 |
+| `/school/schedule` | SchoolSchedulePage | 대학 일정 |
+| `/school/info` | SchoolInfoPage | 대학 정보 |
+| `/` | MainPage | 학과 메인 대시보드 |
+| `/dept/notice` | NoticePage | 학과 공지사항 |
+| `/dept/board` | BoardPage | 학과 게시판 |
+| `/dept/schedule` | SchedulePage | 학과 일정 |
+| `/dept/department` | DepartmentPage | 학과정보 |
+| `/login` | LoginPage | 로그인 |
+
+**접근 보호:**
+- `/school/*` → `selectedUniversityId`가 없으면 `/universities`로 리다이렉트
+- `/` (학과 메인) → `selectedDeptName`이 없으면 `/universities`로 리다이렉트
+
+### 백엔드 API 엔드포인트
+
+| 메서드 | URL | 파라미터 | 설명 |
+|--------|-----|----------|------|
+| GET | `/api/universities` | - | 전체 대학교 목록 |
+| GET | `/api/universities/:id` | - | 특정 대학교 상세 (단과대·학부·학과 트리) |
+| GET | `/api/departments/:id` | - | 학과 상세 (교수진, 교육과정, 연락정보) |
+| GET | `/api/notices` | `deptId` | 학과 공지사항 목록 |
+| GET | `/api/posts` | `deptId` | 학과 게시판 목록 |
+| GET | `/api/schedules` | `deptId` | 학과 일정 목록 |
+| GET | `/api/school/notices` | `univId` | 대학 공지사항 목록 |
+| GET | `/api/school/posts` | `univId` | 대학 게시판 목록 |
+| GET | `/api/school/schedules` | `univId` | 대학 일정 목록 |
+| GET | `/api/school/info` | `univId` | 대학 정보 |
 
 ---
 
-## 5. 데이터 모델 (DTO)
+## 7. 전역 상태 — DeptContext
 
-DTO(Data Transfer Object)는 컨트롤러에서 템플릿으로 데이터를 전달하는 불변 객체입니다. 모든 필드는 `final`로 선언되어 있으며, DB 연동 전에는 컨트롤러에서 하드코딩된 더미 데이터로 생성합니다.
+사용자가 선택한 대학교·학과 정보를 앱 전체에서 공유합니다. `localStorage`에 저장되어 새로고침 후에도 유지됩니다.
 
-### NoticeDto (공지사항)
+| 상태 필드 | 타입 | 설명 |
+|-----------|------|------|
+| `selectedUniversityId` | number \| null | 선택된 대학교 ID |
+| `selectedUniversityName` | string | 선택된 대학교 이름 |
+| `selectedDeptId` | number \| null | 선택된 학과 ID |
+| `selectedDeptName` | string | 선택된 학과 이름 |
+| `selectedSchoolName` | string | 선택된 단과대학 이름 |
+
+---
+
+## 8. 데이터 모델 (DTO)
+
+### UniversityDto / SchoolDto / FacultyDto / DeptSelectionDto (대학 트리)
+
+```
+UniversityDto
+  └── schools: SchoolDto[]          (단과대학)
+        └── faculties: FacultyDto[] (학부)
+              └── depts: DeptSelectionDto[] (학과)
+```
+
+### DepartmentDetailDto (학과 상세)
 
 | 필드 | 타입 | 설명 |
 |------|------|------|
-| id | Long | 고유 식별자 |
-| title | String | 공지 제목 |
-| date | String | 작성일 (yyyy-MM-dd) |
-| author | String | 작성자 |
-| category | String | 카테고리 (학사·장학·행사·취업) |
-| viewCount | int | 조회수 |
-| featured | boolean | 긴급/대표 공지 여부 |
+| id | number | 학과 ID |
+| name | string | 학과명 |
+| description | string | 학과 소개 |
+| professors | ProfessorDto[] | 교수진 목록 |
+| curriculum | CurriculumItemDto[] | 교육과정 목록 |
+| address | string | 주소 |
+| phone | string | 전화번호 |
+| email | string | 이메일 |
+| hours | string | 운영시간 |
 
-### PostDto (게시글)
+### NoticeDto / PostDto / ScheduleDto
 
-| 필드 | 타입 | 설명 |
-|------|------|------|
-| id | Long | 고유 식별자 |
-| title | String | 게시글 제목 |
-| author | String | 작성자 |
-| likes | int | 좋아요 수 |
-| category | String | 카테고리 (자유게시판·질문·스터디·취업후기) |
-| viewCount | int | 조회수 |
-| date | String | 작성일 (yyyy-MM-dd) |
-| featured | boolean | 대표 게시글 여부 |
-
-### ScheduleDto (일정)
-
-| 필드 | 타입 | 설명 |
-|------|------|------|
-| id | Long | 고유 식별자 |
-| title | String | 일정 이름 |
-| date | String | 일정 날짜 (yyyy-MM-dd) |
-| dday | int | D-Day 값 (오늘 기준 남은 일수) |
-| category | String | 카테고리 (학사·행사·시험·기타) |
+공지사항·게시판 API는 `{ featured, notices[] }` / `{ featured, posts[] }` 형태로 반환합니다.
+일정 API는 `ScheduleDto[]` 배열을 직접 반환합니다.
 
 ---
 
-## 6. 각 컨트롤러와 모델 변수
+## 9. 더미 데이터 구조
 
-### MainController (`GET /`)
-메인 페이지에 3가지 섹션용 더미 데이터를 제공합니다.
+모든 더미 데이터는 `DummyDataHelper.java` 한 곳에 집중되어 있습니다.
 
-| 모델 변수 | 타입 | 설명 |
-|-----------|------|------|
-| notices | List\<NoticeDto\> | 최신 공지사항 5개 |
-| posts | List\<PostDto\> | 인기 게시글 5개 (좋아요 순) |
-| schedules | List\<ScheduleDto\> | 다가오는 일정 5개 |
-| today | String | 오늘 날짜 (한국어 형식, 예: 2026년 05월 11일 월요일) |
-| currentPage | String | "main" |
+- **대학 트리:** 목포대학교(18개 학과, 6개 단과대), 순천대학교(4개 학과) 하드코딩
+- **학과별 데이터:** `deptId`를 받아 학과명 기반으로 공지·게시글·일정을 동적 생성
+- **대학별 데이터:** `univId`를 받아 대학명 기반으로 공지·게시글·일정을 동적 생성
+- **학과 상세:** `deptId`로 교수진(3명)·교육과정(6개)·연락정보를 생성
 
-### NoticeController (`GET /notice`)
-
-| 모델 변수 | 타입 | 설명 |
-|-----------|------|------|
-| featured | NoticeDto | 대표(긴급) 공지 1건 |
-| notices | List\<NoticeDto\> | 공지 목록 (9개) |
-| currentPage | String | "notice" |
-
-### BoardController (`GET /board`)
-
-| 모델 변수 | 타입 | 설명 |
-|-----------|------|------|
-| featured | PostDto | 대표 게시글 1건 |
-| posts | List\<PostDto\> | 게시글 목록 (9개, 카테고리 혼합) |
-| currentPage | String | "board" |
-
-### ScheduleController (`GET /schedule`)
-
-| 모델 변수 | 타입 | 설명 |
-|-----------|------|------|
-| schedules | List\<ScheduleDto\> | 일정 목록 (12개, 5~6월, dday 오름차순) |
-| currentPage | String | "schedule" |
-
-### DepartmentController (`GET /department`)
-
-| 모델 변수 | 타입 | 설명 |
-|-----------|------|------|
-| currentPage | String | "department" |
-
-학과정보 페이지는 모든 콘텐츠가 HTML에 하드코딩된 정적 더미 데이터입니다.
-
-### AuthController (`GET /login`)
-
-| 모델 변수 | 타입 | 설명 |
-|-----------|------|------|
-| currentPage | String | "login" |
+> DB 연동 시: 각 컨트롤러에서 `DummyDataHelper` 호출 부분을 Service 호출로 교체하면 됩니다.
 
 ---
 
-## 7. 구현된 기능 상세
+## 10. Navbar 동작 방식
 
-### 7-1. 공통 — 고정 네비게이션 바
-- 모든 페이지 상단에 `position: fixed`로 고정
-- 검정 배경(`bg-black`), 흰색 텍스트
-- 왼쪽: 사이트 로고 (클릭 시 메인으로 이동)
-- 가운데: 공지사항 / 게시판 / 일정 / 학과정보 링크
-- 현재 페이지에 해당하는 링크 아래에 흰색 언더라인 표시
-- 오른쪽: 검색 입력창 + 로그인 버튼
-- 모바일(768px 미만): 햄버거 버튼으로 전체 너비 드롭다운 메뉴 전환
+`Navbar.tsx`는 현재 URL 경로에 따라 자동으로 두 가지 모드로 전환됩니다.
 
-### 7-2. 메인 페이지 (`/`)
-- **히어로 섹션:** 검정 배경, 학과명, 오늘 날짜 표시. D-Day가 14일 이하인 일정은 흰색 테두리 배지로 표시.
-- **3열 카드 그리드:** 데스크탑에서 공지사항·인기게시글·일정을 나란히 표시 (모바일에서 세로 1열).
-  - 각 카드: 검정 헤더 + 아이콘 + 목록 + "더보기 →" 링크
-- **빠른 바로가기:** 4개 아이콘 버튼 (공지사항·게시판·일정·학과정보). 호버 시 검정 배경으로 전환.
+| 모드 | 조건 | 표시 링크 |
+|------|------|----------|
+| 학교(School) 모드 | `/school/*` 또는 `/universities/:id` | 학과선택·공지사항·게시판·일정·학교정보 |
+| 학과(Dept) 모드 | 그 외 (`/`, `/dept/*`) | 공지사항·게시판·일정·학과정보 |
 
-### 7-3. 공지사항 페이지 (`/notice`)
-- **대표 공지(Featured):** 전체 너비 이미지 플레이스홀더 + 하단 그라디언트 위에 제목·카테고리·날짜·조회수 오버레이.
-- **카테고리 필터 탭:** 전체 / 학사 / 장학 / 행사 / 취업. 클릭 시 JS가 해당 카테고리 항목만 표시.
-- **2단 레이아웃 (데스크탑):**
-  - 왼쪽: 공지 목록 (썸네일 플레이스홀더 + 제목 + 카테고리 배지 + 날짜 + 조회수) + 더미 페이지네이션
-  - 오른쪽 사이드바: 카테고리별 글 수 위젯 + 최근 공지 5건 위젯
-- **모바일:** 단일 열, 사이드바가 목록 아래로 이동.
-
-### 7-4. 게시판 페이지 (`/board`)
-공지사항 페이지와 동일한 레이아웃 구조.
-- **대표 게시글(Featured):** 이미지 플레이스홀더 + 카테고리·제목·좋아요 수 오버레이.
-- **카테고리 필터 탭:** 전체 / 자유게시판 / 질문 / 스터디 / 취업후기.
-- **2단 레이아웃 (데스크탑):**
-  - 왼쪽: 게시글 목록 (썸네일 + 제목 + 카테고리 배지 + 날짜 + 좋아요 수 + 조회수) + 더미 페이지네이션
-  - 오른쪽 사이드바: 카테고리별 글 수 위젯 + 인기 게시글 TOP 5 위젯 (좋아요 기준)
-
-### 7-5. 일정 페이지 (`/schedule`)
-- **카테고리 필터 탭:** 전체 / 학사 / 행사 / 시험 / 기타.
-- **월별 자동 그룹화:** 페이지 로드 시 JavaScript(`groupByMonth()`)가 일정 항목들 사이에 "▶ 2026년 5월" 형태의 월 헤더를 자동으로 삽입. 카테고리 필터 적용 시 해당 월에 표시 항목이 없으면 월 헤더도 함께 숨김.
-- **일정 행:** 날짜 블록 (일/월) + 일정 제목 + D-Day 배지 (검정 배경) + 카테고리 배지.
-- **2단 레이아웃 (데스크탑):**
-  - 왼쪽: 월별 그룹화된 일정 목록
-  - 오른쪽 사이드바: 이번 달 카테고리별 일정 수 + D-Day 임박 TOP 5 (dday 오름차순 상위 5개)
-
-### 7-6. 학과정보 페이지 (`/department`)
-4개 섹션이 세로로 순차 배치. 별도의 필터나 JS 없는 정적 페이지.
-1. **학과 소개:** 텍스트 2단락 + 이미지 플레이스홀더 (데스크탑에서 좌우 배치).
-2. **교수진:** 3열 카드 그리드 (6명). 각 카드: 아바타 플레이스홀더 + 이름 + 전공 + 이메일.
-3. **교육과정:** 표 (과목명 / 학년 / 구분(필수·선택) / 학점). 8개 과목.
-4. **위치 및 연락정보:** 지도 플레이스홀더 + 주소·전화·이메일·운영시간 텍스트.
-
-### 7-7. 로그인 페이지 (`/login`)
-- 화면 전체 높이 중앙 정렬 (`min-h-screen flex items-center justify-center`).
-- 흰색 배경 카드 (2px 검정 테두리, `max-w-sm`).
-- 사이트 제목 → 구분선 → 아이디 입력 → 비밀번호 입력 → 로그인 버튼 (검정 배경).
-- 하단 링크: 회원가입 | 비밀번호 찾기 (현재 더미 URL).
+- 학교 모드: 로고 클릭 시 `/universities/:id` (대학 홈)로 이동, 대학명 배지 표시
+- 학과 모드: 로고 클릭 시 `/` (학과 메인)으로 이동, 학과명 배지 표시
 
 ---
 
-## 8. 프론트엔드 설계 원칙
+## 11. DB 연동 방법 (팀원 작업 시)
 
-**디자인 시스템:** B&W(흑백) 미니멀리즘.
-- 배경: 흰색(`#ffffff`), 텍스트: 검정(`#000000`)
-- 강조 색상 없음. 모든 버튼·배지·테두리는 검정/흰색만 사용.
-- 유일한 예외: 좋아요 아이콘에 연한 빨간색(`text-red-400`).
-
-**CSS 전략:**
-- Tailwind CSS CDN을 통해 유틸리티 클래스로 모든 스타일 적용.
-- `custom.css`와 Bootstrap은 `layout/base.html`(레거시)에 남아 있으나, 현재 모든 활성 페이지는 Tailwind만 사용.
-- 활성 필터 탭 스타일(`active-tab`)은 각 페이지의 `<style>` 태그에 정의.
-
-**반응형:**
-- 데스크탑(lg: 1024px 이상): 2단 또는 3단 레이아웃
-- 모바일(lg 미만): 단일 열, 사이드바가 아래로 이동
-
----
-
-## 9. 테스트 구조
-
-컨트롤러 테스트는 `@WebMvcTest`를 사용합니다. 이 어노테이션은 DB 연결 없이 컨트롤러 레이어만 격리해서 테스트하므로 Oracle DB가 없어도 실행됩니다.
-
-| 테스트 파일 | 테스트 수 | 검증 내용 |
-|------------|----------|----------|
-| MainControllerTest | 1 | GET / → 200 OK, main/index 뷰, currentPage 속성 |
-| NoticeControllerTest | 2 | GET /notice → 200 OK, notices + featured 속성 존재 |
-| BoardControllerTest | 3 | GET /board → 200 OK, posts + featured 속성 존재 |
-| ScheduleControllerTest | 2 | GET /schedule → 200 OK, schedules 속성 존재 |
-| DepartmentControllerTest | 1 | GET /department → 200 OK, department/index 뷰 |
-| AuthControllerTest | 1 | GET /login → 200 OK, auth/login 뷰 |
-| **합계** | **10** | |
-
-**테스트 실행 명령:**
-```
-cd demo/demo
-./mvnw test -Dtest="MainControllerTest,NoticeControllerTest,BoardControllerTest,ScheduleControllerTest,DepartmentControllerTest,AuthControllerTest"
-```
-
-`DemoApplicationTests`는 전체 통합 테스트로 Oracle DB 연결이 필요합니다.
-
----
-
-## 10. 앱 실행 방법
-
-### 로컬 개발 (DB 없이 UI만 확인)
-
-`application.properties`에 이미 DB 자동설정이 비활성화되어 있으므로 DB 없이 바로 실행 가능합니다.
-
-```bash
-cd demo/demo
-./mvnw spring-boot:run
-```
-
-브라우저에서 `http://localhost:8080` 접속.
-
-### DB 연동 (팀원 작업 시)
-
-1. `db-config-template.txt`를 참고하여 `demo/demo/src/main/resources/application-secret.properties` 파일 생성
+1. `docs/DB_SETUP_GUIDE.md` 참고하여 `application-secret.properties` 생성
 2. Oracle DB 접속 정보 입력 (팀 채널에서 공유)
 3. `application.properties`에서 `spring.autoconfigure.exclude` 3줄 제거
-4. 앱 재시작
+4. 각 컨트롤러에서 `DummyDataHelper.*` 호출을 Service 호출로 교체
+5. 앱 재시작
 
 **주의:** `application-secret.properties`는 `.gitignore`에 등록되어 있어 Git에 절대 올라가지 않습니다.
-
----
-
-## 11. 팀원 작업 가이드 (TODO 목록)
-
-각 파일에 `TODO: [팀원-담당명]` 형태의 주석으로 작업 위치를 표시해 두었습니다.
-
-| 담당 영역 | 수정 파일 | 주요 작업 |
-|----------|----------|----------|
-| 공지사항 | `NoticeController.java` | noticeService 주입 후 더미 데이터 → DB 조회로 교체 |
-| 공지사항 | `notice/list.html` | 링크 URL `/notice/{id}` 형태로 수정, 실제 이미지 삽입 |
-| 게시판 | `BoardController.java` | postService 주입 후 더미 데이터 → DB 조회로 교체 |
-| 게시판 | `board/list.html` | 링크 URL, 실제 이미지, 작성 폼 연결 |
-| 일정 | `ScheduleController.java` | scheduleService 주입 후 더미 데이터 → DB 조회로 교체 |
-| 일정 | `schedule/list.html` | 실제 dday 계산 로직 연동 |
-| 학과정보 | `department/index.html` | 실제 교수 정보, 지도 API(카카오/네이버) 연동 |
-| 인증 | `AuthController.java` | Spring Security + POST /login 처리 로직 구현 |
-| 인증 | `auth/login.html` | th:action, CSRF 토큰, 오류 메시지 추가 |
-| 공통 | `ScheduleDto.java` | 실제 연동 시 dday 계산을 서비스에서 처리 (`ChronoUnit.DAYS.between`) |
-| 페이지네이션 | 각 list.html | 더미 페이지네이션 → 실제 페이지 파라미터(`?page=N`) 연동 |
 
 ---
 
@@ -355,24 +340,18 @@ cd demo/demo
 
 | 파일 | 역할 |
 |------|------|
-| `DemoApplication.java` | Spring Boot 앱 시작점 (`@SpringBootApplication`) |
-| `MainController.java` | 메인 페이지 렌더링, 공지·게시글·일정 더미 데이터 제공 |
-| `NoticeController.java` | 공지사항 목록 렌더링, featured + notices 더미 데이터 제공 |
-| `BoardController.java` | 게시판 목록 렌더링, featured + posts 더미 데이터 제공 |
-| `ScheduleController.java` | 일정 목록 렌더링, schedules 더미 데이터 제공 |
-| `DepartmentController.java` | 학과정보 페이지 렌더링 (데이터 없음, 정적 HTML) |
-| `AuthController.java` | 로그인 폼 렌더링 |
-| `NoticeDto.java` | 공지사항 데이터 구조 정의 (7개 필드) |
-| `PostDto.java` | 게시글 데이터 구조 정의 (8개 필드) |
-| `ScheduleDto.java` | 일정 데이터 구조 정의 (5개 필드) |
-| `main/index.html` | 메인 대시보드 UI (히어로·3열 카드·바로가기) |
-| `notice/list.html` | 공지사항 목록 UI (featured·필터·2단·사이드바) |
-| `board/list.html` | 게시판 목록 UI (featured·필터·2단·사이드바) |
-| `schedule/list.html` | 일정 목록 UI (월별 그룹·필터·D-Day 사이드바) |
-| `department/index.html` | 학과정보 UI (4개 섹션 정적 페이지) |
-| `auth/login.html` | 로그인 폼 UI (중앙 정렬 카드) |
-| `layout/base.html` | 레거시 공통 navbar/footer fragment (현재 미사용) |
-| `application.properties` | 서버 포트, Thymeleaf 캐시 설정, DB 자동설정 비활성화 |
-| `application-secret.properties` | Oracle DB 접속 정보 (Git 미포함, 각자 로컬에서 생성) |
-| `db-config-template.txt` | DB 연결 설정 작성 방법 안내서 |
-| `pom.xml` | Maven 의존성 및 빌드 플러그인 정의 |
+| `App.tsx` | 전체 라우트 정의, ProtectedMain/ProtectedSchool 접근 보호 |
+| `DeptContext.tsx` | 선택된 대학/학과 전역 상태, localStorage 동기화 |
+| `useDeptFetch.ts` | fetcher 함수 + id를 받아 데이터 로딩 처리하는 범용 훅 |
+| `Navbar.tsx` | URL 기반 학교/학과 모드 자동 전환 네비게이션 바 |
+| `UniversityListPage.tsx` | 대학교 카드 목록, 선택 시 학과 선택 페이지로 이동 |
+| `UniversityShowPage.tsx` | 대학교 홈 (단과대 목록, 바로가기) |
+| `SchoolDepartmentsPage.tsx` | 단과대·학부·학과 3단 계층 그리드, 학과 클릭 시 학과 메인으로 이동 |
+| `DepartmentPage.tsx` | 학과 상세 (API에서 교수진·교육과정·연락정보 조회) |
+| `SpaController.java` | `/api/**` 외 모든 경로를 `index.html`로 포워딩 (SPA 새로고침 지원) |
+| `DummyDataHelper.java` | 모든 더미 데이터 집중 관리 (DB 연동 전 임시) |
+| `UniversityController.java` | `GET /api/universities[/:id]` 응답 |
+| `DepartmentController.java` | `GET /api/departments/:id` 응답 |
+| `SchoolController.java` | `GET /api/school/*` 응답 |
+| `application.properties` | 포트(8080), DB 자동설정 비활성화 |
+| `vite.config.ts` | 빌드 출력 경로(`static/`), `/api` 프록시 설정 |
