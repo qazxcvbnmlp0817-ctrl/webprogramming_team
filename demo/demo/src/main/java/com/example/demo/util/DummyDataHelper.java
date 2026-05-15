@@ -248,7 +248,7 @@ public class DummyDataHelper {
             professors, curriculum,
             "전남 목포시 영산로 1666 국립목포대학교 " + deptName + " 사무실",
             "061-450-" + String.format("%04d", id * 100 % 10000),
-            deptName.substring(0, Math.min(2, deptName.length())) + "-dept@mokpo.ac.kr",
+            "dept" + id + "@mokpo.ac.kr",
             "평일 09:00 ~ 18:00 (점심 12:00 ~ 13:00)"
         );
     }
