@@ -139,7 +139,8 @@ webprogramming_team-main/
 │       │   └── DeptContext.tsx         ← 전역 상태 (선택된 대학/학과 정보)
 │       │
 │       ├── hooks/
-│       │   └── useDeptFetch.ts         ← 범용 데이터 fetching 훅
+│       │   ├── useDeptFetch.ts         ← 범용 데이터 fetching 훅
+│       │   └── useInitialRedirect.ts   ← 앱 시작 시 리다이렉트 목적지 결정 훅
 │       │
 │       ├── api/                        ← 백엔드 API 호출 함수
 │       │   ├── universities.ts         ← /api/universities
@@ -164,7 +165,7 @@ webprogramming_team-main/
 │       │   ├── SchoolBoardPage.tsx     ← /school/board
 │       │   ├── SchoolSchedulePage.tsx  ← /school/schedule
 │       │   ├── SchoolInfoPage.tsx      ← /school/info
-│       │   ├── MainPage.tsx            ← / (학과 메인)
+│       │   ├── MainPage.tsx            ← /dept/home (학과 메인)
 │       │   ├── NoticePage.tsx          ← /dept/notice
 │       │   ├── BoardPage.tsx           ← /dept/board
 │       │   ├── SchedulePage.tsx        ← /dept/schedule
@@ -216,6 +217,7 @@ webprogramming_team-main/
 
 | URL | 페이지 | 설명 |
 |-----|--------|------|
+| `/` | — | `/universities`로 자동 리다이렉트 (진입점) |
 | `/universities` | UniversityListPage | 대학교 목록 선택 |
 | `/universities/:id` | UniversityShowPage | 대학교 홈 |
 | `/school/departments` | SchoolDepartmentsPage | 학부·학과 선택 |
@@ -223,16 +225,29 @@ webprogramming_team-main/
 | `/school/board` | SchoolBoardPage | 대학 게시판 |
 | `/school/schedule` | SchoolSchedulePage | 대학 일정 |
 | `/school/info` | SchoolInfoPage | 대학 정보 |
-| `/` | MainPage | 학과 메인 대시보드 |
+| `/dept/home` | MainPage | 학과 메인 대시보드 |
 | `/dept/notice` | NoticePage | 학과 공지사항 |
 | `/dept/board` | BoardPage | 학과 게시판 |
 | `/dept/schedule` | SchedulePage | 학과 일정 |
 | `/dept/department` | DepartmentPage | 학과정보 |
 | `/login` | LoginPage | 로그인 |
 
-**접근 보호:**
-- `/school/*` → `selectedUniversityId`가 없으면 `/universities`로 리다이렉트
-- `/` (학과 메인) → `selectedDeptName`이 없으면 `/universities`로 리다이렉트
+**사용자 흐름 (순차 강제):**
+
+```
+/ (진입)
+  → /universities        대학교 선택
+  → /school/departments  학부·학과 선택
+  → /dept/home           학과 메인 대시보드
+  → /dept/*              학과 하위 페이지
+```
+
+**접근 보호 (`App.tsx`):**
+
+| 가드 | 적용 라우트 | 조건 미충족 시 |
+|------|------------|--------------|
+| `ProtectedSchool` | `/school/*` | `selectedUniversityId` 없음 → `/universities` |
+| `ProtectedDept` | `/dept/home`, `/dept/notice`, `/dept/board`, `/dept/schedule`, `/dept/department` | `selectedDeptId` 없음 → `/universities` |
 
 ### 백엔드 API 엔드포인트
 
@@ -317,14 +332,41 @@ UniversityDto
 | 모드 | 조건 | 표시 링크 |
 |------|------|----------|
 | 학교(School) 모드 | `/school/*` 또는 `/universities/:id` | 학과선택·공지사항·게시판·일정·학교정보 |
-| 학과(Dept) 모드 | 그 외 (`/`, `/dept/*`) | 공지사항·게시판·일정·학과정보 |
+| 학과(Dept) 모드 | `/dept/*` | 공지사항·게시판·일정·학과정보 |
 
 - 학교 모드: 로고 클릭 시 `/universities/:id` (대학 홈)로 이동, 대학명 배지 표시
-- 학과 모드: 로고 클릭 시 `/` (학과 메인)으로 이동, 학과명 배지 표시
+- 학과 모드: 로고 클릭 시 `/dept/home` (학과 메인)으로 이동, 학과명 배지 표시
 
 ---
 
-## 11. DB 연동 방법 (팀원 작업 시)
+## 11. 로그인 연동 예정 구조
+
+`useInitialRedirect.ts`에 `[AUTH_HOOK]` 주석으로 진입점이 준비되어 있습니다.
+
+```ts
+// [AUTH_HOOK] 로그인 기반 리다이렉트 진입점
+// 인증 시스템 추가 시 이 아래에 주입:
+// const user = useAuth()
+// if (user?.deptId) return `/dept-redirect/${user.deptId}`
+
+if (selectedDeptId) return null
+if (selectedUniversityId) return '/school/departments'
+return '/universities'
+```
+
+**로그인 연동 후 예상 동작:**
+
+| 상태 | `/` 접속 시 이동 경로 |
+|------|----------------------|
+| 로그인 O + 학과 저장됨 | 해당 학과 `/dept/home` 바로 이동 |
+| 로그인 X + localStorage에 대학교 있음 | `/school/departments` (학과 선택) |
+| 로그인 X + localStorage 비어있음 | `/universities` (대학교 선택) |
+
+> **localStorage 초기화:** 브라우저 콘솔에서 `localStorage.removeItem('deptState')` 실행
+
+---
+
+## 12. DB 연동 방법 (팀원 작업 시)
 
 1. `docs/DB_SETUP_GUIDE.md` 참고하여 `application-secret.properties` 생성
 2. Oracle DB 접속 정보 입력 (팀 채널에서 공유)
@@ -336,17 +378,18 @@ UniversityDto
 
 ---
 
-## 12. 파일별 역할 한 줄 요약
+## 13. 파일별 역할 한 줄 요약
 
 | 파일 | 역할 |
 |------|------|
-| `App.tsx` | 전체 라우트 정의, ProtectedMain/ProtectedSchool 접근 보호 |
+| `App.tsx` | 전체 라우트 정의, ProtectedSchool/ProtectedDept 접근 보호 |
 | `DeptContext.tsx` | 선택된 대학/학과 전역 상태, localStorage 동기화 |
 | `useDeptFetch.ts` | fetcher 함수 + id를 받아 데이터 로딩 처리하는 범용 훅 |
+| `useInitialRedirect.ts` | 앱 시작 리다이렉트 결정 훅. 로그인 연동 시 `[AUTH_HOOK]` 주석 위치에 주입 |
 | `Navbar.tsx` | URL 기반 학교/학과 모드 자동 전환 네비게이션 바 |
 | `UniversityListPage.tsx` | 대학교 카드 목록, 선택 시 학과 선택 페이지로 이동 |
 | `UniversityShowPage.tsx` | 대학교 홈 (단과대 목록, 바로가기) |
-| `SchoolDepartmentsPage.tsx` | 단과대·학부·학과 3단 계층 그리드, 학과 클릭 시 학과 메인으로 이동 |
+| `SchoolDepartmentsPage.tsx` | 단과대·학부·학과 3단 계층 그리드, 학과 클릭 시 `/dept/home`으로 이동 |
 | `DepartmentPage.tsx` | 학과 상세 (API에서 교수진·교육과정·연락정보 조회) |
 | `SpaController.java` | `/api/**` 외 모든 경로를 `index.html`로 포워딩 (SPA 새로고침 지원) |
 | `DummyDataHelper.java` | 모든 더미 데이터 집중 관리 (DB 연동 전 임시) |
