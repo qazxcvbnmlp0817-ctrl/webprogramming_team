@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { DeptProvider, useDept } from './context/DeptContext'
-import { useInitialRedirect } from './hooks/useInitialRedirect'
 import UniversityListPage from './pages/UniversityListPage'
 import UniversityShowPage from './pages/UniversityShowPage'
 import MainPage from './pages/MainPage'
@@ -15,12 +14,6 @@ import SchoolBoardPage from './pages/SchoolBoardPage'
 import SchoolSchedulePage from './pages/SchoolSchedulePage'
 import SchoolInfoPage from './pages/SchoolInfoPage'
 import SchoolDepartmentsPage from './pages/SchoolDepartmentsPage'
-
-function ProtectedMain() {
-  const destination = useInitialRedirect()
-  if (destination) return <Navigate to={destination} replace />
-  return <MainPage />
-}
 
 function ProtectedSchool({ children }: { children: ReactNode }) {
   const { selectedUniversityId } = useDept()
@@ -51,8 +44,11 @@ export default function App() {
           <Route path="/school/schedule"    element={<ProtectedSchool><SchoolSchedulePage /></ProtectedSchool>} />
           <Route path="/school/info"        element={<ProtectedSchool><SchoolInfoPage /></ProtectedSchool>} />
 
+          {/* 진입점 — 학교 선택 페이지로 리다이렉트 */}
+          <Route path="/" element={<Navigate to="/universities" replace />} />
+
           {/* 학과(dept) 범위 페이지 — /dept/* */}
-          <Route path="/"                element={<ProtectedMain />} />
+          <Route path="/dept/home"       element={<ProtectedDept><MainPage /></ProtectedDept>} />
           <Route path="/dept/notice"     element={<ProtectedDept><NoticePage /></ProtectedDept>} />
           <Route path="/dept/board"      element={<ProtectedDept><BoardPage /></ProtectedDept>} />
           <Route path="/dept/schedule"   element={<ProtectedDept><SchedulePage /></ProtectedDept>} />

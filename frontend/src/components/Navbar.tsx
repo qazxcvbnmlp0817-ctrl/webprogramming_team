@@ -33,7 +33,7 @@ export default function Navbar() {
         {/* 로고 + 컨텍스트 배지 */}
         <div className="flex items-center gap-3">
           <Link
-            to={isSchool ? schoolHomeLink : '/'}
+            to={isSchool ? schoolHomeLink : '/dept/home'}
             className="font-bold text-lg tracking-tight hover:opacity-80 transition"
           >
             학과정보통합서비스

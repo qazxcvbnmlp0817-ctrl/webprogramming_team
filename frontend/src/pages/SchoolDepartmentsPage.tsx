@@ -25,7 +25,7 @@ export default function SchoolDepartmentsPage() {
       selectedUniversityName: u.name,
       selectedSchoolName: schoolName,
     })
-    navigate('/')
+    navigate('/dept/home')
   }, [setDept, navigate])
 
   return (
