@@ -31,7 +31,7 @@ export function useDeptFetch<T>(
       .catch(err    => { if (!cancelled) setError(err.message) })
       .finally(()   => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [deptId]) // deptId 변경 시 자동 재요청
+  }, [deptId, fetcher])
 
   return { data, loading, error }
 }

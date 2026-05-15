@@ -17,12 +17,14 @@ export default function MainPage() {
 
   useEffect(() => {
     if (!selectedDeptId) return
-    fetchMainData(selectedDeptId).then(data => {
-      setNotices(data.notices)
-      setPosts(data.posts)
-      setSchedules(data.schedules)
-      setToday(data.today)
-    })
+    fetchMainData(selectedDeptId)
+      .then(data => {
+        setNotices(data.notices)
+        setPosts(data.posts)
+        setSchedules(data.schedules)
+        setToday(data.today)
+      })
+      .catch(() => {})
   }, [selectedDeptId])
 
   return (

@@ -19,7 +19,7 @@ public class NoticeController {
         List<NoticeDto> notices = (deptId != null)
             ? DummyDataHelper.getNoticesByDept(deptId)
             : DummyDataHelper.getNoticesByDept(1L);
-        NoticeDto featured = notices.get(0);
-        return Map.of("featured", featured, "notices", notices);
+        if (notices.isEmpty()) return Map.of("notices", notices);
+        return Map.of("featured", notices.get(0), "notices", notices);
     }
 }

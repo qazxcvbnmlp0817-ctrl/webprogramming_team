@@ -19,7 +19,7 @@ public class BoardController {
         List<PostDto> posts = (deptId != null)
             ? DummyDataHelper.getPostsByDept(deptId)
             : DummyDataHelper.getPostsByDept(1L);
-        PostDto featured = posts.get(0);
-        return Map.of("featured", featured, "posts", posts);
+        if (posts.isEmpty()) return Map.of("posts", posts);
+        return Map.of("featured", posts.get(0), "posts", posts);
     }
 }

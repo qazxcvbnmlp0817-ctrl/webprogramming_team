@@ -26,6 +26,7 @@ public class SchoolController {
     public Map<String, Object> schoolNotices(@RequestParam(required = false) Long univId) {
         Long id = univId != null ? univId : 1L;
         List<NoticeDto> list = DummyDataHelper.getUniversityNotices(id);
+        if (list.isEmpty()) return Map.of("notices", list);
         return Map.of("featured", list.get(0), "notices", list);
     }
 
@@ -34,6 +35,7 @@ public class SchoolController {
     public Map<String, Object> schoolPosts(@RequestParam(required = false) Long univId) {
         Long id = univId != null ? univId : 1L;
         List<PostDto> list = DummyDataHelper.getUniversityPosts(id);
+        if (list.isEmpty()) return Map.of("posts", list);
         return Map.of("featured", list.get(0), "posts", list);
     }
 
