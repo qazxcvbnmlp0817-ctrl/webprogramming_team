@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { DeptProvider, useDept } from './context/DeptContext'
+import { useInitialRedirect } from './hooks/useInitialRedirect'
 import UniversityListPage from './pages/UniversityListPage'
 import UniversityShowPage from './pages/UniversityShowPage'
 import MainPage from './pages/MainPage'
@@ -16,14 +17,20 @@ import SchoolInfoPage from './pages/SchoolInfoPage'
 import SchoolDepartmentsPage from './pages/SchoolDepartmentsPage'
 
 function ProtectedMain() {
-  const { selectedDeptName } = useDept()
-  if (!selectedDeptName) return <Navigate to="/universities" replace />
+  const destination = useInitialRedirect()
+  if (destination) return <Navigate to={destination} replace />
   return <MainPage />
 }
 
 function ProtectedSchool({ children }: { children: ReactNode }) {
   const { selectedUniversityId } = useDept()
   if (!selectedUniversityId) return <Navigate to="/universities" replace />
+  return <>{children}</>
+}
+
+function ProtectedDept({ children }: { children: ReactNode }) {
+  const { selectedDeptId } = useDept()
+  if (!selectedDeptId) return <Navigate to="/universities" replace />
   return <>{children}</>
 }
 
@@ -46,10 +53,10 @@ export default function App() {
 
           {/* 학과(dept) 범위 페이지 — /dept/* */}
           <Route path="/"                element={<ProtectedMain />} />
-          <Route path="/dept/notice"     element={<NoticePage />} />
-          <Route path="/dept/board"      element={<BoardPage />} />
-          <Route path="/dept/schedule"   element={<SchedulePage />} />
-          <Route path="/dept/department" element={<DepartmentPage />} />
+          <Route path="/dept/notice"     element={<ProtectedDept><NoticePage /></ProtectedDept>} />
+          <Route path="/dept/board"      element={<ProtectedDept><BoardPage /></ProtectedDept>} />
+          <Route path="/dept/schedule"   element={<ProtectedDept><SchedulePage /></ProtectedDept>} />
+          <Route path="/dept/department" element={<ProtectedDept><DepartmentPage /></ProtectedDept>} />
 
           {/* 이전 경로 호환성 리다이렉트 */}
           <Route path="/notice"     element={<Navigate to="/dept/notice"     replace />} />
