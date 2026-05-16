@@ -9,17 +9,20 @@ package com.example.demo.dto;
 public class PostDto {
 
     private final Long id;
-    private final String title;      // 게시글 제목
-    private final String author;     // 작성자
-    private final int likes;         // 좋아요 수
-    private final String category;   // 카테고리 (자유게시판·질문·스터디·취업후기)
-    private final int viewCount;     // 조회수
-    private final String date;       // 작성일 (yyyy-MM-dd)
-    private final boolean featured;  // 대표 게시글 여부
-    private final int commentCount; // 댓글 수
+    private final String title;
+    private final String author;
+    private final int likes;
+    private final String category;
+    private final int viewCount;
+    private final String date;
+    private final boolean featured;
+    private final int commentCount;
+    private final boolean isNotice;
+    private final String imageUrl;
 
     public PostDto(Long id, String title, String author, int likes,
-                   String category, int viewCount, String date, boolean featured, int commentCount) {
+                   String category, int viewCount, String date, boolean featured,
+                   int commentCount, boolean isNotice, String imageUrl) {
         this.id           = id;
         this.title        = title;
         this.author       = author;
@@ -29,6 +32,8 @@ public class PostDto {
         this.date         = date;
         this.featured     = featured;
         this.commentCount = commentCount;
+        this.isNotice     = isNotice;
+        this.imageUrl     = imageUrl;
     }
 
     public Long getId()          { return id; }
@@ -40,4 +45,6 @@ public class PostDto {
     public String getDate()      { return date; }
     public boolean isFeatured()  { return featured; }
     public int getCommentCount() { return commentCount; }
+    public boolean isNotice()    { return isNotice; }
+    public String getImageUrl()  { return imageUrl; }
 }

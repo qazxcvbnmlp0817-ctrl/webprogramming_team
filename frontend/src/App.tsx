@@ -6,6 +6,7 @@ import UniversityShowPage from './pages/UniversityShowPage'
 import MainPage from './pages/MainPage'
 import NoticePage from './pages/NoticePage'
 import BoardPage from './pages/BoardPage'
+import WritePostPage from './pages/WritePostPage'
 import SchedulePage from './pages/SchedulePage'
 import DepartmentPage from './pages/DepartmentPage'
 import LoginPage from './pages/LoginPage'
@@ -50,7 +51,8 @@ export default function App() {
           {/* 학과(dept) 범위 페이지 — /dept/* */}
           <Route path="/dept/home"       element={<ProtectedDept><MainPage /></ProtectedDept>} />
           <Route path="/dept/notice"     element={<ProtectedDept><NoticePage /></ProtectedDept>} />
-          <Route path="/dept/board"      element={<ProtectedDept><BoardPage /></ProtectedDept>} />
+          <Route path="/dept/board"       element={<ProtectedDept><BoardPage /></ProtectedDept>} />
+          <Route path="/dept/board/write" element={<ProtectedDept><WritePostPage /></ProtectedDept>} />
           <Route path="/dept/schedule"   element={<ProtectedDept><SchedulePage /></ProtectedDept>} />
           <Route path="/dept/department" element={<ProtectedDept><DepartmentPage /></ProtectedDept>} />
 

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import FeaturedCard from '../components/FeaturedCard'
 import Sidebar from '../components/Sidebar'
@@ -13,6 +13,7 @@ const SORT_OPTIONS = ['최신순', '추천순', '댓글순']
 
 export default function BoardPage() {
   const { selectedDeptId, selectedDeptName } = useDept()
+  const navigate = useNavigate()
   const [active, setActive] = useState('전체')
   const [sort, setSort]     = useState('최신순')
   const [search, setSearch] = useState('')
@@ -22,15 +23,17 @@ export default function BoardPage() {
   const posts    = data?.posts    ?? []
 
   const filtered = useMemo(() => {
-    let result = posts.filter(p => {
+    const base = posts.filter(p => {
       const catOk    = active === '전체' || p.category === active
       const searchOk = search === '' || p.title.toLowerCase().includes(search.toLowerCase())
       return catOk && searchOk
     })
-    if (sort === '최신순') result = [...result].sort((a, b) => b.date.localeCompare(a.date))
-    if (sort === '추천순') result = [...result].sort((a, b) => b.likes - a.likes)
-    if (sort === '댓글순') result = [...result].sort((a, b) => b.commentCount - a.commentCount)
-    return result
+    const notices = base.filter(p => p.notice)
+    let rest = base.filter(p => !p.notice)
+    if (sort === '최신순') rest = [...rest].sort((a, b) => b.date.localeCompare(a.date))
+    if (sort === '추천순') rest = [...rest].sort((a, b) => b.likes - a.likes)
+    if (sort === '댓글순') rest = [...rest].sort((a, b) => b.commentCount - a.commentCount)
+    return [...notices, ...rest]
   }, [posts, active, sort, search])
 
   const categoryCounts = BOARD_TABS.map(label => ({
@@ -44,13 +47,21 @@ export default function BoardPage() {
       <div className="pt-14" />
 
       <section className="bg-black text-white py-8 px-4">
-        <div className="max-w-6xl mx-auto">
-          <h1 className="text-2xl font-bold">
-            <i className="fas fa-comments mr-2" />게시판
-          </h1>
-          {selectedDeptName && (
-            <p className="text-gray-400 text-sm mt-1">{selectedDeptName} 게시판</p>
-          )}
+        <div className="max-w-6xl mx-auto flex items-end justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">
+              <i className="fas fa-comments mr-2" />게시판
+            </h1>
+            {selectedDeptName && (
+              <p className="text-gray-400 text-sm mt-1">{selectedDeptName} 게시판</p>
+            )}
+          </div>
+          <button
+            onClick={() => navigate('/dept/board/write')}
+            className="px-4 py-2 text-sm bg-white text-black font-medium hover:bg-gray-200 transition flex items-center gap-1.5"
+          >
+            <i className="fas fa-pen" />글쓰기
+          </button>
         </div>
       </section>
 
@@ -117,14 +128,24 @@ export default function BoardPage() {
             <div className="flex flex-col lg:flex-row gap-8">
               <div className="flex-1">
                 {filtered.map(post => (
-                  <div key={post.id} className="flex gap-4 py-4 border-b border-gray-200 hover:bg-gray-50 transition cursor-pointer">
-                    <div className="w-20 h-16 bg-gray-200 flex-shrink-0 flex items-center justify-center border border-gray-300">
-                      <i className="fas fa-image text-gray-400 text-sm" />
-                    </div>
+                  <div key={post.id} className={`flex gap-4 py-4 border-b border-gray-200 hover:bg-gray-50 transition cursor-pointer ${post.isNotice ? 'bg-gray-50' : ''}`}>
+                    {post.imageUrl && (
+                      <img
+                        src={post.imageUrl}
+                        alt=""
+                        className="w-20 h-16 object-cover flex-shrink-0 border border-gray-300"
+                      />
+                    )}
                     <div className="flex-1 min-w-0">
-                      <Link to="/dept/board" className="font-semibold text-black hover:underline block leading-snug line-clamp-2">{post.title}</Link>
+                      <div className="flex items-center gap-2 mb-0.5">
+                        {post.isNotice && (
+                          <span className="text-xs bg-black text-white px-1.5 py-0.5 font-medium flex-shrink-0">공지</span>
+                        )}
+                        <Link to="/dept/board" className="font-semibold text-black hover:underline block leading-snug line-clamp-2">{post.title}</Link>
+                      </div>
                       <div className="flex items-center flex-wrap gap-3 mt-1.5 text-xs text-gray-500">
                         <span className="border border-black text-black px-1.5 py-0.5 font-medium">{post.category}</span>
+                        <span className="font-medium text-gray-700">{post.author}</span>
                         <span>{post.date}</span>
                         <span><i className="fas fa-heart mr-0.5 text-red-400" />{post.likes}</span>
                         <span><i className="fas fa-comment mr-0.5" />{post.commentCount}</span>

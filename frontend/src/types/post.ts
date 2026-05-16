@@ -8,4 +8,6 @@ export interface PostDto {
   date: string
   featured: boolean
   commentCount: number
+  notice: boolean
+  imageUrl?: string | null
 }

@@ -125,15 +125,16 @@ public class DummyDataHelper {
                 .findFirst().orElse("대학교");
         long base = univId * 1000;
         return List.of(
-            new PostDto(base+1, univName + " 재학생이 추천하는 교양 과목 모음",    "재학생A",  88, "자유게시판", 620, "2026-05-10", true,  42),
-            new PostDto(base+2, univName + " 기숙사 생활 꿀팁 공유",              "기숙사生",  72, "자유게시판", 530, "2026-05-08", false, 35),
-            new PostDto(base+3, "삼성 SDS 2026 상반기 인턴 합격 후기",           "졸업생B",   65, "취업후기",   480, "2026-05-06", false, 28),
-            new PostDto(base+4, univName + " 도서관 스터디룸 예약 꿀팁",          "재학생C",   50, "자유게시판", 390, "2026-05-04", false, 21),
-            new PostDto(base+5, "전공 불문 스터디 모집 (TOEIC 900+ 목표)",        "재학생D",   43, "스터디",     310, "2026-05-02", false, 15),
-            new PostDto(base+6, univName + " 학식 메뉴 개선 건의합니다",          "재학생E",   38, "자유게시판", 260, "2026-04-30", false, 55),
-            new PostDto(base+7, "공모전 같이 나갈 팀원 구합니다 (디자인·개발)",   "재학생F",   30, "스터디",     200, "2026-04-28", false, 18),
-            new PostDto(base+8, "교수님 추천서 부탁드리는 방법 질문",             "재학생G",   22, "질문",       160, "2026-04-26", false, 12),
-            new PostDto(base+9, "대학원 진학 vs 취업 고민 중입니다",              "재학생H",   18, "자유게시판", 140, "2026-04-24", false, 30)
+            new PostDto(base+1, "[공지] " + univName + " 학교 공지사항",           "학교사무실", 0,  "자유게시판", 800, "2026-05-12", false,  0, true,  null),
+            new PostDto(base+2, univName + " 재학생이 추천하는 교양 과목 모음",    "재학생A",  88, "자유게시판", 620, "2026-05-10", true,  42, false, "https://picsum.photos/seed/univ1/200/150"),
+            new PostDto(base+3, univName + " 기숙사 생활 꿀팁 공유",              "기숙사生",  72, "자유게시판", 530, "2026-05-08", false, 35, false, null),
+            new PostDto(base+4, "삼성 SDS 2026 상반기 인턴 합격 후기",           "졸업생B",   65, "취업후기",   480, "2026-05-06", false, 28, false, "https://picsum.photos/seed/univ2/200/150"),
+            new PostDto(base+5, univName + " 도서관 스터디룸 예약 꿀팁",          "재학생C",   50, "자유게시판", 390, "2026-05-04", false, 21, false, null),
+            new PostDto(base+6, "전공 불문 스터디 모집 (TOEIC 900+ 목표)",        "재학생D",   43, "스터디",     310, "2026-05-02", false, 15, false, null),
+            new PostDto(base+7, univName + " 학식 메뉴 개선 건의합니다",          "재학생E",   38, "자유게시판", 260, "2026-04-30", false, 55, false, null),
+            new PostDto(base+8, "공모전 같이 나갈 팀원 구합니다 (디자인·개발)",   "재학생F",   30, "스터디",     200, "2026-04-28", false, 18, false, null),
+            new PostDto(base+9, "교수님 추천서 부탁드리는 방법 질문",             "재학생G",   22, "질문",       160, "2026-04-26", false, 12, false, null),
+            new PostDto(base+10,"대학원 진학 vs 취업 고민 중입니다",              "재학생H",   18, "자유게시판", 140, "2026-04-24", false, 30, false, null)
         );
     }
 
@@ -185,15 +186,16 @@ public class DummyDataHelper {
         String dept = findDeptName(deptId);
         long base = deptId * 100;
         return List.of(
-            new PostDto(base+1, dept + " 중간고사 족보 공유합니다",       "익명",   (int)(40+deptId*2), "자유게시판", (int)(300+deptId*5), "2026-05-01", true,  18),
-            new PostDto(base+2, dept + " 관련 기업 인턴십 합격 후기",     "졸업생", (int)(30+deptId),   "취업후기",  (int)(250+deptId*4), "2026-04-28", false, 25),
-            new PostDto(base+3, dept + " 스터디 같이 할 분 모집",         "재학생", (int)(20+deptId),   "스터디",    (int)(140+deptId*3), "2026-04-25", false,  7),
-            new PostDto(base+4, dept + " 졸업프로젝트 팀원 구합니다",     "4학년",  (int)(15+deptId),   "자유게시판",  (int)(90+deptId*2), "2026-04-20", false, 33),
-            new PostDto(base+5, dept + " 교수님 연구실 인턴 모집",        "교수",   (int)(10+deptId),   "취업후기",    (int)(70+deptId),   "2026-04-18", false,  3),
-            new PostDto(base+6, dept + " 전공 과목 질문있어요",           "1학년",   (int)(8+deptId),   "질문",        (int)(40+deptId),   "2026-04-15", false,  6),
-            new PostDto(base+7, dept + " 전공 스터디원 모집",             "2학년",   (int)(6+deptId),   "스터디",      (int)(30+deptId),   "2026-04-12", false,  4),
-            new PostDto(base+8, dept + " 취업 준비 팁 공유",              "3학년",   (int)(4+deptId),   "취업후기",    (int)(25+deptId),   "2026-04-10", false,  9),
-            new PostDto(base+9, dept + " 1학년 수강신청 추천 조합",       "선배",    (int)(3+deptId),   "자유게시판",  (int)(15+deptId),   "2026-04-08", false,  2)
+            new PostDto(base+1, "[공지] " + dept + " 2026-1학기 학과 공지사항", "학과사무실", 0,                  "자유게시판", (int)(500+deptId*5), "2026-05-10", false,  0, true,  null),
+            new PostDto(base+2, dept + " 중간고사 족보 공유합니다",       "익명",   (int)(40+deptId*2), "자유게시판", (int)(300+deptId*5), "2026-05-01", true,  18, false, "https://picsum.photos/seed/" + deptId + "a/200/150"),
+            new PostDto(base+3, dept + " 관련 기업 인턴십 합격 후기",     "졸업생", (int)(30+deptId),   "취업후기",  (int)(250+deptId*4), "2026-04-28", false, 25, false, null),
+            new PostDto(base+4, dept + " 스터디 같이 할 분 모집",         "재학생", (int)(20+deptId),   "스터디",    (int)(140+deptId*3), "2026-04-25", false,  7, false, "https://picsum.photos/seed/" + deptId + "b/200/150"),
+            new PostDto(base+5, dept + " 졸업프로젝트 팀원 구합니다",     "4학년",  (int)(15+deptId),   "자유게시판",  (int)(90+deptId*2), "2026-04-20", false, 33, false, null),
+            new PostDto(base+6, dept + " 교수님 연구실 인턴 모집",        "교수",   (int)(10+deptId),   "취업후기",    (int)(70+deptId),   "2026-04-18", false,  3, false, null),
+            new PostDto(base+7, dept + " 전공 과목 질문있어요",           "1학년",   (int)(8+deptId),   "질문",        (int)(40+deptId),   "2026-04-15", false,  6, false, null),
+            new PostDto(base+8, dept + " 전공 스터디원 모집",             "2학년",   (int)(6+deptId),   "스터디",      (int)(30+deptId),   "2026-04-12", false,  4, false, null),
+            new PostDto(base+9, dept + " 취업 준비 팁 공유",              "3학년",   (int)(4+deptId),   "취업후기",    (int)(25+deptId),   "2026-04-10", false,  9, false, null),
+            new PostDto(base+10, dept + " 1학년 수강신청 추천 조합",      "선배",    (int)(3+deptId),   "자유게시판",  (int)(15+deptId),   "2026-04-08", false,  2, false, null)
         );
     }
 

@@ -22,6 +22,7 @@ public class SpaController {
         "/school/info",
         "/dept/notice",
         "/dept/board",
+        "/dept/board/write",
         "/dept/schedule",
         "/dept/department",
         "/notice",
