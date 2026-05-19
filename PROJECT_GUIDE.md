@@ -166,6 +166,10 @@ webprogramming_team-main/
 │       │   ├── SchoolBoardPage.tsx     ← /school/board
 │       │   ├── SchoolSchedulePage.tsx  ← /school/schedule
 │       │   ├── SchoolInfoPage.tsx      ← /school/info
+│       │   ├── FacultyPage.tsx         ← /school/faculty/:facultyId (학부 메인)
+│       │   ├── FacultyNoticePage.tsx   ← /school/faculty/:facultyId/notice
+│       │   ├── FacultyBoardPage.tsx    ← /school/faculty/:facultyId/board
+│       │   ├── FacultySchedulePage.tsx ← /school/faculty/:facultyId/schedule
 │       │   ├── MainPage.tsx            ← /dept/home (학과 메인)
 │       │   ├── NoticePage.tsx          ← /dept/notice
 │       │   ├── BoardPage.tsx           ← /dept/board
@@ -243,6 +247,10 @@ webprogramming_team-main/
 | `/school/board` | SchoolBoardPage | 대학 게시판 |
 | `/school/schedule` | SchoolSchedulePage | 대학 일정 |
 | `/school/info` | SchoolInfoPage | 대학 정보 |
+| `/school/faculty/:facultyId` | FacultyPage | 학부 메인 대시보드 |
+| `/school/faculty/:facultyId/notice` | FacultyNoticePage | 학부 공지사항 |
+| `/school/faculty/:facultyId/board` | FacultyBoardPage | 학부 게시판 |
+| `/school/faculty/:facultyId/schedule` | FacultySchedulePage | 학부 일정 |
 | `/dept/home` | MainPage | 학과 메인 대시보드 |
 | `/dept/notice` | NoticePage | 학과 공지사항 |
 | `/dept/board` | BoardPage | 학과 게시판 |
@@ -255,21 +263,23 @@ webprogramming_team-main/
 | `/find-id` | FindIdPage | 아이디 찾기 |
 | `/find-password` | FindPasswordPage | 비밀번호 찾기 |
 
-**사용자 흐름 (순차 강제):**
+**사용자 흐름:**
 
 ```
 / (진입)
-  → /universities        대학교 선택
-  → /school/departments  학부·학과 선택
-  → /dept/home           학과 메인 대시보드
-  → /dept/*              학과 하위 페이지
+  → /universities              대학교 선택
+  → /school/departments        학부·학과 선택
+      ├── 학부 클릭 → /school/faculty/:id   학부 메인 대시보드
+      │                  └── /school/faculty/:id/notice|board|schedule
+      └── 학과 클릭 → /dept/home            학과 메인 대시보드
+                         └── /dept/*
 ```
 
 **접근 보호 (`App.tsx`):**
 
 | 가드 | 적용 라우트 | 조건 미충족 시 |
 |------|------------|--------------|
-| `ProtectedSchool` | `/school/*` | `selectedUniversityId` 없음 → `/universities` |
+| `ProtectedSchool` | `/school/*` (학교·학부 모든 하위 경로) | `selectedUniversityId` 없음 → `/universities` |
 | `ProtectedDept` | `/dept/home`, `/dept/notice`, `/dept/board`, `/dept/board/write`, `/dept/schedule`, `/dept/department` | `selectedDeptId` 없음 → `/universities` |
 
 ### 백엔드 API 엔드포인트
@@ -286,6 +296,10 @@ webprogramming_team-main/
 | GET | `/api/school/posts` | `univId` | 대학 게시판 목록 |
 | GET | `/api/school/schedules` | `univId` | 대학 일정 목록 |
 | GET | `/api/school/info` | `univId` | 대학 정보 |
+| GET | `/api/faculty/main` | `facultyId` | 학부 메인 (공지·게시글·일정·날짜) |
+| GET | `/api/faculty/notices` | `facultyId` | 학부 공지사항 목록 |
+| GET | `/api/faculty/posts` | `facultyId` | 학부 게시판 목록 |
+| GET | `/api/faculty/schedules` | `facultyId` | 학부 일정 목록 |
 | POST | `/api/auth/login` | Body: `{username, password, memberType}` | 로그인 |
 | POST | `/api/auth/signup` | Body: 회원 정보 | 회원가입 |
 | GET | `/api/auth/check-id` | `username` | 아이디 중복 확인 |
@@ -347,6 +361,7 @@ UniversityDto
 - **대학 트리:** 목포대학교(18개 학과, 6개 단과대), 순천대학교(4개 학과) 하드코딩
 - **학과별 데이터:** `deptId`를 받아 학과명 기반으로 공지·게시글·일정을 동적 생성
 - **대학별 데이터:** `univId`를 받아 대학명 기반으로 공지·게시글·일정을 동적 생성
+- **학부별 데이터:** `facultyId`를 받아 공지(8개)·게시글(10개)·일정(8개)을 동적 생성. ID 충돌 방지를 위해 `facultyId × 300/400/500` 오프셋 사용
 - **학과 상세:** `deptId`로 교수진(3명)·교육과정(6개)·연락정보를 생성
 
 > DB 연동 시: 각 컨트롤러에서 `DummyDataHelper` 호출 부분을 Service 호출로 교체하면 됩니다.
@@ -355,15 +370,19 @@ UniversityDto
 
 ## 10. Navbar 동작 방식
 
-`Navbar.tsx`는 현재 URL 경로에 따라 자동으로 두 가지 모드로 전환됩니다.
+`Navbar.tsx`는 현재 URL 경로에 따라 자동으로 세 가지 모드로 전환됩니다.
 
-| 모드 | 조건 | 표시 링크 |
-|------|------|----------|
-| 학교(School) 모드 | `/school/*` 또는 `/universities/:id` | 학과선택·공지사항·게시판·일정·학교정보 |
-| 학과(Dept) 모드 | `/dept/*` | 공지사항·게시판·일정·학과정보 |
+| 모드 | 조건 | 표시 링크 | 배지 |
+|------|------|----------|------|
+| 학부(Faculty) 모드 | `/school/faculty/:id/*` | 홈·공지사항·게시판·일정·학과선택 | `학부 포털` |
+| 학교(School) 모드 | `/school/*` (학부 제외) 또는 `/universities/:id` | 학과선택·공지사항·게시판·일정·학교정보 | 대학명 |
+| 학과(Dept) 모드 | `/dept/*` | 공지사항·게시판·일정·학과정보 | 학과명 |
 
-- 학교 모드: 로고 클릭 시 `/universities/:id` (대학 홈)로 이동, 대학명 배지 표시
-- 학과 모드: 로고 클릭 시 `/dept/home` (학과 메인)으로 이동, 학과명 배지 표시
+- 학부 모드: 로고 클릭 시 `/school/faculty/:id` (학부 홈)으로 이동
+- 학교 모드: 로고 클릭 시 `/universities/:id` (대학 홈)으로 이동
+- 학과 모드: 로고 클릭 시 `/dept/home` (학과 메인)으로 이동
+
+> 학부 경로 감지: `pathname.match(/^\/school\/faculty\/(\d+)/)` 로 facultyId를 추출하여 링크를 동적 생성합니다.
 
 ---
 
@@ -419,7 +438,7 @@ return '/universities'
 
 1. `docs/DB_SETUP_GUIDE.md` 참고하여 `application-secret.properties` 생성
 2. Oracle DB 접속 정보 입력 (팀 채널에서 공유)
-3. `application.properties`에서 `spring.autoconfigure.exclude` 3줄 제거
+3. `pom.xml`에서 JPA/Oracle 의존성 주석 해제 (`spring-boot-starter-data-jpa`, `ojdbc11`)
 4. 각 컨트롤러에서 `DummyDataHelper.*` 호출을 Service 호출로 교체
 5. 앱 재시작
 
@@ -435,10 +454,14 @@ return '/universities'
 | `DeptContext.tsx` | 선택된 대학/학과 전역 상태, localStorage 동기화 |
 | `useDeptFetch.ts` | fetcher 함수 + id를 받아 데이터 로딩 처리하는 범용 훅 |
 | `useInitialRedirect.ts` | 앱 시작 리다이렉트 결정 훅. 로그인 연동 시 `[AUTH_HOOK]` 주석 위치에 주입 |
-| `Navbar.tsx` | URL 기반 학교/학과 모드 자동 전환 네비게이션 바 |
+| `Navbar.tsx` | URL 기반 학교/학부/학과 3모드 자동 전환 네비게이션 바 |
 | `UniversityListPage.tsx` | 대학교 카드 목록, 선택 시 학과 선택 페이지로 이동 |
 | `UniversityShowPage.tsx` | 대학교 홈 (단과대 목록, 바로가기) |
-| `SchoolDepartmentsPage.tsx` | 단과대·학부·학과 3단 계층 그리드, 학과 클릭 시 `/dept/home`으로 이동 |
+| `SchoolDepartmentsPage.tsx` | 단과대·학부·학과 3단 계층 그리드. 학부명 클릭 시 `/school/faculty/:id`, 학과 클릭 시 `/dept/home`으로 이동 |
+| `FacultyPage.tsx` | 학부 메인 대시보드 (캘린더·일정·공지·인기 게시글 2×2 그리드) |
+| `FacultyNoticePage.tsx` | 학부 공지사항 (탭 필터·FeaturedCard·Sidebar) |
+| `FacultyBoardPage.tsx` | 학부 게시판 (검색·탭·정렬·소속학과 빠른이동) |
+| `FacultySchedulePage.tsx` | 학부 일정 (월별 그룹·D-Day 배지·Sidebar) |
 | `DepartmentPage.tsx` | 학과 상세 (API에서 교수진·교육과정·연락정보 조회) |
 | `WritePostPage.tsx` | 게시글 작성 폼 (`/dept/board/write`) |
 | `LoginPage.tsx` | 로그인 폼, `auth.ts`의 `loginApi` 호출 |
@@ -457,5 +480,5 @@ return '/universities'
 | `UniversityController.java` | `GET /api/universities[/:id]` 응답 |
 | `DepartmentController.java` | `GET /api/departments/:id` 응답 |
 | `SchoolController.java` | `GET /api/school/*` 응답 |
-| `application.properties` | 포트(8080), DB 자동설정 비활성화 |
+| `application.properties` | 포트(8080), 정적 리소스 no-cache 설정 |
 | `vite.config.ts` | 빌드 출력 경로(`static/`), `/api` 프록시 설정 |
