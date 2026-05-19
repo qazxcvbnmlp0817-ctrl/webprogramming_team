@@ -154,6 +154,9 @@ webprogramming_team-main/
 │       ├── utils/                      ← 공유 순수 유틸리티 함수
 │       │   └── scheduleUtils.ts        ← groupByMonth() — 3개 일정 페이지 공유
 │       │
+│       ├── data/                       ← 프론트엔드 더미/정적 데이터
+│       │   └── footerData.ts           ← 푸터 표시 정보 (대학명·주소·연락처·저작권)
+│       │
 │       ├── types/                      ← TypeScript 타입 정의
 │       │   ├── university.ts
 │       │   ├── department.ts
@@ -187,6 +190,7 @@ webprogramming_team-main/
 │       │
 │       └── components/                 ← 재사용 컴포넌트
 │           ├── Navbar.tsx              ← 상단 네비게이션 바
+│           ├── Footer.tsx              ← 하단 고정 푸터 (/universities 제외)
 │           ├── FeaturedCard.tsx
 │           ├── FilterTabs.tsx
 │           ├── Sidebar.tsx
@@ -389,7 +393,47 @@ UniversityDto
 
 ---
 
-## 11. 인증(로그인·회원가입) 구현 현황
+## 11. 레이아웃 구조 — Sticky Footer
+
+`App.tsx`에서 전체 앱을 `min-h-screen flex flex-col` 래퍼로 감싸 Sticky Footer를 구현합니다.
+
+```
+App.tsx
+└── <div class="min-h-screen flex flex-col">   ← 전체 높이 보장
+      ├── <div class="flex-1">                  ← 콘텐츠 영역 (빈 공간 채움)
+      │     └── <Routes> ... </Routes>          ← 각 페이지 (Navbar 포함)
+      └── <Footer />                            ← 항상 하단 고정
+```
+
+개별 페이지를 수정하지 않고 `App.tsx` 한 곳에서 전체 적용합니다.
+
+### Footer 표시 제외 페이지
+
+`Footer.tsx` 내부의 `FOOTER_HIDDEN_PATHS` 배열로 관리합니다.
+
+```ts
+const FOOTER_HIDDEN_PATHS = ['/universities']
+```
+
+제외할 경로가 추가되면 이 배열에 경로 문자열만 추가하면 됩니다.
+
+### 푸터 데이터 (`data/footerData.ts`)
+
+| 필드 | 설명 |
+|------|------|
+| `universityName` | 대학교 이름 |
+| `serviceName` | 서비스 이름 |
+| `address` | 주소 |
+| `phone` | 대표 전화 |
+| `email` | 웹마스터 이메일 |
+| `copyright` | 저작권 문구 (연도 자동 계산) |
+| `links` | 하단 링크 목록 (`label`, `href`) |
+
+> DB 연동 시: `footerData` 상수를 API 호출 결과로 교체하면 됩니다.
+
+---
+
+## 12. 인증(로그인·회원가입) 구현 현황
 
 ### 현재 구조
 
@@ -453,7 +497,9 @@ return '/universities'
 
 | 파일 | 역할 |
 |------|------|
-| `App.tsx` | 전체 라우트 정의, ProtectedSchool/ProtectedDept 접근 보호 |
+| `App.tsx` | 전체 라우트 정의, ProtectedSchool/ProtectedDept 접근 보호, sticky footer 레이아웃 |
+| `Footer.tsx` | 하단 고정 푸터. `FOOTER_HIDDEN_PATHS`로 특정 경로 제외 가능 |
+| `data/footerData.ts` | 푸터 표시 정보 더미 데이터. DB 연동 시 API 응답으로 교체 |
 | `DeptContext.tsx` | 선택된 대학/학과 전역 상태, localStorage 동기화 |
 | `useDeptFetch.ts` | fetcher 함수 + id를 받아 데이터 로딩 처리하는 범용 훅 |
 | `useInitialRedirect.ts` | 앱 시작 리다이렉트 결정 훅. 로그인 연동 시 `[AUTH_HOOK]` 주석 위치에 주입 |
