@@ -17,6 +17,16 @@ const DEPT_NAV = [
   { to: '/dept/department', label: '학과정보' },
 ]
 
+function buildFacultyNav(facultyId: string) {
+  return [
+    { to: `/school/faculty/${facultyId}`,          label: '홈' },
+    { to: `/school/faculty/${facultyId}/notice`,   label: '공지사항' },
+    { to: `/school/faculty/${facultyId}/board`,    label: '게시판' },
+    { to: `/school/faculty/${facultyId}/schedule`, label: '일정' },
+    { to: '/school/departments',                   label: '학과 선택' },
+  ]
+}
+
 export default function Navbar() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
@@ -35,9 +45,23 @@ export default function Navbar() {
     }
   }, [pathname])
 
-  const isSchool = pathname.startsWith('/school') || /^\/universities\/\d+/.test(pathname)
-  const navLinks = isSchool ? SCHOOL_NAV : DEPT_NAV
-  const schoolHomeLink = `/universities/${selectedUniversityId}`
+  const facultyMatch = pathname.match(/^\/school\/faculty\/(\d+)/)
+  const isFaculty = !!facultyMatch
+  const facultyId  = facultyMatch?.[1] ?? ''
+
+  const isSchool = !isFaculty && (pathname.startsWith('/school') || /^\/universities\/\d+/.test(pathname))
+
+  const navLinks = isFaculty
+    ? buildFacultyNav(facultyId)
+    : isSchool
+      ? SCHOOL_NAV
+      : DEPT_NAV
+
+  const homeLink = isFaculty
+    ? `/school/faculty/${facultyId}`
+    : isSchool
+      ? `/universities/${selectedUniversityId}`
+      : '/dept/home'
 
   const handleLogout = () => {
     sessionStorage.removeItem('isLoggedIn')
@@ -54,18 +78,24 @@ export default function Navbar() {
         {/* 로고 + 컨텍스트 배지 */}
         <div className="flex items-center gap-3">
           <Link
-            to={isSchool ? schoolHomeLink : '/dept/home'}
+            to={homeLink}
             className="font-bold text-lg tracking-tight hover:opacity-80 transition"
           >
             학과정보통합서비스
           </Link>
+          {isFaculty && selectedUniversityName && (
+            <span className="hidden md:inline-flex items-center gap-1 text-xs text-gray-400 border border-gray-700 px-2 py-0.5 rounded">
+              <i className="fas fa-layer-group text-[10px]" />
+              학부 포털
+            </span>
+          )}
           {isSchool && selectedUniversityName && (
             <span className="hidden md:inline-flex items-center gap-1 text-xs text-gray-400 border border-gray-700 px-2 py-0.5 rounded">
               <i className="fas fa-university text-[10px]" />
               {selectedUniversityName}
             </span>
           )}
-          {!isSchool && selectedDeptName && (
+          {!isSchool && !isFaculty && selectedDeptName && (
             <span className="hidden md:inline-flex items-center gap-1 text-xs text-gray-400 border border-gray-700 px-2 py-0.5 rounded">
               <i className="fas fa-door-open text-[10px]" />
               {selectedDeptName}

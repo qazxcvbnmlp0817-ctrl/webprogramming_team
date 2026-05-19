@@ -19,4 +19,12 @@ public class ScheduleController {
             ? DummyDataHelper.getSchedulesByDept(deptId)
             : DummyDataHelper.getSchedulesByDept(1L);
     }
+
+    @GetMapping("/api/faculty/schedules")
+    @ResponseBody
+    public List<ScheduleDto> facultySchedules(@RequestParam(required = false) Long facultyId) {
+        return (facultyId != null)
+            ? DummyDataHelper.getSchedulesByFaculty(facultyId)
+            : DummyDataHelper.getSchedulesByFaculty(1L);
+    }
 }

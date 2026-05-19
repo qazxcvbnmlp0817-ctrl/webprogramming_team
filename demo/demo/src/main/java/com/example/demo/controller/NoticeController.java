@@ -22,4 +22,14 @@ public class NoticeController {
         if (notices.isEmpty()) return Map.of("notices", notices);
         return Map.of("featured", notices.get(0), "notices", notices);
     }
+
+    @GetMapping("/api/faculty/notices")
+    @ResponseBody
+    public Map<String, Object> facultyNotices(@RequestParam(required = false) Long facultyId) {
+        List<NoticeDto> notices = (facultyId != null)
+            ? DummyDataHelper.getNoticesByFaculty(facultyId)
+            : DummyDataHelper.getNoticesByFaculty(1L);
+        if (notices.isEmpty()) return Map.of("notices", notices);
+        return Map.of("featured", notices.get(0), "notices", notices);
+    }
 }

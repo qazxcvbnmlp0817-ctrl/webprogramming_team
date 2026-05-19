@@ -14,12 +14,15 @@ import SignupPage from './pages/SignupPage'
 import MyPage from './pages/MyPage'
 import FindIdPage from './pages/FindIdPage'
 import FindPasswordPage from './pages/FindPasswordPage'
-import WritePostPage from './pages/WritePostPage'
 import SchoolNoticePage from './pages/SchoolNoticePage'
 import SchoolBoardPage from './pages/SchoolBoardPage'
 import SchoolSchedulePage from './pages/SchoolSchedulePage'
 import SchoolInfoPage from './pages/SchoolInfoPage'
 import SchoolDepartmentsPage from './pages/SchoolDepartmentsPage'
+import FacultyPage from './pages/FacultyPage'
+import FacultyBoardPage from './pages/FacultyBoardPage'
+import FacultyNoticePage from './pages/FacultyNoticePage'
+import FacultySchedulePage from './pages/FacultySchedulePage'
 
 function ProtectedSchool({ children }: { children: ReactNode }) {
   const { selectedUniversityId } = useDept()
@@ -45,6 +48,10 @@ export default function App() {
 
           {/* 학교(school) 범위 페이지 — /school/* */}
           <Route path="/school/departments" element={<ProtectedSchool><SchoolDepartmentsPage /></ProtectedSchool>} />
+          <Route path="/school/faculty/:facultyId"          element={<ProtectedSchool><FacultyPage /></ProtectedSchool>} />
+          <Route path="/school/faculty/:facultyId/notice"   element={<ProtectedSchool><FacultyNoticePage /></ProtectedSchool>} />
+          <Route path="/school/faculty/:facultyId/board"    element={<ProtectedSchool><FacultyBoardPage /></ProtectedSchool>} />
+          <Route path="/school/faculty/:facultyId/schedule" element={<ProtectedSchool><FacultySchedulePage /></ProtectedSchool>} />
           <Route path="/school/notice"      element={<ProtectedSchool><SchoolNoticePage /></ProtectedSchool>} />
           <Route path="/school/board"       element={<ProtectedSchool><SchoolBoardPage /></ProtectedSchool>} />
           <Route path="/school/schedule"    element={<ProtectedSchool><SchoolSchedulePage /></ProtectedSchool>} />

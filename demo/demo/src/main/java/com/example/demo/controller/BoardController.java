@@ -22,4 +22,14 @@ public class BoardController {
         if (posts.isEmpty()) return Map.of("posts", posts);
         return Map.of("featured", posts.get(0), "posts", posts);
     }
+
+    @GetMapping("/api/faculty/posts")
+    @ResponseBody
+    public Map<String, Object> facultyPosts(@RequestParam(required = false) Long facultyId) {
+        List<PostDto> posts = (facultyId != null)
+            ? DummyDataHelper.getPostsByFaculty(facultyId)
+            : DummyDataHelper.getPostsByFaculty(1L);
+        if (posts.isEmpty()) return Map.of("posts", posts);
+        return Map.of("featured", posts.get(0), "posts", posts);
+    }
 }

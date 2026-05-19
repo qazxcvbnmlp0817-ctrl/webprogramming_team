@@ -153,6 +153,67 @@ public class DummyDataHelper {
         );
     }
 
+    /** 학부 ID로 학부명을 조회한다 */
+    public static String findFacultyName(Long facultyId) {
+        return UNIVERSITIES.stream()
+                .flatMap(u -> u.getSchools().stream())
+                .flatMap(s -> s.getFaculties().stream())
+                .filter(f -> f.getId().equals(facultyId))
+                .map(FacultyDto::getName)
+                .findFirst()
+                .orElse("학부");
+    }
+
+    /** facultyId 기반 공지사항 목록 생성 */
+    public static List<NoticeDto> getNoticesByFaculty(Long facultyId) {
+        String faculty = findFacultyName(facultyId);
+        long base = facultyId * 400;
+        return List.of(
+            new NoticeDto(base+1, "[긴급] " + faculty + " 2026년 1학기 수강정정 기간 안내", "2026-05-11", faculty + " 사무실", "학사", (int)(300 + facultyId * 7), true),
+            new NoticeDto(base+2, faculty + " 2026년 1학기 학부 행사 안내",                 "2026-05-08", faculty + " 사무실", "행사", (int)(200 + facultyId * 5), false),
+            new NoticeDto(base+3, faculty + " 졸업논문 심사 일정 안내",                     "2026-05-06", faculty + " 사무실", "학사", (int)(150 + facultyId * 3), false),
+            new NoticeDto(base+4, faculty + " 장학금 신청 안내 (5월 15일까지)",             "2026-05-04", "학생처",             "장학", (int)(100 + facultyId * 2), false),
+            new NoticeDto(base+5, faculty + " 실험실 안전교육 일정 공지",                   "2026-05-02", faculty + " 사무실", "학사",  (int)(80 + facultyId),     false),
+            new NoticeDto(base+6, faculty + " 산학협력 세미나 개최 안내",                   "2026-04-30", faculty + " 사무실", "행사",  (int)(60 + facultyId),     false),
+            new NoticeDto(base+7, faculty + " 졸업작품 심사 일정 공지",                     "2026-04-28", faculty + " 사무실", "학사",  (int)(40 + facultyId),     false),
+            new NoticeDto(base+8, faculty + " 교내 해커톤 참가 모집",                       "2026-04-25", "학생처",             "취업",  (int)(25 + facultyId),     false)
+        );
+    }
+
+    /** facultyId 기반 일정 목록 생성 */
+    public static List<ScheduleDto> getSchedulesByFaculty(Long facultyId) {
+        String faculty = findFacultyName(facultyId);
+        long base = facultyId * 500;
+        return List.of(
+            new ScheduleDto(base+1, faculty + " 중간고사 시작",      "2026-05-12",  1, "시험"),
+            new ScheduleDto(base+2, faculty + " 학부 프로젝트 발표", "2026-05-20",  9, "학사"),
+            new ScheduleDto(base+3, faculty + " 수강신청 변경기간",  "2026-05-25", 14, "학사"),
+            new ScheduleDto(base+4, faculty + " 학부 연합 행사",     "2026-06-01", 21, "행사"),
+            new ScheduleDto(base+5, faculty + " 기말고사 시작",      "2026-06-16", 36, "시험"),
+            new ScheduleDto(base+6, faculty + " 기말고사 종료",      "2026-06-20", 40, "시험"),
+            new ScheduleDto(base+7, faculty + " 여름 방학 시작",     "2026-06-27", 47, "학사"),
+            new ScheduleDto(base+8, faculty + " 졸업논문 제출 마감", "2026-07-15", 65, "학사")
+        );
+    }
+
+    /** facultyId 기반 게시글 목록 생성 */
+    public static List<PostDto> getPostsByFaculty(Long facultyId) {
+        String faculty = findFacultyName(facultyId);
+        long base = facultyId * 300;
+        return List.of(
+            new PostDto(base+1,  "[공지] " + faculty + " 2026-1학기 학부 공지사항",        "학부사무실",  0,                    "자유게시판", (int)(600+facultyId*5), "2026-05-10", false,  0, true,  null),
+            new PostDto(base+2,  faculty + " 학부 봄 행사 안내",                           "학부사무실", 55,                    "자유게시판", (int)(400+facultyId*5), "2026-05-08", true,  22, false, "https://picsum.photos/seed/fac" + facultyId + "a/200/150"),
+            new PostDto(base+3,  faculty + " 학부 연합 스터디 모집",                        "재학생A",    42,                    "스터디",     (int)(300+facultyId*4), "2026-05-06", false, 18, false, null),
+            new PostDto(base+4,  faculty + " 관련 기업 인턴십 합격 후기",                  "졸업생",     35,                    "취업후기",   (int)(250+facultyId*3), "2026-05-04", false, 14, false, "https://picsum.photos/seed/fac" + facultyId + "b/200/150"),
+            new PostDto(base+5,  faculty + " 전공 기초 질문있어요",                         "1학년",      28,                    "질문",       (int)(180+facultyId*2), "2026-05-02", false, 10, false, null),
+            new PostDto(base+6,  faculty + " 졸업논문 주제 추천 부탁드립니다",              "4학년",      22,                    "질문",       (int)(140+facultyId),   "2026-04-30", false,  8, false, null),
+            new PostDto(base+7,  faculty + " 학부 MT 후기",                                "재학생B",    18,                    "자유게시판", (int)(110+facultyId),   "2026-04-28", false, 25, false, null),
+            new PostDto(base+8,  faculty + " 관련 공모전 팀원 구합니다",                   "재학생C",    15,                    "스터디",      (int)(80+facultyId),   "2026-04-26", false,  6, false, null),
+            new PostDto(base+9,  faculty + " 대학원 진학 상담 후기",                       "졸업생B",    12,                    "취업후기",    (int)(60+facultyId),   "2026-04-24", false,  9, false, null),
+            new PostDto(base+10, faculty + " 학부 추천 도서 목록",                         "선배",        8,                    "자유게시판",  (int)(40+facultyId),   "2026-04-22", false,  3, false, null)
+        );
+    }
+
     /** 학과 ID로 학과명을 조회한다 */
     public static String findDeptName(Long deptId) {
         return UNIVERSITIES.stream()

@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import { fetchUniversity } from '../api/universities'
 import { useDept } from '../context/DeptContext'
@@ -79,11 +79,15 @@ export default function SchoolDepartmentsPage() {
                   {school.faculties.map(faculty => (
                     <div key={faculty.id} className="px-4 py-3">
 
-                      {/* 학부명 */}
-                      <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      {/* 학부명 — 클릭 시 학부 상세 페이지로 이동 */}
+                      <Link
+                        to={`/school/faculty/${faculty.id}`}
+                        className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5 hover:text-black transition-colors group"
+                      >
                         <i className="fas fa-layer-group text-[9px]" />
                         {faculty.name}
-                      </p>
+                        <i className="fas fa-chevron-right text-[8px] opacity-0 group-hover:opacity-60 transition-opacity" />
+                      </Link>
 
                       {/* 학과 태그 */}
                       <div className="flex flex-wrap gap-1.5">

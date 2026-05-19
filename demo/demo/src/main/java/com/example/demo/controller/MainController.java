@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import com.example.demo.dto.NoticeDto;
 import com.example.demo.dto.PostDto;
 import com.example.demo.dto.ScheduleDto;
+import com.example.demo.util.DummyDataHelper;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -31,7 +32,23 @@ public class MainController {
         result.put("schedules", schedules);
         result.put("today", LocalDate.now()
             .format(DateTimeFormatter.ofPattern("yyyy년 MM월 dd일 EEEE", Locale.KOREAN)));
-        result.put("selectedDeptName", com.example.demo.util.DummyDataHelper.findDeptName(id));
+        result.put("selectedDeptName", DummyDataHelper.findDeptName(id));
+        return result;
+    }
+
+    @GetMapping("/api/faculty/main")
+    @ResponseBody
+    public Map<String, Object> apiFacultyMain(@RequestParam(required = false) Long facultyId) {
+        Long id = (facultyId != null) ? facultyId : 1L;
+        Map<String, Object> result = new HashMap<>();
+        List<NoticeDto>   notices   = DummyDataHelper.getNoticesByFaculty(id);
+        List<PostDto>     posts     = DummyDataHelper.getPostsByFaculty(id);
+        List<ScheduleDto> schedules = DummyDataHelper.getSchedulesByFaculty(id);
+        result.put("notices",   notices.subList(0, Math.min(5, notices.size())));
+        result.put("posts",     posts.subList(0, Math.min(5, posts.size())));
+        result.put("schedules", schedules);
+        result.put("today", LocalDate.now()
+            .format(DateTimeFormatter.ofPattern("yyyy년 MM월 dd일 EEEE", Locale.KOREAN)));
         return result;
     }
 }

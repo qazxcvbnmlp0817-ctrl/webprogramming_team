@@ -35,18 +35,17 @@
             <artifactId>spring-boot-starter-thymeleaf</artifactId>
         </dependency>
 
-        <!-- JPA: 팀원이 DB 연동 시 사용 (현재 비활성화) -->
+        <!-- JPA / Oracle: DB 연동 시 아래 주석 해제
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
-
-        <!-- Oracle JDBC 드라이버 -->
         <dependency>
             <groupId>com.oracle.database.jdbc</groupId>
             <artifactId>ojdbc11</artifactId>
             <scope>runtime</scope>
         </dependency>
+        -->
 
         <!-- 테스트: JUnit5, MockMvc, AssertJ 포함 -->
         <dependency>
