@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { DeptProvider, useDept } from './context/DeptContext'
+import Footer from './components/Footer'
 import UniversityListPage from './pages/UniversityListPage'
 import UniversityShowPage from './pages/UniversityShowPage'
 import MainPage from './pages/MainPage'
@@ -40,7 +41,9 @@ export default function App() {
   return (
     <DeptProvider>
       <BrowserRouter>
-        <Routes>
+        <div className="min-h-screen flex flex-col">
+          <div className="flex-1">
+            <Routes>
           {/* 대학 목록 / 대학 홈 */}
           <Route path="/universities"    element={<UniversityListPage />} />
           <Route path="/universities/:id" element={<UniversityShowPage />} />
@@ -83,7 +86,10 @@ export default function App() {
           <Route path="/mypage"        element={<MyPage />} />
           <Route path="/find-id"       element={<FindIdPage />} />
           <Route path="/find-password" element={<FindPasswordPage />} />
-        </Routes>
+            </Routes>
+          </div>
+          <Footer />
+        </div>
       </BrowserRouter>
     </DeptProvider>
   )
