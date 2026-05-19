@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useDept } from '../context/DeptContext'
 
 const SCHOOL_NAV = [
@@ -19,12 +19,33 @@ const DEPT_NAV = [
 
 export default function Navbar() {
   const { pathname } = useLocation()
+  const navigate = useNavigate()
   const { selectedUniversityId, selectedUniversityName, selectedDeptName } = useDept()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+
+  useEffect(() => {
+    const check = () => setIsLoggedIn(sessionStorage.getItem('isLoggedIn') === 'true')
+    check()
+    window.addEventListener('storage', check)
+    window.addEventListener('loginChanged', check)
+    return () => {
+      window.removeEventListener('storage', check)
+      window.removeEventListener('loginChanged', check)
+    }
+  }, [pathname])
 
   const isSchool = pathname.startsWith('/school') || /^\/universities\/\d+/.test(pathname)
   const navLinks = isSchool ? SCHOOL_NAV : DEPT_NAV
   const schoolHomeLink = `/universities/${selectedUniversityId}`
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('isLoggedIn')
+    sessionStorage.removeItem('username')
+    sessionStorage.removeItem('memberType')
+    setIsLoggedIn(false)
+    navigate('/login')
+  }
 
   return (
     <nav className="fixed top-0 left-0 w-full bg-black text-white z-50 border-b border-gray-800">
@@ -76,12 +97,29 @@ export default function Navbar() {
           >
             학교 변경
           </Link>
-          <Link
-            to="/login"
-            className="border border-white text-white text-sm px-3 py-1 rounded hover:bg-white hover:text-black transition"
-          >
-            로그인
-          </Link>
+          {isLoggedIn ? (
+            <>
+              <Link
+                to="/mypage"
+                className="border border-white text-white text-sm px-3 py-1 rounded hover:bg-white hover:text-black transition"
+              >
+                마이페이지
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="border border-white text-white text-sm px-3 py-1 rounded hover:bg-white hover:text-black transition"
+              >
+                로그아웃
+              </button>
+            </>
+          ) : (
+            <Link
+              to="/login"
+              className="border border-white text-white text-sm px-3 py-1 rounded hover:bg-white hover:text-black transition"
+            >
+              로그인
+            </Link>
+          )}
         </div>
 
         {/* 햄버거 버튼 */}
@@ -120,13 +158,31 @@ export default function Navbar() {
           >
             학교 변경
           </Link>
-          <Link
-            to="/login"
-            onClick={() => setMenuOpen(false)}
-            className="border border-white text-center py-1 rounded hover:bg-white hover:text-black transition"
-          >
-            로그인
-          </Link>
+          {isLoggedIn ? (
+            <>
+              <Link
+                to="/mypage"
+                onClick={() => setMenuOpen(false)}
+                className="border border-white text-center py-1 rounded hover:bg-white hover:text-black transition"
+              >
+                마이페이지
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="border border-white text-center py-1 rounded hover:bg-white hover:text-black transition w-full"
+              >
+                로그아웃
+              </button>
+            </>
+          ) : (
+            <Link
+              to="/login"
+              onClick={() => setMenuOpen(false)}
+              className="border border-white text-center py-1 rounded hover:bg-white hover:text-black transition"
+            >
+              로그인
+            </Link>
+          )}
         </div>
       )}
     </nav>

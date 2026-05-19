@@ -128,7 +128,7 @@ export default function BoardPage() {
             <div className="flex flex-col lg:flex-row gap-8">
               <div className="flex-1">
                 {filtered.map(post => (
-                  <div key={post.id} className={`flex gap-4 py-4 border-b border-gray-200 hover:bg-gray-50 transition cursor-pointer ${post.isNotice ? 'bg-gray-50' : ''}`}>
+                  <div key={post.id} className={`flex gap-4 py-4 border-b border-gray-200 hover:bg-gray-50 transition cursor-pointer ${post.notice ? 'bg-gray-50' : ''}`}>
                     {post.imageUrl && (
                       <img
                         src={post.imageUrl}
@@ -138,7 +138,7 @@ export default function BoardPage() {
                     )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
-                        {post.isNotice && (
+                        {post.notice && (
                           <span className="text-xs bg-black text-white px-1.5 py-0.5 font-medium flex-shrink-0">공지</span>
                         )}
                         <Link to="/dept/board" className="font-semibold text-black hover:underline block leading-snug line-clamp-2">{post.title}</Link>

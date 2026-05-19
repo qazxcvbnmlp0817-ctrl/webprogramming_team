@@ -10,6 +10,11 @@ import WritePostPage from './pages/WritePostPage'
 import SchedulePage from './pages/SchedulePage'
 import DepartmentPage from './pages/DepartmentPage'
 import LoginPage from './pages/LoginPage'
+import SignupPage from './pages/SignupPage'
+import MyPage from './pages/MyPage'
+import FindIdPage from './pages/FindIdPage'
+import FindPasswordPage from './pages/FindPasswordPage'
+import WritePostPage from './pages/WritePostPage'
 import SchoolNoticePage from './pages/SchoolNoticePage'
 import SchoolBoardPage from './pages/SchoolBoardPage'
 import SchoolSchedulePage from './pages/SchoolSchedulePage'
@@ -66,7 +71,11 @@ export default function App() {
           <Route path="/universities/:univId/schedule" element={<Navigate to="/school/schedule" replace />} />
           <Route path="/universities/:univId/info"     element={<Navigate to="/school/info"     replace />} />
 
-          <Route path="/login" element={<LoginPage />} />
+          <Route path="/login"         element={<LoginPage />} />
+          <Route path="/signup"        element={<SignupPage />} />
+          <Route path="/mypage"        element={<MyPage />} />
+          <Route path="/find-id"       element={<FindIdPage />} />
+          <Route path="/find-password" element={<FindPasswordPage />} />
         </Routes>
       </BrowserRouter>
     </DeptProvider>

@@ -30,8 +30,10 @@ public class SpaController {
         "/schedule",
         "/department",
         "/login",
-        "/register",
-        "/forgot-password"
+        "/signup",
+        "/mypage",
+        "/find-id",
+        "/find-password"
     })
     public String forward() {
         return "forward:/index.html";
