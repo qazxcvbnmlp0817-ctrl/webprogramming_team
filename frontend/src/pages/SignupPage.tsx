@@ -49,6 +49,7 @@ export default function SignupPage() {
   const [studentId, setStudentId] = useState('')
   const [college, setCollege] = useState('')
   const [department, setDepartment] = useState('')
+  const [grade, setGrade] = useState('')
 
   useEffect(() => {
     if (timerActive && timeLeft > 0) {
@@ -77,7 +78,7 @@ export default function SignupPage() {
     if (step === 2) return selectedUniv !== ''
     if (step === 3) return memberType !== ''
     if (step === 4) return authName !== '' && phone !== '' && authCode !== ''
-    if (step === 5) return !!(userId && pw && pw === pwConfirm && inputName && studentId && college && department)
+    if (step === 5) return !!(userId && pw && pw === pwConfirm && inputName && studentId && college && department && (memberType !== 'student' || grade !== ''))
     return true
   }
 
@@ -302,6 +303,19 @@ export default function SignupPage() {
                     {college && DEPARTMENTS[college]?.map(d => <option key={d} value={d}>{d}</option>)}
                   </select>
                 </div>
+                {memberType === 'student' && (
+                  <div>
+                    <label className="block text-sm font-medium mb-1">학년</label>
+                    <select value={grade} onChange={e => setGrade(e.target.value)}
+                      className="w-full border-2 border-black px-3 py-2 text-sm outline-none bg-white">
+                      <option value="">선택해주세요</option>
+                      <option value="1">1학년</option>
+                      <option value="2">2학년</option>
+                      <option value="3">3학년</option>
+                      <option value="4">4학년</option>
+                    </select>
+                  </div>
+                )}
               </div>
             )}
 

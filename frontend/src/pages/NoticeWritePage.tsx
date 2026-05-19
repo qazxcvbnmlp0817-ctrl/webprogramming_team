@@ -1,8 +1,8 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 
-const CATEGORIES = ['자유게시판', '질문', '스터디', '취업후기']
+const CATEGORIES = ['학사', '장학', '행사', '취업']
 
 function formatFileSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`
@@ -10,20 +10,24 @@ function formatFileSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-export default function WritePostPage() {
+export default function NoticeWritePage() {
   const navigate = useNavigate()
   const [title, setTitle]       = useState('')
-  const [category, setCategory] = useState('자유게시판')
+  const [category, setCategory] = useState('학사')
   const [content, setContent]   = useState('')
-
-  const [targetGrades, setTargetGrades] = useState<number[]>([1, 2, 3, 4])
-  const [visibility, setVisibility]     = useState<'public' | 'grade'>('public')
 
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [files, setFiles]                 = useState<File[]>([])
 
   const imageInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef  = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const memberType = sessionStorage.getItem('memberType') ?? ''
+    if (memberType !== 'professor' && memberType !== 'admin') {
+      navigate('/dept/notice', { replace: true })
+    }
+  }, [navigate])
 
   function handleImageAdd(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = Array.from(e.target.files ?? [])
@@ -52,8 +56,8 @@ export default function WritePostPage() {
       alert('제목과 내용을 입력해주세요.')
       return
     }
-    alert('게시글이 등록되었습니다.')
-    navigate('/dept/board')
+    alert('공지사항이 등록되었습니다.')
+    navigate('/dept/notice')
   }
 
   return (
@@ -64,7 +68,7 @@ export default function WritePostPage() {
       <section className="bg-black text-white py-8 px-4">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-2xl font-bold">
-            <i className="fas fa-pen mr-2" />글쓰기
+            <i className="fas fa-bullhorn mr-2" />공지 작성
           </h1>
         </div>
       </section>
@@ -107,43 +111,6 @@ export default function WritePostPage() {
             />
           </div>
 
-          {/* 학년 태그 */}
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium">학년 태그</label>
-            <div className="flex flex-wrap gap-3">
-              {[1, 2, 3, 4].map(g => (
-                <label key={g} className="flex items-center gap-1.5 text-sm cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="accent-black w-4 h-4"
-                    checked={targetGrades.includes(g)}
-                    onChange={e => setTargetGrades(prev =>
-                      e.target.checked ? [...prev, g] : prev.filter(v => v !== g)
-                    )}
-                  />
-                  {g}학년
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* 공개 범위 */}
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium">공개 범위</label>
-            <div className="flex gap-6">
-              <label className="flex items-center gap-1.5 text-sm cursor-pointer">
-                <input type="radio" name="visibility" className="accent-black" value="public"
-                  checked={visibility === 'public'} onChange={() => setVisibility('public')} />
-                전체 공개
-              </label>
-              <label className="flex items-center gap-1.5 text-sm cursor-pointer">
-                <input type="radio" name="visibility" className="accent-black" value="grade"
-                  checked={visibility === 'grade'} onChange={() => setVisibility('grade')} />
-                해당 학년 공개
-              </label>
-            </div>
-          </div>
-
           {/* 사진 첨부 */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
@@ -156,15 +123,8 @@ export default function WritePostPage() {
                 <i className="fas fa-plus" />사진 추가
               </button>
             </div>
-            <input
-              ref={imageInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={handleImageAdd}
-            />
-            {imagePreviews.length > 0 && (
+            <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageAdd} />
+            {imagePreviews.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {imagePreviews.map((url, idx) => (
                   <div key={idx} className="relative w-24 h-24 border border-gray-300">
@@ -173,14 +133,11 @@ export default function WritePostPage() {
                       type="button"
                       onClick={() => handleImageRemove(idx)}
                       className="absolute top-0.5 right-0.5 w-5 h-5 bg-black text-white text-xs flex items-center justify-center hover:bg-gray-700"
-                    >
-                      ×
-                    </button>
+                    >×</button>
                   </div>
                 ))}
               </div>
-            )}
-            {imagePreviews.length === 0 && (
+            ) : (
               <p className="text-xs text-gray-400">JPG, PNG, GIF 등 이미지 파일을 첨부할 수 있습니다.</p>
             )}
           </div>
@@ -197,13 +154,7 @@ export default function WritePostPage() {
                 <i className="fas fa-plus" />파일 추가
               </button>
             </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              className="hidden"
-              onChange={handleFileAdd}
-            />
+            <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileAdd} />
             {files.length > 0 ? (
               <ul className="flex flex-col gap-1">
                 {files.map((file, idx) => (
@@ -211,13 +162,7 @@ export default function WritePostPage() {
                     <i className="fas fa-paperclip text-gray-400 flex-shrink-0" />
                     <span className="flex-1 truncate text-gray-800">{file.name}</span>
                     <span className="text-xs text-gray-400 flex-shrink-0">{formatFileSize(file.size)}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleFileRemove(idx)}
-                      className="text-gray-400 hover:text-black flex-shrink-0"
-                    >
-                      ×
-                    </button>
+                    <button type="button" onClick={() => handleFileRemove(idx)} className="text-gray-400 hover:text-black flex-shrink-0">×</button>
                   </li>
                 ))}
               </ul>
@@ -229,7 +174,7 @@ export default function WritePostPage() {
           <div className="flex gap-2 justify-end mt-2">
             <button
               type="button"
-              onClick={() => navigate('/dept/board')}
+              onClick={() => navigate('/dept/notice')}
               className="px-6 py-2 text-sm border border-black font-medium hover:bg-gray-100 transition"
             >
               취소

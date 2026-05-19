@@ -17,13 +17,17 @@ import FindIdPage from './pages/FindIdPage'
 import FindPasswordPage from './pages/FindPasswordPage'
 import SchoolNoticePage from './pages/SchoolNoticePage'
 import SchoolBoardPage from './pages/SchoolBoardPage'
+import SchoolWritePostPage from './pages/SchoolWritePostPage'
+import SchoolNoticeWritePage from './pages/SchoolNoticeWritePage'
 import SchoolSchedulePage from './pages/SchoolSchedulePage'
 import SchoolInfoPage from './pages/SchoolInfoPage'
 import SchoolDepartmentsPage from './pages/SchoolDepartmentsPage'
 import FacultyPage from './pages/FacultyPage'
 import FacultyBoardPage from './pages/FacultyBoardPage'
 import FacultyNoticePage from './pages/FacultyNoticePage'
+import FacultyNoticeWritePage from './pages/FacultyNoticeWritePage'
 import FacultySchedulePage from './pages/FacultySchedulePage'
+import NoticeWritePage from './pages/NoticeWritePage'
 
 function ProtectedSchool({ children }: { children: ReactNode }) {
   const { selectedUniversityId } = useDept()
@@ -52,11 +56,14 @@ export default function App() {
           {/* 학교(school) 범위 페이지 — /school/* */}
           <Route path="/school/departments" element={<ProtectedSchool><SchoolDepartmentsPage /></ProtectedSchool>} />
           <Route path="/school/faculty/:facultyId"          element={<ProtectedSchool><FacultyPage /></ProtectedSchool>} />
-          <Route path="/school/faculty/:facultyId/notice"   element={<ProtectedSchool><FacultyNoticePage /></ProtectedSchool>} />
-          <Route path="/school/faculty/:facultyId/board"    element={<ProtectedSchool><FacultyBoardPage /></ProtectedSchool>} />
+          <Route path="/school/faculty/:facultyId/notice"         element={<ProtectedSchool><FacultyNoticePage /></ProtectedSchool>} />
+          <Route path="/school/faculty/:facultyId/notice/write" element={<ProtectedSchool><FacultyNoticeWritePage /></ProtectedSchool>} />
+          <Route path="/school/faculty/:facultyId/board"         element={<ProtectedSchool><FacultyBoardPage /></ProtectedSchool>} />
           <Route path="/school/faculty/:facultyId/schedule" element={<ProtectedSchool><FacultySchedulePage /></ProtectedSchool>} />
-          <Route path="/school/notice"      element={<ProtectedSchool><SchoolNoticePage /></ProtectedSchool>} />
-          <Route path="/school/board"       element={<ProtectedSchool><SchoolBoardPage /></ProtectedSchool>} />
+          <Route path="/school/notice"       element={<ProtectedSchool><SchoolNoticePage /></ProtectedSchool>} />
+          <Route path="/school/notice/write" element={<ProtectedSchool><SchoolNoticeWritePage /></ProtectedSchool>} />
+          <Route path="/school/board"        element={<ProtectedSchool><SchoolBoardPage /></ProtectedSchool>} />
+          <Route path="/school/board/write" element={<ProtectedSchool><SchoolWritePostPage /></ProtectedSchool>} />
           <Route path="/school/schedule"    element={<ProtectedSchool><SchoolSchedulePage /></ProtectedSchool>} />
           <Route path="/school/info"        element={<ProtectedSchool><SchoolInfoPage /></ProtectedSchool>} />
 
@@ -65,7 +72,8 @@ export default function App() {
 
           {/* 학과(dept) 범위 페이지 — /dept/* */}
           <Route path="/dept/home"       element={<ProtectedDept><MainPage /></ProtectedDept>} />
-          <Route path="/dept/notice"     element={<ProtectedDept><NoticePage /></ProtectedDept>} />
+          <Route path="/dept/notice"       element={<ProtectedDept><NoticePage /></ProtectedDept>} />
+          <Route path="/dept/notice/write" element={<ProtectedDept><NoticeWritePage /></ProtectedDept>} />
           <Route path="/dept/board"       element={<ProtectedDept><BoardPage /></ProtectedDept>} />
           <Route path="/dept/board/write" element={<ProtectedDept><WritePostPage /></ProtectedDept>} />
           <Route path="/dept/schedule"   element={<ProtectedDept><SchedulePage /></ProtectedDept>} />

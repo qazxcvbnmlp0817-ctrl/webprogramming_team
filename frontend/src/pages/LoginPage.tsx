@@ -29,6 +29,7 @@ export default function LoginPage() {
         sessionStorage.setItem('isLoggedIn', 'true')
         sessionStorage.setItem('username', id)
         sessionStorage.setItem('memberType', memberType)
+        sessionStorage.setItem('grade', result.grade != null ? String(result.grade) : '')
         window.dispatchEvent(new Event('loginChanged'))
         navigate('/universities')
       } else {

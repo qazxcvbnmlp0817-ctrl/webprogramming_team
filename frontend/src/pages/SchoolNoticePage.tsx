@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useMemo } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import FilterTabs from '../components/FilterTabs'
 import FeaturedCard from '../components/FeaturedCard'
@@ -13,12 +13,21 @@ const TABS = ['전체', '학사', '장학', '행사', '취업']
 
 export default function SchoolNoticePage() {
   const { selectedUniversityId, selectedUniversityName } = useDept()
+  const navigate = useNavigate()
   const [active, setActive] = useState('전체')
+  const [search, setSearch] = useState('')
+
+  const canWrite = ['professor', 'admin'].includes(sessionStorage.getItem('memberType') ?? '')
 
   const { data, loading } = useDeptFetch(fetchSchoolNotices, selectedUniversityId)
   const featured = data?.featured ?? null
   const notices  = data?.notices  ?? []
-  const filtered = active === '전체' ? notices : notices.filter(n => n.category === active)
+
+  const filtered = useMemo(() => notices.filter(n => {
+    const catOk    = active === '전체' || n.category === active
+    const searchOk = search === '' || n.title.toLowerCase().includes(search.toLowerCase())
+    return catOk && searchOk
+  }), [notices, active, search])
   const categoryCounts = TABS.map(label => ({
     label,
     count: label === '전체' ? notices.length : notices.filter(n => n.category === label).length,
@@ -30,12 +39,22 @@ export default function SchoolNoticePage() {
       <div className="pt-14" />
 
       <section className="bg-black text-white py-8 px-4">
-        <div className="max-w-6xl mx-auto flex items-center gap-3">
-          <Link to={`/universities/${selectedUniversityId}`} className="text-gray-400 hover:text-white transition text-sm">
-            <i className="fas fa-arrow-left mr-1" />{selectedUniversityName ?? '학교 홈'}
-          </Link>
-          <span className="text-gray-600">›</span>
-          <h1 className="text-xl font-bold"><i className="fas fa-bullhorn mr-2" />학교 공지사항</h1>
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Link to={`/universities/${selectedUniversityId}`} className="text-gray-400 hover:text-white transition text-sm">
+              <i className="fas fa-arrow-left mr-1" />{selectedUniversityName ?? '학교 홈'}
+            </Link>
+            <span className="text-gray-600">›</span>
+            <h1 className="text-xl font-bold"><i className="fas fa-bullhorn mr-2" />학교 공지사항</h1>
+          </div>
+          {canWrite && (
+            <button
+              onClick={() => navigate('/school/notice/write')}
+              className="px-4 py-2 text-sm bg-white text-black font-medium hover:bg-gray-200 transition flex items-center gap-1.5"
+            >
+              <i className="fas fa-pen" />공지 작성
+            </button>
+          )}
         </div>
       </section>
 
@@ -49,18 +68,28 @@ export default function SchoolNoticePage() {
             {featured && (
               <FeaturedCard category={featured.category} title={featured.title} date={featured.date} meta={`👁 ${featured.viewCount}`} />
             )}
+            <div className="mb-4">
+              <div className="flex items-center border border-black">
+                <i className="fas fa-search px-3 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="제목으로 검색..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="flex-1 py-2 pr-4 text-sm outline-none bg-white"
+                />
+              </div>
+            </div>
             <FilterTabs tabs={TABS} active={active} onChange={setActive} />
             <div className="flex flex-col lg:flex-row gap-8">
               <div className="flex-1">
                 {filtered.map(notice => (
                   <div key={notice.id} className="flex gap-4 py-4 border-b border-gray-200 hover:bg-gray-50 transition cursor-pointer">
-                    <div className="w-20 h-16 bg-gray-200 flex-shrink-0 flex items-center justify-center border border-gray-300">
-                      <i className="fas fa-image text-gray-400 text-sm" />
-                    </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-black leading-snug line-clamp-2">{notice.title}</p>
                       <div className="flex items-center flex-wrap gap-3 mt-1.5 text-xs text-gray-500">
                         <span className="border border-black text-black px-1.5 py-0.5 font-medium">{notice.category}</span>
+                        <span className="font-medium text-gray-700">{notice.author}</span>
                         <span>{notice.date}</span>
                         <span><i className="fas fa-eye mr-0.5" />{notice.viewCount}</span>
                       </div>

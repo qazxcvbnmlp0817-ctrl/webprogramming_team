@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useState, useMemo } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import FilterTabs from '../components/FilterTabs'
 import FeaturedCard from '../components/FeaturedCard'
@@ -15,7 +15,11 @@ const NOTICE_TABS = ['전체', '학사', '장학', '행사', '취업']
 export default function FacultyNoticePage() {
   const { facultyId } = useParams<{ facultyId: string }>()
   const { selectedUniversityId } = useDept()
+  const navigate = useNavigate()
   const [active, setActive] = useState('전체')
+  const [search, setSearch] = useState('')
+
+  const canWrite = ['professor', 'admin'].includes(sessionStorage.getItem('memberType') ?? '')
 
   const facultyIdNum = facultyId ? Number(facultyId) : null
 
@@ -24,7 +28,12 @@ export default function FacultyNoticePage() {
 
   const featured = data?.featured ?? null
   const notices  = data?.notices  ?? []
-  const filtered = active === '전체' ? notices : notices.filter(n => n.category === active)
+
+  const filtered = useMemo(() => notices.filter(n => {
+    const catOk    = active === '전체' || n.category === active
+    const searchOk = search === '' || n.title.toLowerCase().includes(search.toLowerCase())
+    return catOk && searchOk
+  }), [notices, active, search])
 
   const school  = univ?.schools.find(s => s.faculties.some(f => f.id === facultyIdNum))
   const faculty = school?.faculties.find(f => f.id === facultyIdNum)
@@ -40,19 +49,29 @@ export default function FacultyNoticePage() {
       <div className="pt-14" />
 
       <section className="bg-black text-white py-8 px-4">
-        <div className="max-w-6xl mx-auto">
-          <p className="text-gray-500 text-xs mb-2">
-            <Link to={`/school/faculty/${facultyId}`} className="hover:text-gray-300 transition">
-              {faculty?.name ?? '학부'} 홈
-            </Link>
-            <span className="mx-1">›</span>
-            <span>공지사항</span>
-          </p>
-          <h1 className="text-2xl font-bold">
-            <i className="fas fa-bullhorn mr-2" />공지사항
-          </h1>
-          {faculty && (
-            <p className="text-gray-400 text-sm mt-1">{faculty.name} 공지사항</p>
+        <div className="max-w-6xl mx-auto flex items-end justify-between">
+          <div>
+            <p className="text-gray-500 text-xs mb-2">
+              <Link to={`/school/faculty/${facultyId}`} className="hover:text-gray-300 transition">
+                {faculty?.name ?? '학부'} 홈
+              </Link>
+              <span className="mx-1">›</span>
+              <span>공지사항</span>
+            </p>
+            <h1 className="text-2xl font-bold">
+              <i className="fas fa-bullhorn mr-2" />공지사항
+            </h1>
+            {faculty && (
+              <p className="text-gray-400 text-sm mt-1">{faculty.name} 공지사항</p>
+            )}
+          </div>
+          {canWrite && (
+            <button
+              onClick={() => navigate(`/school/faculty/${facultyId}/notice/write`)}
+              className="px-4 py-2 text-sm bg-white text-black font-medium hover:bg-gray-200 transition flex items-center gap-1.5"
+            >
+              <i className="fas fa-pen" />공지 작성
+            </button>
           )}
         </div>
       </section>
@@ -73,6 +92,18 @@ export default function FacultyNoticePage() {
               />
             )}
 
+            <div className="mb-4">
+              <div className="flex items-center border border-black">
+                <i className="fas fa-search px-3 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="제목으로 검색..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="flex-1 py-2 pr-4 text-sm outline-none bg-white"
+                />
+              </div>
+            </div>
             <FilterTabs tabs={NOTICE_TABS} active={active} onChange={setActive} />
 
             <div className="flex flex-col lg:flex-row gap-8">

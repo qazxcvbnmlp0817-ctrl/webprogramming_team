@@ -10,7 +10,7 @@ function formatFileSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-export default function WritePostPage() {
+export default function SchoolWritePostPage() {
   const navigate = useNavigate()
   const [title, setTitle]       = useState('')
   const [category, setCategory] = useState('자유게시판')
@@ -53,7 +53,7 @@ export default function WritePostPage() {
       return
     }
     alert('게시글이 등록되었습니다.')
-    navigate('/dept/board')
+    navigate('/school/board')
   }
 
   return (
@@ -229,7 +229,7 @@ export default function WritePostPage() {
           <div className="flex gap-2 justify-end mt-2">
             <button
               type="button"
-              onClick={() => navigate('/dept/board')}
+              onClick={() => navigate('/school/board')}
               className="px-6 py-2 text-sm border border-black font-medium hover:bg-gray-100 transition"
             >
               취소

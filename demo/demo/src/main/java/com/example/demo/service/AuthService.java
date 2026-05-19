@@ -65,6 +65,7 @@ public class AuthService {
         response.put("memberType", user.getMemberType());
         response.put("username", user.getUsername());
         response.put("name", user.getName());
+        response.put("grade", user.getGrade());
         return response;
     }
 

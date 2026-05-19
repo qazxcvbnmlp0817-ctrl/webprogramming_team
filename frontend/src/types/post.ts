@@ -10,4 +10,6 @@ export interface PostDto {
   commentCount: number
   notice: boolean
   imageUrl?: string | null
+  targetGrades: number[]
+  visibility: 'public' | 'grade'
 }

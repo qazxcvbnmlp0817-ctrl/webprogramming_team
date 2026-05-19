@@ -26,6 +26,7 @@ public class User {
     private String department;
     private String studentId;
     private String phone;
+    private Integer grade; // 1,2,3,4 (학생만), 교수/관리자는 null
 
     // @Column(nullable = false)
     private boolean approved; // 관리자 승인 여부 (admin 은 false 로 시작)
@@ -50,6 +51,8 @@ public class User {
     public void setStudentId(String studentId) { this.studentId = studentId; }
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
+    public Integer getGrade() { return grade; }
+    public void setGrade(Integer grade) { this.grade = grade; }
     public boolean isApproved() { return approved; }
     public void setApproved(boolean approved) { this.approved = approved; }
 }

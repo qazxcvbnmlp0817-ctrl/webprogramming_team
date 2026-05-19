@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
-import FeaturedCard from '../components/FeaturedCard'
 import Sidebar from '../components/Sidebar'
 import Pagination from '../components/Pagination'
 import { fetchPosts } from '../api/posts'
@@ -9,32 +8,37 @@ import { useDept } from '../context/DeptContext'
 import { useDeptFetch } from '../hooks/useDeptFetch'
 
 const BOARD_TABS   = ['전체', '자유게시판', '질문', '스터디', '취업후기']
+const GRADE_TABS   = ['전체', '1학년', '2학년', '3학년', '4학년']
 const SORT_OPTIONS = ['최신순', '추천순', '댓글순']
 
 export default function BoardPage() {
   const { selectedDeptId, selectedDeptName } = useDept()
   const navigate = useNavigate()
-  const [active, setActive] = useState('전체')
-  const [sort, setSort]     = useState('최신순')
-  const [search, setSearch] = useState('')
+  const [active, setActive]       = useState('전체')
+  const [gradeFilter, setGradeFilter] = useState('전체')
+  const [sort, setSort]           = useState('최신순')
+  const [search, setSearch]       = useState('')
 
   const { data, loading } = useDeptFetch(fetchPosts, selectedDeptId)
-  const featured = data?.featured ?? null
-  const posts    = data?.posts    ?? []
+  const posts = data?.posts ?? []
 
   const filtered = useMemo(() => {
-    const base = posts.filter(p => {
+    const memberType   = sessionStorage.getItem('memberType') ?? ''
+    const myGrade      = Number(sessionStorage.getItem('grade') || '0')
+    const isPrivileged = memberType === 'professor' || memberType === 'admin'
+
+    let result = posts.filter(p => {
       const catOk    = active === '전체' || p.category === active
       const searchOk = search === '' || p.title.toLowerCase().includes(search.toLowerCase())
-      return catOk && searchOk
+      const gradeOk  = gradeFilter === '전체' || p.targetGrades.includes(Number(gradeFilter[0]))
+      const visibleOk = p.visibility === 'public' || isPrivileged || p.targetGrades.includes(myGrade)
+      return catOk && searchOk && gradeOk && visibleOk
     })
-    const notices = base.filter(p => p.notice)
-    let rest = base.filter(p => !p.notice)
-    if (sort === '최신순') rest = [...rest].sort((a, b) => b.date.localeCompare(a.date))
-    if (sort === '추천순') rest = [...rest].sort((a, b) => b.likes - a.likes)
-    if (sort === '댓글순') rest = [...rest].sort((a, b) => b.commentCount - a.commentCount)
-    return [...notices, ...rest]
-  }, [posts, active, sort, search])
+    if (sort === '최신순') result = [...result].sort((a, b) => b.date.localeCompare(a.date))
+    if (sort === '추천순') result = [...result].sort((a, b) => b.likes - a.likes)
+    if (sort === '댓글순') result = [...result].sort((a, b) => b.commentCount - a.commentCount)
+    return result
+  }, [posts, active, gradeFilter, sort, search])
 
   const categoryCounts = BOARD_TABS.map(label => ({
     label,
@@ -56,12 +60,14 @@ export default function BoardPage() {
               <p className="text-gray-400 text-sm mt-1">{selectedDeptName} 게시판</p>
             )}
           </div>
-          <button
-            onClick={() => navigate('/dept/board/write')}
-            className="px-4 py-2 text-sm bg-white text-black font-medium hover:bg-gray-200 transition flex items-center gap-1.5"
-          >
-            <i className="fas fa-pen" />글쓰기
-          </button>
+          {sessionStorage.getItem('isLoggedIn') === 'true' && (
+            <button
+              onClick={() => navigate('/dept/board/write')}
+              className="px-4 py-2 text-sm bg-white text-black font-medium hover:bg-gray-200 transition flex items-center gap-1.5"
+            >
+              <i className="fas fa-pen" />글쓰기
+            </button>
+          )}
         </div>
       </section>
 
@@ -72,15 +78,6 @@ export default function BoardPage() {
           </div>
         ) : (
           <>
-            {featured && (
-              <FeaturedCard
-                category={featured.category}
-                title={featured.title}
-                date={featured.date}
-                meta={`❤ ${featured.likes}`}
-              />
-            )}
-
             <div className="mb-4">
               <div className="flex items-center border border-black">
                 <i className="fas fa-search px-3 text-gray-400" />
@@ -94,7 +91,7 @@ export default function BoardPage() {
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-y-2 mb-6">
+            <div className="flex flex-wrap items-center gap-y-2 mb-3">
               <div className="flex flex-wrap gap-2">
                 {BOARD_TABS.map(tab => (
                   <button
@@ -125,10 +122,25 @@ export default function BoardPage() {
               </div>
             </div>
 
+            <div className="flex flex-wrap gap-2 mb-6">
+              {GRADE_TABS.map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setGradeFilter(tab)}
+                  aria-pressed={gradeFilter === tab}
+                  className={`px-3 py-1 text-xs border font-medium transition ${
+                    gradeFilter === tab ? 'border-black bg-black text-white' : 'border-gray-400 text-gray-600 hover:border-black hover:text-black'
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+
             <div className="flex flex-col lg:flex-row gap-8">
               <div className="flex-1">
                 {filtered.map(post => (
-                  <div key={post.id} className={`flex gap-4 py-4 border-b border-gray-200 hover:bg-gray-50 transition cursor-pointer ${post.notice ? 'bg-gray-50' : ''}`}>
+                  <div key={post.id} className="flex gap-4 py-4 border-b border-gray-200 hover:bg-gray-50 transition cursor-pointer">
                     {post.imageUrl && (
                       <img
                         src={post.imageUrl}
@@ -138,13 +150,15 @@ export default function BoardPage() {
                     )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
-                        {post.notice && (
-                          <span className="text-xs bg-black text-white px-1.5 py-0.5 font-medium flex-shrink-0">공지</span>
-                        )}
                         <p className="font-semibold text-black leading-snug line-clamp-2">{post.title}</p>
                       </div>
                       <div className="flex items-center flex-wrap gap-3 mt-1.5 text-xs text-gray-500">
                         <span className="border border-black text-black px-1.5 py-0.5 font-medium">{post.category}</span>
+                        {post.visibility === 'grade' && (
+                          <span className="border border-gray-400 text-gray-500 px-1.5 py-0.5">
+                            {post.targetGrades.map(g => `${g}학년`).join('·')}
+                          </span>
+                        )}
                         <span className="font-medium text-gray-700">{post.author}</span>
                         <span>{post.date}</span>
                         <span><i className="fas fa-heart mr-0.5 text-red-400" />{post.likes}</span>
