@@ -24,9 +24,9 @@ public class MainController {
     public Map<String, Object> apiMain(@RequestParam(required = false) Long deptId) {
         Long id = (deptId != null) ? deptId : 1L;
         Map<String, Object> result = new HashMap<>();
-        List<com.example.demo.dto.NoticeDto>   notices   = com.example.demo.util.DummyDataHelper.getNoticesByDept(id);
-        List<com.example.demo.dto.PostDto>     posts     = com.example.demo.util.DummyDataHelper.getPostsByDept(id);
-        List<com.example.demo.dto.ScheduleDto> schedules = com.example.demo.util.DummyDataHelper.getSchedulesByDept(id);
+        List<NoticeDto>   notices   = DummyDataHelper.getNoticesByDept(id);
+        List<PostDto>     posts     = DummyDataHelper.getPostsByDept(id);
+        List<ScheduleDto> schedules = DummyDataHelper.getSchedulesByDept(id);
         result.put("notices",   notices.subList(0, Math.min(5, notices.size())));
         result.put("posts",     posts.subList(0, Math.min(5, posts.size())));
         result.put("schedules", schedules);

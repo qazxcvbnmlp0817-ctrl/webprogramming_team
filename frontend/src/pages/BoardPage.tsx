@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import FeaturedCard from '../components/FeaturedCard'
 import Sidebar from '../components/Sidebar'
@@ -141,7 +141,7 @@ export default function BoardPage() {
                         {post.notice && (
                           <span className="text-xs bg-black text-white px-1.5 py-0.5 font-medium flex-shrink-0">공지</span>
                         )}
-                        <Link to="/dept/board" className="font-semibold text-black hover:underline block leading-snug line-clamp-2">{post.title}</Link>
+                        <p className="font-semibold text-black leading-snug line-clamp-2">{post.title}</p>
                       </div>
                       <div className="flex items-center flex-wrap gap-3 mt-1.5 text-xs text-gray-500">
                         <span className="border border-black text-black px-1.5 py-0.5 font-medium">{post.category}</span>

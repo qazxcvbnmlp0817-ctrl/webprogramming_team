@@ -151,6 +151,9 @@ webprogramming_team-main/
 │       │   ├── school.ts               ← /api/school/*
 │       │   └── auth.ts                 ← /api/auth/* (로그인·회원가입·아이디·비밀번호 찾기)
 │       │
+│       ├── utils/                      ← 공유 순수 유틸리티 함수
+│       │   └── scheduleUtils.ts        ← groupByMonth() — 3개 일정 페이지 공유
+│       │
 │       ├── types/                      ← TypeScript 타입 정의
 │       │   ├── university.ts
 │       │   ├── department.ts
@@ -481,4 +484,5 @@ return '/universities'
 | `DepartmentController.java` | `GET /api/departments/:id` 응답 |
 | `SchoolController.java` | `GET /api/school/*` 응답 |
 | `application.properties` | 포트(8080), 정적 리소스 no-cache 설정 |
+| `utils/scheduleUtils.ts` | `groupByMonth(ScheduleDto[])` 공유 함수. SchedulePage·FacultySchedulePage·SchoolSchedulePage가 import |
 | `vite.config.ts` | 빌드 출력 경로(`static/`), `/api` 프록시 설정 |

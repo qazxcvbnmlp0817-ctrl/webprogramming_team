@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import FilterTabs from '../components/FilterTabs'
 import FeaturedCard from '../components/FeaturedCard'
@@ -72,9 +71,9 @@ export default function NoticePage() {
                       <i className="fas fa-image text-gray-400 text-sm" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <Link to="/dept/notice" className="font-semibold text-black hover:underline block leading-snug line-clamp-2">
+                      <p className="font-semibold text-black leading-snug line-clamp-2">
                         {notice.title}
-                      </Link>
+                      </p>
                       <div className="flex items-center flex-wrap gap-3 mt-1.5 text-xs text-gray-500">
                         <span className="border border-black text-black px-1.5 py-0.5 font-medium">{notice.category}</span>
                         <span>{notice.date}</span>

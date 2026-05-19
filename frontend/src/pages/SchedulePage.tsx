@@ -5,19 +5,9 @@ import Sidebar from '../components/Sidebar'
 import { fetchSchedules } from '../api/schedules'
 import { useDept } from '../context/DeptContext'
 import { useDeptFetch } from '../hooks/useDeptFetch'
-import type { ScheduleDto } from '../types/schedule'
+import { groupByMonth } from '../utils/scheduleUtils'
 
 const SCHEDULE_TABS = ['전체', '학사', '행사', '시험', '기타']
-
-function groupByMonth(items: ScheduleDto[]): Map<string, ScheduleDto[]> {
-  const map = new Map<string, ScheduleDto[]>()
-  items.forEach(item => {
-    const month = item.date.slice(0, 7)
-    if (!map.has(month)) map.set(month, [])
-    map.get(month)!.push(item)
-  })
-  return map
-}
 
 export default function SchedulePage() {
   const { selectedDeptId, selectedDeptName } = useDept()
