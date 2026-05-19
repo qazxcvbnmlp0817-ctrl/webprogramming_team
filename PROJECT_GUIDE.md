@@ -10,7 +10,7 @@
 
 **목적:** 국립목포대학교 등 여러 대학교의 학과 공지사항, 게시판, 일정, 학과정보를 하나의 웹 포털로 통합하여 학생과 교직원이 편리하게 접근할 수 있도록 합니다.
 
-**현재 단계:** 프론트엔드 UI 및 REST API 뼈대 완성. 모든 페이지 UI와 더미 데이터가 구현되어 있으며, 팀원이 실제 DB 연동 및 서비스 로직을 추가하면 됩니다.
+**현재 단계:** 프론트엔드 UI 및 REST API 뼈대 완성. 모든 페이지 UI와 더미 데이터가 구현되어 있으며, 로그인·회원가입·아이디/비밀번호 찾기 기능도 인메모리 방식으로 구현되어 있습니다. 팀원이 실제 DB 연동 및 서비스 로직을 추가하면 됩니다.
 
 ---
 
@@ -148,7 +148,8 @@ webprogramming_team-main/
 │       │   ├── notices.ts              ← /api/notices
 │       │   ├── posts.ts                ← /api/posts
 │       │   ├── schedules.ts            ← /api/schedules
-│       │   └── school.ts               ← /api/school/*
+│       │   ├── school.ts               ← /api/school/*
+│       │   └── auth.ts                 ← /api/auth/* (로그인·회원가입·아이디·비밀번호 찾기)
 │       │
 │       ├── types/                      ← TypeScript 타입 정의
 │       │   ├── university.ts
@@ -168,9 +169,14 @@ webprogramming_team-main/
 │       │   ├── MainPage.tsx            ← /dept/home (학과 메인)
 │       │   ├── NoticePage.tsx          ← /dept/notice
 │       │   ├── BoardPage.tsx           ← /dept/board
+│       │   ├── WritePostPage.tsx       ← /dept/board/write (글쓰기)
 │       │   ├── SchedulePage.tsx        ← /dept/schedule
 │       │   ├── DepartmentPage.tsx      ← /dept/department
-│       │   └── LoginPage.tsx           ← /login
+│       │   ├── LoginPage.tsx           ← /login
+│       │   ├── SignupPage.tsx          ← /signup
+│       │   ├── MyPage.tsx              ← /mypage
+│       │   ├── FindIdPage.tsx          ← /find-id
+│       │   └── FindPasswordPage.tsx    ← /find-password
 │       │
 │       └── components/                 ← 재사용 컴포넌트
 │           ├── Navbar.tsx              ← 상단 네비게이션 바
@@ -194,8 +200,20 @@ webprogramming_team-main/
 │       │   │   │   ├── BoardController.java      ← GET /api/posts
 │       │   │   │   ├── ScheduleController.java   ← GET /api/schedules
 │       │   │   │   ├── SchoolController.java     ← GET /api/school/*
-│       │   │   │   └── AuthController.java       ← GET /login (레거시)
-│       │   │   ├── dto/                          ← API 응답 데이터 구조
+│       │   │   │   └── AuthController.java       ← POST/GET /api/auth/* (인증)
+│       │   │   ├── service/
+│       │   │   │   └── AuthService.java          ← 인증 비즈니스 로직
+│       │   │   ├── entity/
+│       │   │   │   └── User.java                 ← 회원 엔티티 (JPA 어노테이션 주석 처리)
+│       │   │   ├── repository/
+│       │   │   │   ├── UserRepository.java       ← 회원 저장소 인터페이스
+│       │   │   │   └── UserRepositoryImpl.java   ← 인메모리 구현체 (DB 연동 시 삭제)
+│       │   │   ├── dto/                          ← API 요청/응답 데이터 구조
+│       │   │   │   ├── (기존 DTO들...)
+│       │   │   │   ├── LoginRequestDto.java
+│       │   │   │   ├── SignupRequestDto.java
+│       │   │   │   ├── FindIdRequestDto.java
+│       │   │   │   └── FindPasswordRequestDto.java
 │       │   │   └── util/
 │       │   │       └── DummyDataHelper.java      ← 모든 더미 데이터 집중 관리
 │       │   └── resources/
@@ -228,9 +246,14 @@ webprogramming_team-main/
 | `/dept/home` | MainPage | 학과 메인 대시보드 |
 | `/dept/notice` | NoticePage | 학과 공지사항 |
 | `/dept/board` | BoardPage | 학과 게시판 |
+| `/dept/board/write` | WritePostPage | 게시글 작성 |
 | `/dept/schedule` | SchedulePage | 학과 일정 |
 | `/dept/department` | DepartmentPage | 학과정보 |
 | `/login` | LoginPage | 로그인 |
+| `/signup` | SignupPage | 회원가입 |
+| `/mypage` | MyPage | 마이페이지 |
+| `/find-id` | FindIdPage | 아이디 찾기 |
+| `/find-password` | FindPasswordPage | 비밀번호 찾기 |
 
 **사용자 흐름 (순차 강제):**
 
@@ -247,7 +270,7 @@ webprogramming_team-main/
 | 가드 | 적용 라우트 | 조건 미충족 시 |
 |------|------------|--------------|
 | `ProtectedSchool` | `/school/*` | `selectedUniversityId` 없음 → `/universities` |
-| `ProtectedDept` | `/dept/home`, `/dept/notice`, `/dept/board`, `/dept/schedule`, `/dept/department` | `selectedDeptId` 없음 → `/universities` |
+| `ProtectedDept` | `/dept/home`, `/dept/notice`, `/dept/board`, `/dept/board/write`, `/dept/schedule`, `/dept/department` | `selectedDeptId` 없음 → `/universities` |
 
 ### 백엔드 API 엔드포인트
 
@@ -263,6 +286,11 @@ webprogramming_team-main/
 | GET | `/api/school/posts` | `univId` | 대학 게시판 목록 |
 | GET | `/api/school/schedules` | `univId` | 대학 일정 목록 |
 | GET | `/api/school/info` | `univId` | 대학 정보 |
+| POST | `/api/auth/login` | Body: `{username, password, memberType}` | 로그인 |
+| POST | `/api/auth/signup` | Body: 회원 정보 | 회원가입 |
+| GET | `/api/auth/check-id` | `username` | 아이디 중복 확인 |
+| POST | `/api/auth/find-id` | Body: `{name, phone}` | 아이디 찾기 |
+| POST | `/api/auth/find-password` | Body: `{username, name, phone}` | 비밀번호 찾기 (임시 비밀번호 반환) |
 
 ---
 
@@ -339,9 +367,25 @@ UniversityDto
 
 ---
 
-## 11. 로그인 연동 예정 구조
+## 11. 인증(로그인·회원가입) 구현 현황
 
-`useInitialRedirect.ts`에 `[AUTH_HOOK]` 주석으로 진입점이 준비되어 있습니다.
+### 현재 구조
+
+인증 기능이 `AuthController` → `AuthService` → `UserRepositoryImpl` 구조로 구현되어 있습니다.
+
+- **회원 저장소:** `UserRepositoryImpl`은 인메모리(`ArrayList`) 방식으로 동작합니다. 서버 재시작 시 데이터가 초기화됩니다.
+- **비밀번호:** 현재 평문 저장. DB 연동 시 BCrypt 암호화로 교체 예정 (`AuthService` 주석 참고).
+- **세션/토큰:** 현재 미구현. 로그인 성공 시 응답 JSON만 반환하며, 클라이언트 상태 관리는 프론트엔드에서 직접 처리합니다.
+
+### 회원 유형 (memberType)
+
+| 값 | 설명 |
+|----|------|
+| `student` | 일반 학생 |
+| `professor` | 교수 |
+| `admin` | 관리자 (가입 후 승인 필요) |
+
+### useInitialRedirect.ts 리다이렉트 로직
 
 ```ts
 // [AUTH_HOOK] 로그인 기반 리다이렉트 진입점
@@ -354,15 +398,20 @@ if (selectedUniversityId) return '/school/departments'
 return '/universities'
 ```
 
-**로그인 연동 후 예상 동작:**
-
 | 상태 | `/` 접속 시 이동 경로 |
 |------|----------------------|
-| 로그인 O + 학과 저장됨 | 해당 학과 `/dept/home` 바로 이동 |
-| 로그인 X + localStorage에 대학교 있음 | `/school/departments` (학과 선택) |
-| 로그인 X + localStorage 비어있음 | `/universities` (대학교 선택) |
+| localStorage에 학과 저장됨 | 현재 경로 유지 (`/dept/home` 등) |
+| localStorage에 대학교만 있음 | `/school/departments` (학과 선택) |
+| localStorage 비어있음 | `/universities` (대학교 선택) |
 
 > **localStorage 초기화:** 브라우저 콘솔에서 `localStorage.removeItem('deptState')` 실행
+
+### DB 연동 시 인증 전환 방법
+
+1. `User.java`의 JPA 어노테이션 주석 해제 (`@Entity`, `@Id` 등)
+2. `UserRepository`를 `JpaRepository<User, Long>` 상속으로 변경
+3. `UserRepositoryImpl.java` 삭제 (JPA가 자동 구현)
+4. `AuthService`의 BCrypt 주석 해제 및 평문 비교 코드 교체
 
 ---
 
@@ -391,7 +440,19 @@ return '/universities'
 | `UniversityShowPage.tsx` | 대학교 홈 (단과대 목록, 바로가기) |
 | `SchoolDepartmentsPage.tsx` | 단과대·학부·학과 3단 계층 그리드, 학과 클릭 시 `/dept/home`으로 이동 |
 | `DepartmentPage.tsx` | 학과 상세 (API에서 교수진·교육과정·연락정보 조회) |
+| `WritePostPage.tsx` | 게시글 작성 폼 (`/dept/board/write`) |
+| `LoginPage.tsx` | 로그인 폼, `auth.ts`의 `loginApi` 호출 |
+| `SignupPage.tsx` | 회원가입 폼 (학생·교수·관리자 선택), `signupApi` 호출 |
+| `MyPage.tsx` | 마이페이지 (로그인 사용자 정보 표시) |
+| `FindIdPage.tsx` | 이름·전화번호로 아이디 찾기 |
+| `FindPasswordPage.tsx` | 아이디·이름·전화번호로 임시 비밀번호 발급 |
+| `auth.ts` | `/api/auth/*` 호출 함수 (login, signup, checkId, findId, findPassword) |
 | `SpaController.java` | `/api/**` 외 모든 경로를 `index.html`로 포워딩 (SPA 새로고침 지원) |
+| `AuthController.java` | `POST/GET /api/auth/*` — 로그인·회원가입·아이디/비밀번호 찾기 |
+| `AuthService.java` | 인증 비즈니스 로직. DB 연동 시 BCrypt 주석 참고 |
+| `User.java` | 회원 엔티티. DB 연동 시 JPA 어노테이션 주석 해제 |
+| `UserRepository.java` | 회원 저장소 인터페이스 |
+| `UserRepositoryImpl.java` | 인메모리 구현체. DB 연동 시 이 파일 삭제 |
 | `DummyDataHelper.java` | 모든 더미 데이터 집중 관리 (DB 연동 전 임시) |
 | `UniversityController.java` | `GET /api/universities[/:id]` 응답 |
 | `DepartmentController.java` | `GET /api/departments/:id` 응답 |
