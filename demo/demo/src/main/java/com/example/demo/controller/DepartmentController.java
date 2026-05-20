@@ -1,21 +1,23 @@
 package com.example.demo.controller;
 
 import com.example.demo.dto.DepartmentDetailDto;
-import com.example.demo.util.DummyDataHelper;
+import com.example.demo.service.UniversityService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
-@Controller
+@RestController
 public class DepartmentController {
 
+    private final UniversityService universityService;
+
+    public DepartmentController(UniversityService universityService) {
+        this.universityService = universityService;
+    }
+
     @GetMapping("/api/departments/{id}")
-    @ResponseBody
     public ResponseEntity<DepartmentDetailDto> getDepartmentDetail(@PathVariable Long id) {
-        DepartmentDetailDto detail = DummyDataHelper.findDepartmentDetail(id);
-        if (detail == null) return ResponseEntity.notFound().build();
-        return ResponseEntity.ok(detail);
+        return universityService.getDepartmentDetail(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }

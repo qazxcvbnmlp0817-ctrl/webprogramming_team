@@ -16,6 +16,8 @@ export async function signupApi(data: {
   college: string
   department: string
   studentId: string
+  phone: string
+  grade: number | null
 }) {
   const res = await fetch('/api/auth/signup', {
     method: 'POST',

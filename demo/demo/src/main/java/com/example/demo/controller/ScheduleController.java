@@ -1,30 +1,32 @@
 package com.example.demo.controller;
 
 import com.example.demo.dto.ScheduleDto;
-import com.example.demo.util.DummyDataHelper;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import com.example.demo.service.ScheduleService;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Controller
+@RestController
 public class ScheduleController {
 
+    private final ScheduleService scheduleService;
+
+    public ScheduleController(ScheduleService scheduleService) {
+        this.scheduleService = scheduleService;
+    }
+
     @GetMapping("/api/schedules")
-    @ResponseBody
     public List<ScheduleDto> apiSchedules(@RequestParam(required = false) Long deptId) {
-        return (deptId != null)
-            ? DummyDataHelper.getSchedulesByDept(deptId)
-            : DummyDataHelper.getSchedulesByDept(1L);
+        return scheduleService.getSchedulesByDept(deptId != null ? deptId : 1L);
     }
 
     @GetMapping("/api/faculty/schedules")
-    @ResponseBody
     public List<ScheduleDto> facultySchedules(@RequestParam(required = false) Long facultyId) {
-        return (facultyId != null)
-            ? DummyDataHelper.getSchedulesByFaculty(facultyId)
-            : DummyDataHelper.getSchedulesByFaculty(1L);
+        return scheduleService.getSchedulesByFaculty(facultyId != null ? facultyId : 1L);
+    }
+
+    @GetMapping("/api/univ/schedules")
+    public List<ScheduleDto> univSchedules(@RequestParam(required = false) Long univId) {
+        return scheduleService.getSchedulesByUniv(univId != null ? univId : 1L);
     }
 }

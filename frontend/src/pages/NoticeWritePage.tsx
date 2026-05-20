@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import { useDept } from '../context/DeptContext'
 
 const CATEGORIES = ['학사', '장학', '행사', '취업']
 
@@ -12,6 +13,7 @@ function formatFileSize(bytes: number) {
 
 export default function NoticeWritePage() {
   const navigate = useNavigate()
+  const { selectedDeptId } = useDept()
   const [title, setTitle]       = useState('')
   const [category, setCategory] = useState('학사')
   const [content, setContent]   = useState('')
@@ -50,14 +52,30 @@ export default function NoticeWritePage() {
     setFiles(prev => prev.filter((_, i) => i !== idx))
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!title.trim() || !content.trim()) {
       alert('제목과 내용을 입력해주세요.')
       return
     }
-    alert('공지사항이 등록되었습니다.')
-    navigate('/dept/notice')
+    const author = sessionStorage.getItem('name') ?? '작성자'
+    const res = await fetch('/api/notices', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title,
+        content,
+        category,
+        author,
+        scopeId: selectedDeptId ?? 1,
+      }),
+    })
+    if (res.ok) {
+      alert('공지사항이 등록되었습니다.')
+      navigate('/dept/notice')
+    } else {
+      alert('등록에 실패했습니다. 다시 시도해주세요.')
+    }
   }
 
   return (

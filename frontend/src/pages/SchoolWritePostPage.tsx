@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import { useDept } from '../context/DeptContext'
 
 const CATEGORIES = ['자유게시판', '질문', '스터디', '취업후기']
 
@@ -12,6 +13,7 @@ function formatFileSize(bytes: number) {
 
 export default function SchoolWritePostPage() {
   const navigate = useNavigate()
+  const { selectedUniversityId } = useDept()
   const [title, setTitle]       = useState('')
   const [category, setCategory] = useState('자유게시판')
   const [content, setContent]   = useState('')
@@ -46,14 +48,32 @@ export default function SchoolWritePostPage() {
     setFiles(prev => prev.filter((_, i) => i !== idx))
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!title.trim() || !content.trim()) {
       alert('제목과 내용을 입력해주세요.')
       return
     }
-    alert('게시글이 등록되었습니다.')
-    navigate('/school/board')
+    const author = sessionStorage.getItem('name') ?? '작성자'
+    const res = await fetch('/api/univ/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title,
+        content,
+        category,
+        author,
+        targetGrades,
+        visibility,
+        scopeId: selectedUniversityId ?? 1,
+      }),
+    })
+    if (res.ok) {
+      alert('게시글이 등록되었습니다.')
+      navigate('/school/board')
+    } else {
+      alert('등록에 실패했습니다. 다시 시도해주세요.')
+    }
   }
 
   return (
@@ -156,14 +176,7 @@ export default function SchoolWritePostPage() {
                 <i className="fas fa-plus" />사진 추가
               </button>
             </div>
-            <input
-              ref={imageInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={handleImageAdd}
-            />
+            <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageAdd} />
             {imagePreviews.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {imagePreviews.map((url, idx) => (
@@ -173,9 +186,7 @@ export default function SchoolWritePostPage() {
                       type="button"
                       onClick={() => handleImageRemove(idx)}
                       className="absolute top-0.5 right-0.5 w-5 h-5 bg-black text-white text-xs flex items-center justify-center hover:bg-gray-700"
-                    >
-                      ×
-                    </button>
+                    >×</button>
                   </div>
                 ))}
               </div>
@@ -197,13 +208,7 @@ export default function SchoolWritePostPage() {
                 <i className="fas fa-plus" />파일 추가
               </button>
             </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              className="hidden"
-              onChange={handleFileAdd}
-            />
+            <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileAdd} />
             {files.length > 0 ? (
               <ul className="flex flex-col gap-1">
                 {files.map((file, idx) => (
@@ -211,13 +216,7 @@ export default function SchoolWritePostPage() {
                     <i className="fas fa-paperclip text-gray-400 flex-shrink-0" />
                     <span className="flex-1 truncate text-gray-800">{file.name}</span>
                     <span className="text-xs text-gray-400 flex-shrink-0">{formatFileSize(file.size)}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleFileRemove(idx)}
-                      className="text-gray-400 hover:text-black flex-shrink-0"
-                    >
-                      ×
-                    </button>
+                    <button type="button" onClick={() => handleFileRemove(idx)} className="text-gray-400 hover:text-black flex-shrink-0">×</button>
                   </li>
                 ))}
               </ul>

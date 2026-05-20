@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import { signupApi } from '../api/auth'
 
 type MemberType = 'student' | 'professor' | 'admin'
 
@@ -347,7 +348,36 @@ export default function SignupPage() {
                     이전
                   </button>
                 )}
-                <button onClick={() => { if (canNext()) setStep(s => s + 1) }} disabled={!canNext()}
+                <button
+                  onClick={async () => {
+                    if (!canNext()) return
+                    if (step === 5) {
+                      try {
+                        const result = await signupApi({
+                          username: userId,
+                          password: pw,
+                          name: inputName,
+                          memberType,
+                          universityId: selectedUniv,
+                          college,
+                          department,
+                          studentId,
+                          phone,
+                          grade: memberType === 'student' && grade ? Number(grade) : null,
+                        })
+                        if (result.success) {
+                          setStep(6)
+                        } else {
+                          alert(result.message ?? '회원가입에 실패했습니다.')
+                        }
+                      } catch {
+                        alert('서버 오류가 발생했습니다. 다시 시도해주세요.')
+                      }
+                    } else {
+                      setStep(s => s + 1)
+                    }
+                  }}
+                  disabled={!canNext()}
                   className="bg-black text-white px-6 py-2 text-sm font-bold hover:opacity-80 transition disabled:opacity-40 disabled:cursor-not-allowed">
                   다음
                 </button>

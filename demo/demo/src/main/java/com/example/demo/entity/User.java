@@ -1,24 +1,25 @@
 package com.example.demo.entity;
 
-// ===== DB 연동 시 아래 주석 해제 =====
-// import jakarta.persistence.*;
+import jakarta.persistence.*;
 
+@Entity
+@Table(name = "APP_USERS")
 public class User {
 
-    // @Id
-    // @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // @Column(unique = true, nullable = false)
+    @Column(unique = true, nullable = false)
     private String username;
 
-    // @Column(nullable = false)
-    private String password; // DB 연동 시 BCrypt 암호화 적용
+    @Column(nullable = false)
+    private String password;
 
-    // @Column(nullable = false)
+    @Column(nullable = false)
     private String name;
 
-    // @Column(nullable = false)
+    @Column(nullable = false)
     private String memberType; // student, professor, admin
 
     private String universityId;
@@ -28,8 +29,8 @@ public class User {
     private String phone;
     private Integer grade; // 1,2,3,4 (학생만), 교수/관리자는 null
 
-    // @Column(nullable = false)
-    private boolean approved; // 관리자 승인 여부 (admin 은 false 로 시작)
+    @Column(nullable = false)
+    private boolean approved; // 관리자 승인 여부 (admin은 false로 시작)
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

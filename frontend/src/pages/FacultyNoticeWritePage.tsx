@@ -51,14 +51,30 @@ export default function FacultyNoticeWritePage() {
     setFiles(prev => prev.filter((_, i) => i !== idx))
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!title.trim() || !content.trim()) {
       alert('제목과 내용을 입력해주세요.')
       return
     }
-    alert('공지사항이 등록되었습니다.')
-    navigate(`/school/faculty/${facultyId}/notice`)
+    const author = sessionStorage.getItem('name') ?? '작성자'
+    const res = await fetch('/api/faculty/notices', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title,
+        content,
+        category,
+        author,
+        scopeId: Number(facultyId) || 1,
+      }),
+    })
+    if (res.ok) {
+      alert('공지사항이 등록되었습니다.')
+      navigate(`/school/faculty/${facultyId}/notice`)
+    } else {
+      alert('등록에 실패했습니다. 다시 시도해주세요.')
+    }
   }
 
   return (

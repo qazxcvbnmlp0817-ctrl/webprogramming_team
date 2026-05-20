@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.example.demo.dto.FindIdRequestDto;
@@ -13,16 +14,11 @@ import com.example.demo.dto.SignupRequestDto;
 import com.example.demo.entity.User;
 import com.example.demo.repository.UserRepository;
 
-// ===== DB 연동 시 추가할 것 =====
-// import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-
 @Service
 public class AuthService {
 
     private final UserRepository userRepository;
-
-    // ===== DB 연동 시 추가 =====
-    // private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public AuthService(UserRepository userRepository) {
         this.userRepository = userRepository;
@@ -40,9 +36,7 @@ public class AuthService {
 
         User user = userOpt.get();
 
-        // ===== DB 연동 시 아래로 교체 =====
-        // if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-        if (!user.getPassword().equals(request.getPassword())) {
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             response.put("success", false);
             response.put("message", "아이디 또는 비밀번호가 일치하지 않습니다.");
             return response;
@@ -80,17 +74,15 @@ public class AuthService {
 
         User user = new User();
         user.setUsername(request.getUsername());
-
-        // ===== DB 연동 시 아래로 교체 =====
-        // user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setPassword(request.getPassword());
-
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setName(request.getName());
         user.setMemberType(request.getMemberType());
         user.setUniversityId(request.getUniversityId());
         user.setCollege(request.getCollege());
         user.setDepartment(request.getDepartment());
         user.setStudentId(request.getStudentId());
+        user.setPhone(request.getPhone());
+        user.setGrade(request.getGrade());
         user.setApproved(!request.getMemberType().equals("admin"));
 
         userRepository.save(user);
@@ -148,11 +140,9 @@ public class AuthService {
             return response;
         }
 
-        // ===== DB 연동 시 임시 비밀번호 암호화 후 저장 =====
-        // String tempPassword = "temp1234!";
-        // user.setPassword(passwordEncoder.encode(tempPassword));
         String tempPassword = "temp1234!";
-        user.setPassword(tempPassword);
+        user.setPassword(passwordEncoder.encode(tempPassword));
+        userRepository.save(user);
 
         response.put("success", true);
         response.put("message", "임시 비밀번호: " + tempPassword);

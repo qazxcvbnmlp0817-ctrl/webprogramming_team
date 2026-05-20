@@ -10,7 +10,7 @@
 
 **목적:** 국립목포대학교 등 여러 대학교의 학과 공지사항, 게시판, 일정, 학과정보를 하나의 웹 포털로 통합하여 학생과 교직원이 편리하게 접근할 수 있도록 합니다.
 
-**현재 단계:** 프론트엔드 UI 및 REST API 뼈대 완성. 모든 페이지 UI와 더미 데이터가 구현되어 있으며, 로그인·회원가입·아이디/비밀번호 찾기 기능도 인메모리 방식으로 구현되어 있습니다. 팀원이 실제 DB 연동 및 서비스 로직을 추가하면 됩니다.
+**현재 단계:** 프론트엔드 UI 및 REST API 뼈대 완성. 모든 페이지 UI와 더미 데이터가 구현되어 있으며, 로그인·회원가입·아이디/비밀번호 찾기 기능도 인메모리 방식으로 구현되어 있습니다. 공지·게시글 작성 페이지, 미니캘린더 컴포넌트, 단위 테스트가 추가되었습니다. 팀원이 실제 DB 연동 및 서비스 로직을 추가하면 됩니다.
 
 ---
 
@@ -169,16 +169,23 @@ webprogramming_team-main/
 │       │   ├── UniversityShowPage.tsx  ← /universities/:id
 │       │   ├── SchoolDepartmentsPage.tsx ← /school/departments
 │       │   ├── SchoolNoticePage.tsx    ← /school/notice
+│       │   ├── SchoolNoticeWritePage.tsx ← /school/notice/write (교수·관리자만)
 │       │   ├── SchoolBoardPage.tsx     ← /school/board
+│       │   ├── SchoolWritePostPage.tsx ← /school/board/write (학년태그·공개범위 포함)
 │       │   ├── SchoolSchedulePage.tsx  ← /school/schedule
 │       │   ├── SchoolInfoPage.tsx      ← /school/info
 │       │   ├── FacultyPage.tsx         ← /school/faculty/:facultyId (학부 메인)
 │       │   ├── FacultyNoticePage.tsx   ← /school/faculty/:facultyId/notice
+│       │   ├── FacultyNoticeWritePage.tsx ← /school/faculty/:facultyId/notice/write (교수·관리자만)
 │       │   ├── FacultyBoardPage.tsx    ← /school/faculty/:facultyId/board
 │       │   ├── FacultySchedulePage.tsx ← /school/faculty/:facultyId/schedule
 │       │   ├── MainPage.tsx            ← /dept/home (학과 메인)
+│       │   ├── MainPage.test.tsx
 │       │   ├── NoticePage.tsx          ← /dept/notice
+│       │   ├── NoticePage.test.tsx
+│       │   ├── NoticeWritePage.tsx     ← /dept/notice/write (교수·관리자만)
 │       │   ├── BoardPage.tsx           ← /dept/board
+│       │   ├── BoardPage.test.tsx
 │       │   ├── WritePostPage.tsx       ← /dept/board/write (글쓰기)
 │       │   ├── SchedulePage.tsx        ← /dept/schedule
 │       │   ├── DepartmentPage.tsx      ← /dept/department
@@ -190,10 +197,15 @@ webprogramming_team-main/
 │       │
 │       └── components/                 ← 재사용 컴포넌트
 │           ├── Navbar.tsx              ← 상단 네비게이션 바
+│           ├── Navbar.test.tsx
 │           ├── Footer.tsx              ← 하단 고정 푸터 (/universities 제외)
 │           ├── FeaturedCard.tsx
 │           ├── FilterTabs.tsx
+│           ├── FilterTabs.test.tsx
+│           ├── MiniCalendar.tsx        ← 월별 미니 캘린더 (학과·학부 메인 페이지)
+│           ├── MiniCalendar.test.tsx
 │           ├── Sidebar.tsx
+│           ├── Sidebar.test.tsx
 │           └── Pagination.tsx
 │
 ├── demo/demo/                          ← Spring Boot 백엔드
@@ -207,6 +219,7 @@ webprogramming_team-main/
 │       │   │   │   ├── SpaController.java        ← SPA 라우트 → index.html 포워딩
 │       │   │   │   ├── UniversityController.java ← GET /api/universities
 │       │   │   │   ├── DepartmentController.java ← GET /api/departments/:id
+│       │   │   │   ├── MainController.java       ← GET /api/main, /api/faculty/main
 │       │   │   │   ├── NoticeController.java     ← GET /api/notices
 │       │   │   │   ├── BoardController.java      ← GET /api/posts
 │       │   │   │   ├── ScheduleController.java   ← GET /api/schedules
@@ -251,17 +264,21 @@ webprogramming_team-main/
 | `/universities/:id` | UniversityShowPage | 대학교 홈 |
 | `/school/departments` | SchoolDepartmentsPage | 학부·학과 선택 |
 | `/school/notice` | SchoolNoticePage | 대학 공지사항 |
+| `/school/notice/write` | SchoolNoticeWritePage | 대학 공지 작성 (교수·관리자) |
 | `/school/board` | SchoolBoardPage | 대학 게시판 |
+| `/school/board/write` | SchoolWritePostPage | 대학 게시글 작성 (학년태그·공개범위) |
 | `/school/schedule` | SchoolSchedulePage | 대학 일정 |
 | `/school/info` | SchoolInfoPage | 대학 정보 |
 | `/school/faculty/:facultyId` | FacultyPage | 학부 메인 대시보드 |
 | `/school/faculty/:facultyId/notice` | FacultyNoticePage | 학부 공지사항 |
+| `/school/faculty/:facultyId/notice/write` | FacultyNoticeWritePage | 학부 공지 작성 (교수·관리자) |
 | `/school/faculty/:facultyId/board` | FacultyBoardPage | 학부 게시판 |
 | `/school/faculty/:facultyId/schedule` | FacultySchedulePage | 학부 일정 |
 | `/dept/home` | MainPage | 학과 메인 대시보드 |
 | `/dept/notice` | NoticePage | 학과 공지사항 |
+| `/dept/notice/write` | NoticeWritePage | 학과 공지 작성 (교수·관리자) |
 | `/dept/board` | BoardPage | 학과 게시판 |
-| `/dept/board/write` | WritePostPage | 게시글 작성 |
+| `/dept/board/write` | WritePostPage | 학과 게시글 작성 |
 | `/dept/schedule` | SchedulePage | 학과 일정 |
 | `/dept/department` | DepartmentPage | 학과정보 |
 | `/login` | LoginPage | 로그인 |
@@ -303,7 +320,8 @@ webprogramming_team-main/
 | GET | `/api/school/posts` | `univId` | 대학 게시판 목록 |
 | GET | `/api/school/schedules` | `univId` | 대학 일정 목록 |
 | GET | `/api/school/info` | `univId` | 대학 정보 |
-| GET | `/api/faculty/main` | `facultyId` | 학부 메인 (공지·게시글·일정·날짜) |
+| GET | `/api/main` | `deptId` | 학과 메인 (공지5·게시글5·일정·오늘날짜) |
+| GET | `/api/faculty/main` | `facultyId` | 학부 메인 (공지5·게시글5·일정·오늘날짜) |
 | GET | `/api/faculty/notices` | `facultyId` | 학부 공지사항 목록 |
 | GET | `/api/faculty/posts` | `facultyId` | 학부 게시판 목록 |
 | GET | `/api/faculty/schedules` | `facultyId` | 학부 일정 목록 |
@@ -442,6 +460,7 @@ const FOOTER_HIDDEN_PATHS = ['/universities']
 - **회원 저장소:** `UserRepositoryImpl`은 인메모리(`ArrayList`) 방식으로 동작합니다. 서버 재시작 시 데이터가 초기화됩니다.
 - **비밀번호:** 현재 평문 저장. DB 연동 시 BCrypt 암호화로 교체 예정 (`AuthService` 주석 참고).
 - **세션/토큰:** 현재 미구현. 로그인 성공 시 응답 JSON만 반환하며, 클라이언트 상태 관리는 프론트엔드에서 직접 처리합니다.
+- **공지 작성 접근 제어:** `NoticeWritePage`, `SchoolNoticeWritePage`, `FacultyNoticeWritePage`는 마운트 시 `sessionStorage.getItem('memberType')`을 확인합니다. `professor` 또는 `admin`이 아니면 해당 공지 목록 페이지로 즉시 리다이렉트합니다.
 
 ### 회원 유형 (memberType)
 
@@ -509,10 +528,15 @@ return '/universities'
 | `SchoolDepartmentsPage.tsx` | 단과대·학부·학과 3단 계층 그리드. 학부명 클릭 시 `/school/faculty/:id`, 학과 클릭 시 `/dept/home`으로 이동 |
 | `FacultyPage.tsx` | 학부 메인 대시보드 (캘린더·일정·공지·인기 게시글 2×2 그리드) |
 | `FacultyNoticePage.tsx` | 학부 공지사항 (탭 필터·FeaturedCard·Sidebar) |
+| `FacultyNoticeWritePage.tsx` | 학부 공지 작성 폼. `sessionStorage.memberType`이 professor/admin이 아니면 목록으로 리다이렉트 |
 | `FacultyBoardPage.tsx` | 학부 게시판 (검색·탭·정렬·소속학과 빠른이동) |
 | `FacultySchedulePage.tsx` | 학부 일정 (월별 그룹·D-Day 배지·Sidebar) |
 | `DepartmentPage.tsx` | 학과 상세 (API에서 교수진·교육과정·연락정보 조회) |
-| `WritePostPage.tsx` | 게시글 작성 폼 (`/dept/board/write`) |
+| `NoticeWritePage.tsx` | 학과 공지 작성 폼. 교수·관리자 전용. 카테고리·제목·내용·사진·파일 첨부 |
+| `WritePostPage.tsx` | 학과 게시글 작성 폼 (`/dept/board/write`) |
+| `SchoolNoticeWritePage.tsx` | 학교 공지 작성 폼. 교수·관리자 전용 |
+| `SchoolWritePostPage.tsx` | 학교 게시글 작성 폼. 학년 태그(1~4학년 다중선택), 공개범위(전체/해당학년) 포함 |
+| `MiniCalendar.tsx` | 월별 미니 캘린더. `ScheduleDto[]`를 받아 일정 점(dot)으로 표시, hover 시 팝오버로 일정 목록 표시 |
 | `LoginPage.tsx` | 로그인 폼, `auth.ts`의 `loginApi` 호출 |
 | `SignupPage.tsx` | 회원가입 폼 (학생·교수·관리자 선택), `signupApi` 호출 |
 | `MyPage.tsx` | 마이페이지 (로그인 사용자 정보 표시) |
@@ -520,6 +544,7 @@ return '/universities'
 | `FindPasswordPage.tsx` | 아이디·이름·전화번호로 임시 비밀번호 발급 |
 | `auth.ts` | `/api/auth/*` 호출 함수 (login, signup, checkId, findId, findPassword) |
 | `SpaController.java` | `/api/**` 외 모든 경로를 `index.html`로 포워딩 (SPA 새로고침 지원) |
+| `MainController.java` | `GET /api/main` (학과 메인), `GET /api/faculty/main` (학부 메인) — 공지5·게시글5·일정 전체·오늘날짜 반환 |
 | `AuthController.java` | `POST/GET /api/auth/*` — 로그인·회원가입·아이디/비밀번호 찾기 |
 | `AuthService.java` | 인증 비즈니스 로직. DB 연동 시 BCrypt 주석 참고 |
 | `User.java` | 회원 엔티티. DB 연동 시 JPA 어노테이션 주석 해제 |
