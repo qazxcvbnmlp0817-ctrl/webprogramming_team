@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Sidebar from '../components/Sidebar'
@@ -18,6 +18,10 @@ export default function SchoolBoardPage() {
   const [gradeFilter, setGradeFilter] = useState('전체')
   const [sort, setSort]               = useState('최신순')
   const [search, setSearch]           = useState('')
+  const [page, setPage]               = useState(1)
+  const PER_PAGE = 10
+
+  useEffect(() => { setPage(1) }, [active, gradeFilter, sort, search])
 
   const { data, loading } = useDeptFetch(fetchSchoolPosts, selectedUniversityId)
   const posts = data?.posts ?? []
@@ -39,6 +43,9 @@ export default function SchoolBoardPage() {
     if (sort === '댓글순') result = [...result].sort((a, b) => b.commentCount - a.commentCount)
     return result
   }, [posts, active, gradeFilter, sort, search])
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
+  const pageItems  = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE)
 
   const categoryCounts = TABS.map(label => ({
     label,
@@ -113,7 +120,7 @@ export default function SchoolBoardPage() {
             </div>
             <div className="flex flex-col lg:flex-row gap-8">
               <div className="flex-1">
-                {filtered.map(post => {
+                {pageItems.map(post => {
                   const thumbUrl = post.attachments?.find(a => a.isImage)?.url ?? post.imageUrl
                   return (
                   <div key={post.id} onClick={() => navigate(`/post/${post.id}`)} className="flex gap-4 py-4 border-b border-gray-200 hover:bg-gray-50 transition cursor-pointer">
@@ -144,7 +151,7 @@ export default function SchoolBoardPage() {
                     <i className="fas fa-inbox text-3xl mb-3 block" />게시글이 없습니다.
                   </div>
                 )}
-                <Pagination current={1} total={10} onChange={() => {}} />
+                <Pagination current={page} total={totalPages} onChange={setPage} />
               </div>
               <Sidebar
                 categoryWidget={{ title: '카테고리', items: categoryCounts, onSelect: setActive }}

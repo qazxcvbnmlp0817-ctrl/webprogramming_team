@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import FilterTabs from '../components/FilterTabs'
@@ -20,6 +20,10 @@ export default function FacultyNoticePage() {
   const [active, setActive]           = useState('전체')
   const [gradeFilter, setGradeFilter] = useState('전체')
   const [search, setSearch]           = useState('')
+  const [page, setPage]               = useState(1)
+  const PER_PAGE = 10
+
+  useEffect(() => { setPage(1) }, [active, gradeFilter, search])
 
   const canWrite = ['professor', 'admin'].includes(sessionStorage.getItem('memberType') ?? '')
 
@@ -37,6 +41,9 @@ export default function FacultyNoticePage() {
     const gradeOk  = gradeFilter === '전체' || (n.targetGrades ?? [1,2,3,4]).includes(Number(gradeFilter[0]))
     return catOk && searchOk && gradeOk
   }), [notices, active, gradeFilter, search])
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
+  const pageItems  = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE)
 
   const school  = univ?.schools.find(s => s.faculties.some(f => f.id === facultyIdNum))
   const faculty = school?.faculties.find(f => f.id === facultyIdNum)
@@ -125,7 +132,7 @@ export default function FacultyNoticePage() {
 
             <div className="flex flex-col lg:flex-row gap-8">
               <div className="flex-1">
-                {filtered.map(notice => {
+                {pageItems.map(notice => {
                   const thumbUrl = notice.attachments?.find(a => a.isImage)?.url
                   return (
                   <div
@@ -160,7 +167,7 @@ export default function FacultyNoticePage() {
                     <i className="fas fa-inbox text-3xl mb-3 block" />공지사항이 없습니다.
                   </div>
                 )}
-                <Pagination current={1} total={10} onChange={() => {}} />
+                <Pagination current={page} total={totalPages} onChange={setPage} />
               </div>
 
               <Sidebar

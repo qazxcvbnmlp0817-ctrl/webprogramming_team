@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import FilterTabs from '../components/FilterTabs'
@@ -18,6 +18,10 @@ export default function NoticePage() {
   const [active, setActive]           = useState('전체')
   const [gradeFilter, setGradeFilter] = useState('전체')
   const [search, setSearch]           = useState('')
+  const [page, setPage]               = useState(1)
+  const PER_PAGE = 10
+
+  useEffect(() => { setPage(1) }, [active, gradeFilter, search])
 
   const canWrite = ['professor', 'admin'].includes(sessionStorage.getItem('memberType') ?? '')
 
@@ -31,6 +35,9 @@ export default function NoticePage() {
     const gradeOk  = gradeFilter === '전체' || (n.targetGrades ?? [1,2,3,4]).includes(Number(gradeFilter[0]))
     return catOk && searchOk && gradeOk
   }), [notices, active, gradeFilter, search])
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
+  const pageItems  = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE)
 
   const categoryCounts = NOTICE_TABS.map(label => ({
     label,
@@ -109,7 +116,7 @@ export default function NoticePage() {
 
             <div className="flex flex-col lg:flex-row gap-8">
               <div className="flex-1">
-                {filtered.map(notice => {
+                {pageItems.map(notice => {
                   const thumbUrl = notice.attachments?.find(a => a.isImage)?.url
                   return (
                   <div
@@ -144,7 +151,7 @@ export default function NoticePage() {
                     <i className="fas fa-inbox text-3xl mb-3 block" />공지사항이 없습니다.
                   </div>
                 )}
-                <Pagination current={1} total={10} onChange={() => {}} />
+                <Pagination current={page} total={totalPages} onChange={setPage} />
               </div>
 
               <Sidebar
