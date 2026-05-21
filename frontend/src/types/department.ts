@@ -10,6 +10,7 @@ export interface CurriculumItemDto {
   year: string
   required: boolean
   credit: number
+  category?: string
 }
 
 export interface DepartmentDetailDto {
