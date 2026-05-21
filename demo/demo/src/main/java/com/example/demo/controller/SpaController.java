@@ -29,6 +29,7 @@ public class SpaController {
         "/school/faculty/{facultyId:[0-9]+}/notice",
         "/school/faculty/{facultyId:[0-9]+}/notice/write",
         "/school/faculty/{facultyId:[0-9]+}/board",
+        "/school/faculty/{facultyId:[0-9]+}/board/write",
         "/school/faculty/{facultyId:[0-9]+}/schedule",
         // 학과(dept) 범위
         "/dept/home",
@@ -43,6 +44,9 @@ public class SpaController {
         "/board",
         "/schedule",
         "/department",
+        // 게시글 상세 / 수정
+        "/post/{postId:[0-9]+}",
+        "/post/{postId:[0-9]+}/edit",
         // 인증
         "/login",
         "/signup",

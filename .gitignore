@@ -22,3 +22,9 @@ Thumbs.db
 
 # ===== 로그 파일 =====
 *.log
+
+# ===== 업로드된 파일 =====
+uploads/
+
+# ===== Claude Code 설정 =====
+.claude/

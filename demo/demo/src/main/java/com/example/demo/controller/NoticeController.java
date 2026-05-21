@@ -20,6 +20,13 @@ public class NoticeController {
 
     // ── GET ──────────────────────────────────────────────────────────────────
 
+    @GetMapping("/api/notices/{id}")
+    public ResponseEntity<?> getNotice(@PathVariable Long id) {
+        return noticeService.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @GetMapping("/api/notices")
     public Map<String, Object> apiNotices(@RequestParam(required = false) Long deptId) {
         List<NoticeDto> notices = noticeService.getNoticesByDept(deptId != null ? deptId : 1L);
@@ -61,6 +68,19 @@ public class NoticeController {
     public ResponseEntity<Map<String, Object>> createUnivNotice(@RequestBody NoticeWriteRequestDto req) {
         req.setScopeType("univ");
         noticeService.create(req);
+        return ResponseEntity.ok(Map.of("success", true));
+    }
+
+    @PutMapping("/api/notices/{id}")
+    public ResponseEntity<?> updateNotice(@PathVariable Long id,
+                                          @RequestBody NoticeWriteRequestDto req) {
+        noticeService.update(id, req);
+        return ResponseEntity.ok(Map.of("success", true));
+    }
+
+    @DeleteMapping("/api/notices/{id}")
+    public ResponseEntity<?> deleteNotice(@PathVariable Long id) {
+        noticeService.delete(id);
         return ResponseEntity.ok(Map.of("success", true));
     }
 }

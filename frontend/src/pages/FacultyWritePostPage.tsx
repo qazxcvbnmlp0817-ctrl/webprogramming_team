@@ -1,9 +1,9 @@
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import type { PostAttachmentDto } from '../types/post'
 
-const CATEGORIES = ['학사', '장학', '행사', '취업']
+const CATEGORIES = ['자유게시판', '질문', '스터디', '취업후기']
 
 function formatFileSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`
@@ -11,14 +11,15 @@ function formatFileSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-export default function FacultyNoticeWritePage() {
+export default function FacultyWritePostPage() {
   const navigate = useNavigate()
   const { facultyId } = useParams<{ facultyId: string }>()
   const [title, setTitle]       = useState('')
-  const [category, setCategory] = useState('학사')
+  const [category, setCategory] = useState('자유게시판')
   const [content, setContent]   = useState('')
 
   const [targetGrades, setTargetGrades] = useState<number[]>([1, 2, 3, 4])
+  const [visibility, setVisibility]     = useState<'public' | 'grade'>('public')
 
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [imageFiles, setImageFiles]       = useState<File[]>([])
@@ -26,13 +27,6 @@ export default function FacultyNoticeWritePage() {
 
   const imageInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef  = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    const memberType = sessionStorage.getItem('memberType') ?? ''
-    if (memberType !== 'professor' && memberType !== 'admin') {
-      navigate(`/school/faculty/${facultyId}/notice`, { replace: true })
-    }
-  }, [navigate, facultyId])
 
   function handleImageAdd(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = Array.from(e.target.files ?? [])
@@ -75,19 +69,25 @@ export default function FacultyNoticeWritePage() {
     }
 
     const author = sessionStorage.getItem('name') ?? '작성자'
-    const res = await fetch('/api/faculty/notices', {
+    const authorUsername = sessionStorage.getItem('username') ?? ''
+    const res = await fetch('/api/faculty/posts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        title, content, category, author, targetGrades,
-        scopeId: Number(facultyId) || 1,
+        title,
+        content,
+        category,
+        author,
+        authorUsername,
+        targetGrades,
+        visibility,
+        scopeId: facultyId ? Number(facultyId) : 1,
         attachments: uploadedAttachments,
-        authorUsername: sessionStorage.getItem('username') ?? '',
       }),
     })
     if (res.ok) {
-      alert('공지사항이 등록되었습니다.')
-      navigate(`/school/faculty/${facultyId}/notice`)
+      alert('게시글이 등록되었습니다.')
+      navigate(`/school/faculty/${facultyId}/board`)
     } else {
       alert('등록에 실패했습니다. 다시 시도해주세요.')
     }
@@ -101,7 +101,7 @@ export default function FacultyNoticeWritePage() {
       <section className="bg-black text-white py-8 px-4">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-2xl font-bold">
-            <i className="fas fa-bullhorn mr-2" />공지 작성
+            <i className="fas fa-pen mr-2" />글쓰기
           </h1>
         </div>
       </section>
@@ -164,6 +164,23 @@ export default function FacultyNoticeWritePage() {
             </div>
           </div>
 
+          {/* 공개 범위 */}
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium">공개 범위</label>
+            <div className="flex gap-6">
+              <label className="flex items-center gap-1.5 text-sm cursor-pointer">
+                <input type="radio" name="visibility" className="accent-black" value="public"
+                  checked={visibility === 'public'} onChange={() => setVisibility('public')} />
+                전체 공개
+              </label>
+              <label className="flex items-center gap-1.5 text-sm cursor-pointer">
+                <input type="radio" name="visibility" className="accent-black" value="grade"
+                  checked={visibility === 'grade'} onChange={() => setVisibility('grade')} />
+                해당 학년 공개
+              </label>
+            </div>
+          </div>
+
           {/* 사진 첨부 */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
@@ -177,7 +194,7 @@ export default function FacultyNoticeWritePage() {
               </button>
             </div>
             <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageAdd} />
-            {imagePreviews.length > 0 ? (
+            {imagePreviews.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {imagePreviews.map((url, idx) => (
                   <div key={idx} className="relative w-24 h-24 border border-gray-300">
@@ -190,7 +207,8 @@ export default function FacultyNoticeWritePage() {
                   </div>
                 ))}
               </div>
-            ) : (
+            )}
+            {imagePreviews.length === 0 && (
               <p className="text-xs text-gray-400">JPG, PNG, GIF 등 이미지 파일을 첨부할 수 있습니다.</p>
             )}
           </div>
@@ -227,7 +245,7 @@ export default function FacultyNoticeWritePage() {
           <div className="flex gap-2 justify-end mt-2">
             <button
               type="button"
-              onClick={() => navigate(`/school/faculty/${facultyId}/notice`)}
+              onClick={() => navigate(`/school/faculty/${facultyId}/board`)}
               className="px-6 py-2 text-sm border border-black font-medium hover:bg-gray-100 transition"
             >
               취소

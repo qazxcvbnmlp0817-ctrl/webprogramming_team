@@ -1,3 +1,12 @@
+export interface PostAttachmentDto {
+  id: number | null
+  originalName: string
+  url: string
+  fileSize: number
+  fileType: string
+  isImage: boolean
+}
+
 export interface PostDto {
   id: number
   title: string
@@ -12,4 +21,7 @@ export interface PostDto {
   imageUrl?: string | null
   targetGrades: number[]
   visibility: 'public' | 'grade'
+  content?: string
+  authorUsername?: string
+  attachments?: PostAttachmentDto[]
 }

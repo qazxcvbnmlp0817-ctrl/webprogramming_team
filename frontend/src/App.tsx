@@ -27,7 +27,12 @@ import FacultyBoardPage from './pages/FacultyBoardPage'
 import FacultyNoticePage from './pages/FacultyNoticePage'
 import FacultyNoticeWritePage from './pages/FacultyNoticeWritePage'
 import FacultySchedulePage from './pages/FacultySchedulePage'
+import FacultyWritePostPage from './pages/FacultyWritePostPage'
 import NoticeWritePage from './pages/NoticeWritePage'
+import NoticeDetailPage from './pages/NoticeDetailPage'
+import NoticeEditPage from './pages/NoticeEditPage'
+import PostDetailPage from './pages/PostDetailPage'
+import PostEditPage from './pages/PostEditPage'
 
 function ProtectedSchool({ children }: { children: ReactNode }) {
   const { selectedUniversityId } = useDept()
@@ -59,6 +64,7 @@ export default function App() {
           <Route path="/school/faculty/:facultyId/notice"         element={<ProtectedSchool><FacultyNoticePage /></ProtectedSchool>} />
           <Route path="/school/faculty/:facultyId/notice/write" element={<ProtectedSchool><FacultyNoticeWritePage /></ProtectedSchool>} />
           <Route path="/school/faculty/:facultyId/board"         element={<ProtectedSchool><FacultyBoardPage /></ProtectedSchool>} />
+          <Route path="/school/faculty/:facultyId/board/write" element={<ProtectedSchool><FacultyWritePostPage /></ProtectedSchool>} />
           <Route path="/school/faculty/:facultyId/schedule" element={<ProtectedSchool><FacultySchedulePage /></ProtectedSchool>} />
           <Route path="/school/notice"       element={<ProtectedSchool><SchoolNoticePage /></ProtectedSchool>} />
           <Route path="/school/notice/write" element={<ProtectedSchool><SchoolNoticeWritePage /></ProtectedSchool>} />
@@ -94,6 +100,14 @@ export default function App() {
           <Route path="/mypage"        element={<MyPage />} />
           <Route path="/find-id"       element={<FindIdPage />} />
           <Route path="/find-password" element={<FindPasswordPage />} />
+
+          {/* 게시글 상세 / 수정 — scope 무관 */}
+          <Route path="/post/:postId"      element={<PostDetailPage />} />
+          <Route path="/post/:postId/edit" element={<PostEditPage />} />
+
+          {/* 공지사항 상세 / 수정 */}
+          <Route path="/notice/:noticeId"      element={<NoticeDetailPage />} />
+          <Route path="/notice/:noticeId/edit" element={<NoticeEditPage />} />
             </Routes>
           </div>
           <Footer />

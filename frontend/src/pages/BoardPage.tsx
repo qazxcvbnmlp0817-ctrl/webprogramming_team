@@ -139,11 +139,13 @@ export default function BoardPage() {
 
             <div className="flex flex-col lg:flex-row gap-8">
               <div className="flex-1">
-                {filtered.map(post => (
-                  <div key={post.id} className="flex gap-4 py-4 border-b border-gray-200 hover:bg-gray-50 transition cursor-pointer">
-                    {post.imageUrl && (
+                {filtered.map(post => {
+                  const thumbUrl = post.attachments?.find(a => a.isImage)?.url ?? post.imageUrl
+                  return (
+                  <div key={post.id} onClick={() => navigate(`/post/${post.id}`)} className="flex gap-4 py-4 border-b border-gray-200 hover:bg-gray-50 transition cursor-pointer">
+                    {thumbUrl && (
                       <img
-                        src={post.imageUrl}
+                        src={thumbUrl}
                         alt=""
                         className="w-20 h-16 object-cover flex-shrink-0 border border-gray-300"
                       />
@@ -154,7 +156,7 @@ export default function BoardPage() {
                       </div>
                       <div className="flex items-center flex-wrap gap-3 mt-1.5 text-xs text-gray-500">
                         <span className="border border-black text-black px-1.5 py-0.5 font-medium">{post.category}</span>
-                        {post.visibility === 'grade' && (
+                        {post.targetGrades.length < 4 && (
                           <span className="border border-gray-400 text-gray-500 px-1.5 py-0.5">
                             {post.targetGrades.map(g => `${g}학년`).join('·')}
                           </span>
@@ -167,7 +169,8 @@ export default function BoardPage() {
                       </div>
                     </div>
                   </div>
-                ))}
+                  )
+                })}
                 {filtered.length === 0 && (
                   <div className="py-16 text-center text-gray-400">
                     <i className="fas fa-inbox text-3xl mb-3 block" />게시글이 없습니다.

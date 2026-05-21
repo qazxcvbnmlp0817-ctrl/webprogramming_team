@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import { useDept } from '../context/DeptContext'
+import type { PostAttachmentDto } from '../types/post'
 
 const CATEGORIES = ['학사', '장학', '행사', '취업']
 
@@ -18,7 +19,10 @@ export default function NoticeWritePage() {
   const [category, setCategory] = useState('학사')
   const [content, setContent]   = useState('')
 
+  const [targetGrades, setTargetGrades] = useState<number[]>([1, 2, 3, 4])
+
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
+  const [imageFiles, setImageFiles]       = useState<File[]>([])
   const [files, setFiles]                 = useState<File[]>([])
 
   const imageInputRef = useRef<HTMLInputElement>(null)
@@ -33,6 +37,7 @@ export default function NoticeWritePage() {
 
   function handleImageAdd(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = Array.from(e.target.files ?? [])
+    setImageFiles(prev => [...prev, ...selected])
     setImagePreviews(prev => [...prev, ...selected.map(f => URL.createObjectURL(f))])
     e.target.value = ''
   }
@@ -40,6 +45,7 @@ export default function NoticeWritePage() {
   function handleImageRemove(idx: number) {
     URL.revokeObjectURL(imagePreviews[idx])
     setImagePreviews(prev => prev.filter((_, i) => i !== idx))
+    setImageFiles(prev => prev.filter((_, i) => i !== idx))
   }
 
   function handleFileAdd(e: React.ChangeEvent<HTMLInputElement>) {
@@ -58,16 +64,26 @@ export default function NoticeWritePage() {
       alert('제목과 내용을 입력해주세요.')
       return
     }
+
+    let uploadedAttachments: PostAttachmentDto[] = []
+    const allFiles = [...imageFiles, ...files]
+    if (allFiles.length > 0) {
+      const formData = new FormData()
+      allFiles.forEach(f => formData.append('files', f))
+      const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData })
+      if (!uploadRes.ok) { alert('파일 업로드에 실패했습니다.'); return }
+      uploadedAttachments = await uploadRes.json()
+    }
+
     const author = sessionStorage.getItem('name') ?? '작성자'
     const res = await fetch('/api/notices', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        title,
-        content,
-        category,
-        author,
+        title, content, category, author, targetGrades,
         scopeId: selectedDeptId ?? 1,
+        attachments: uploadedAttachments,
+        authorUsername: sessionStorage.getItem('username') ?? '',
       }),
     })
     if (res.ok) {
@@ -127,6 +143,26 @@ export default function NoticeWritePage() {
               rows={12}
               className="border border-black px-3 py-2 text-sm outline-none resize-none"
             />
+          </div>
+
+          {/* 학년 태그 */}
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium">학년 태그</label>
+            <div className="flex flex-wrap gap-3">
+              {[1, 2, 3, 4].map(g => (
+                <label key={g} className="flex items-center gap-1.5 text-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="accent-black w-4 h-4"
+                    checked={targetGrades.includes(g)}
+                    onChange={e => setTargetGrades(prev =>
+                      e.target.checked ? [...prev, g] : prev.filter(v => v !== g)
+                    )}
+                  />
+                  {g}학년
+                </label>
+              ))}
+            </div>
           </div>
 
           {/* 사진 첨부 */}

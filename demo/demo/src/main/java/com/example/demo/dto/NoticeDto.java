@@ -1,22 +1,44 @@
 package com.example.demo.dto;
 
-/**
- * 공지사항 데이터 전송 객체
- * - 연결 컨트롤러: NoticeController, MainController
- * - 연결 템플릿: notice/list.html, main/index.html
- */
+import java.util.List;
+
 public class NoticeDto {
 
     private final Long id;
     private final String title;
     private final String date;
     private final String author;
-    private final String category;   // 카테고리: 학사·장학·행사·취업
-    private final int viewCount;     // 조회수
-    private final boolean featured;  // 긴급/대표 공지 여부
+    private final String category;
+    private final int viewCount;
+    private final boolean featured;
+    private final List<Integer> targetGrades;
+    private final String content;
+    private final List<PostAttachmentDto> attachments;
+    private final String authorUsername;
 
     public NoticeDto(Long id, String title, String date, String author,
                      String category, int viewCount, boolean featured) {
+        this(id, title, date, author, category, viewCount, featured,
+             List.of(1, 2, 3, 4), null, null, null);
+    }
+
+    public NoticeDto(Long id, String title, String date, String author,
+                     String category, int viewCount, boolean featured, List<Integer> targetGrades) {
+        this(id, title, date, author, category, viewCount, featured,
+             targetGrades, null, null, null);
+    }
+
+    public NoticeDto(Long id, String title, String date, String author,
+                     String category, int viewCount, boolean featured,
+                     List<Integer> targetGrades, String content, List<PostAttachmentDto> attachments) {
+        this(id, title, date, author, category, viewCount, featured,
+             targetGrades, content, attachments, null);
+    }
+
+    public NoticeDto(Long id, String title, String date, String author,
+                     String category, int viewCount, boolean featured,
+                     List<Integer> targetGrades, String content,
+                     List<PostAttachmentDto> attachments, String authorUsername) {
         this.id = id;
         this.title = title;
         this.date = date;
@@ -24,13 +46,21 @@ public class NoticeDto {
         this.category = category;
         this.viewCount = viewCount;
         this.featured = featured;
+        this.targetGrades = targetGrades;
+        this.content = content;
+        this.attachments = attachments;
+        this.authorUsername = authorUsername;
     }
 
-    public Long getId()         { return id; }
-    public String getTitle()    { return title; }
-    public String getDate()     { return date; }
-    public String getAuthor()   { return author; }
-    public String getCategory() { return category; }
-    public int getViewCount()   { return viewCount; }
-    public boolean isFeatured() { return featured; }
+    public Long getId()                          { return id; }
+    public String getTitle()                     { return title; }
+    public String getDate()                      { return date; }
+    public String getAuthor()                    { return author; }
+    public String getCategory()                  { return category; }
+    public int getViewCount()                    { return viewCount; }
+    public boolean isFeatured()                  { return featured; }
+    public List<Integer> getTargetGrades()       { return targetGrades; }
+    public String getContent()                   { return content; }
+    public List<PostAttachmentDto> getAttachments() { return attachments; }
+    public String getAuthorUsername()            { return authorUsername; }
 }

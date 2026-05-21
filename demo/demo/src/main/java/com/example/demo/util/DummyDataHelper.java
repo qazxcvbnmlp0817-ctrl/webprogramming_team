@@ -106,14 +106,14 @@ public class DummyDataHelper {
                 .findFirst().orElse("대학교");
         long base = univId * 1000;
         return List.of(
-            new NoticeDto(base+1, "[공지] " + univName + " 2026년 1학기 학사 일정 안내",      "2026-05-11", univName + " 학사처", "학사", 520, true),
-            new NoticeDto(base+2, univName + " 2026년 하계 방학 기간 및 학사 운영 안내",       "2026-05-09", univName + " 학사처", "학사", 380, false),
-            new NoticeDto(base+3, univName + " 장학생 선발 공고 (교내 성적 장학금)",           "2026-05-07", univName + " 장학처", "장학", 295, false),
-            new NoticeDto(base+4, univName + " 2026 대학 축제 '목포제' 개최 안내",             "2026-05-05", univName + " 학생처", "행사", 210, false),
-            new NoticeDto(base+5, univName + " 취업지원센터 채용설명회 일정 공지",             "2026-05-03", univName + " 취업지원센터", "취업", 175, false),
-            new NoticeDto(base+6, univName + " 도서관 이용 시간 변경 안내",                    "2026-05-01", univName + " 도서관", "학사", 140, false),
-            new NoticeDto(base+7, univName + " 2026년 하계 계절학기 수강신청 안내",            "2026-04-29", univName + " 학사처", "학사", 118, false),
-            new NoticeDto(base+8, univName + " 교내 창업경진대회 참가 모집",                   "2026-04-27", univName + " 창업지원단", "행사",  93, false)
+            new NoticeDto(base+1, "[공지] " + univName + " 2026년 1학기 학사 일정 안내",      "2026-05-11", univName + " 학사처",      "학사", 520, true,  List.of(1,2,3,4)),
+            new NoticeDto(base+2, univName + " 2026년 하계 방학 기간 및 학사 운영 안내",       "2026-05-09", univName + " 학사처",      "학사", 380, false, List.of(1,2,3,4)),
+            new NoticeDto(base+3, univName + " 장학생 선발 공고 (교내 성적 장학금)",           "2026-05-07", univName + " 장학처",      "장학", 295, false, List.of(1,2,3,4)),
+            new NoticeDto(base+4, univName + " 2026 대학 축제 '목포제' 개최 안내",             "2026-05-05", univName + " 학생처",      "행사", 210, false, List.of(1,2,3,4)),
+            new NoticeDto(base+5, univName + " 취업지원센터 채용설명회 일정 공지",             "2026-05-03", univName + " 취업지원센터", "취업", 175, false, List.of(3,4)),
+            new NoticeDto(base+6, univName + " 도서관 이용 시간 변경 안내",                    "2026-05-01", univName + " 도서관",      "학사", 140, false, List.of(1,2,3,4)),
+            new NoticeDto(base+7, univName + " 2026년 하계 계절학기 수강신청 안내",            "2026-04-29", univName + " 학사처",      "학사", 118, false, List.of(1,2,3,4)),
+            new NoticeDto(base+8, univName + " 교내 창업경진대회 참가 모집",                   "2026-04-27", univName + " 창업지원단",  "행사",  93, false, List.of(2,3,4))
         );
     }
 
@@ -168,14 +168,14 @@ public class DummyDataHelper {
         String faculty = findFacultyName(facultyId);
         long base = facultyId * 400;
         return List.of(
-            new NoticeDto(base+1, "[긴급] " + faculty + " 2026년 1학기 수강정정 기간 안내", "2026-05-11", faculty + " 사무실", "학사", (int)(300 + facultyId * 7), true),
-            new NoticeDto(base+2, faculty + " 2026년 1학기 학부 행사 안내",                 "2026-05-08", faculty + " 사무실", "행사", (int)(200 + facultyId * 5), false),
-            new NoticeDto(base+3, faculty + " 졸업논문 심사 일정 안내",                     "2026-05-06", faculty + " 사무실", "학사", (int)(150 + facultyId * 3), false),
-            new NoticeDto(base+4, faculty + " 장학금 신청 안내 (5월 15일까지)",             "2026-05-04", "학생처",             "장학", (int)(100 + facultyId * 2), false),
-            new NoticeDto(base+5, faculty + " 실험실 안전교육 일정 공지",                   "2026-05-02", faculty + " 사무실", "학사",  (int)(80 + facultyId),     false),
-            new NoticeDto(base+6, faculty + " 산학협력 세미나 개최 안내",                   "2026-04-30", faculty + " 사무실", "행사",  (int)(60 + facultyId),     false),
-            new NoticeDto(base+7, faculty + " 졸업작품 심사 일정 공지",                     "2026-04-28", faculty + " 사무실", "학사",  (int)(40 + facultyId),     false),
-            new NoticeDto(base+8, faculty + " 교내 해커톤 참가 모집",                       "2026-04-25", "학생처",             "취업",  (int)(25 + facultyId),     false)
+            new NoticeDto(base+1, "[긴급] " + faculty + " 2026년 1학기 수강정정 기간 안내", "2026-05-11", faculty + " 사무실", "학사", (int)(300 + facultyId * 7), true,  List.of(1,2,3,4)),
+            new NoticeDto(base+2, faculty + " 2026년 1학기 학부 행사 안내",                 "2026-05-08", faculty + " 사무실", "행사", (int)(200 + facultyId * 5), false, List.of(1,2,3,4)),
+            new NoticeDto(base+3, faculty + " 졸업논문 심사 일정 안내",                     "2026-05-06", faculty + " 사무실", "학사", (int)(150 + facultyId * 3), false, List.of(4)),
+            new NoticeDto(base+4, faculty + " 장학금 신청 안내 (5월 15일까지)",             "2026-05-04", "학생처",             "장학", (int)(100 + facultyId * 2), false, List.of(1,2,3,4)),
+            new NoticeDto(base+5, faculty + " 실험실 안전교육 일정 공지",                   "2026-05-02", faculty + " 사무실", "학사",  (int)(80 + facultyId),     false, List.of(1,2,3,4)),
+            new NoticeDto(base+6, faculty + " 산학협력 세미나 개최 안내",                   "2026-04-30", faculty + " 사무실", "행사",  (int)(60 + facultyId),     false, List.of(3,4)),
+            new NoticeDto(base+7, faculty + " 졸업작품 심사 일정 공지",                     "2026-04-28", faculty + " 사무실", "학사",  (int)(40 + facultyId),     false, List.of(4)),
+            new NoticeDto(base+8, faculty + " 교내 해커톤 참가 모집",                       "2026-04-25", "학생처",             "취업",  (int)(25 + facultyId),     false, List.of(2,3,4))
         );
     }
 
@@ -229,14 +229,14 @@ public class DummyDataHelper {
         String dept = findDeptName(deptId);
         long base = deptId * 100;
         return List.of(
-            new NoticeDto(base+1, "[긴급] " + dept + " 2026년 1학기 수강정정 기간 안내", "2026-05-11", dept + " 사무실", "학사", (int)(200 + deptId * 7), true),
-            new NoticeDto(base+2, dept + " 2026년 1학기 수강신청 일정 안내",              "2026-05-08", dept + " 사무실", "학사", (int)(100 + deptId * 5), false),
-            new NoticeDto(base+3, dept + " 졸업논문 제출 마감 안내",                      "2026-05-06", dept + " 사무실", "학사",  (int)(80 + deptId * 3), false),
-            new NoticeDto(base+4, dept + " 장학금 신청 안내 (5월 15일까지)",              "2026-05-04", "학생처",         "장학",  (int)(60 + deptId * 2), false),
-            new NoticeDto(base+5, dept + " 실험실 안전교육 일정 공지",                    "2026-05-02", dept + " 사무실", "학사",  (int)(40 + deptId),     false),
-            new NoticeDto(base+6, dept + " 산학협력 세미나 개최 안내",                    "2026-04-30", dept + " 사무실", "행사",  (int)(30 + deptId),     false),
-            new NoticeDto(base+7, dept + " 졸업작품 심사 일정 공지",                      "2026-04-28", dept + " 사무실", "학사",  (int)(25 + deptId),     false),
-            new NoticeDto(base+8, dept + " 교내 해커톤 참가 모집",                        "2026-04-25", "학생처",         "행사",  (int)(15 + deptId),     false)
+            new NoticeDto(base+1, "[긴급] " + dept + " 2026년 1학기 수강정정 기간 안내", "2026-05-11", dept + " 사무실", "학사", (int)(200 + deptId * 7), true,  List.of(1,2,3,4)),
+            new NoticeDto(base+2, dept + " 2026년 1학기 수강신청 일정 안내",              "2026-05-08", dept + " 사무실", "학사", (int)(100 + deptId * 5), false, List.of(1,2,3,4)),
+            new NoticeDto(base+3, dept + " 졸업논문 제출 마감 안내",                      "2026-05-06", dept + " 사무실", "학사",  (int)(80 + deptId * 3), false, List.of(4)),
+            new NoticeDto(base+4, dept + " 장학금 신청 안내 (5월 15일까지)",              "2026-05-04", "학생처",         "장학",  (int)(60 + deptId * 2), false, List.of(1,2,3,4)),
+            new NoticeDto(base+5, dept + " 실험실 안전교육 일정 공지",                    "2026-05-02", dept + " 사무실", "학사",  (int)(40 + deptId),     false, List.of(1,2,3,4)),
+            new NoticeDto(base+6, dept + " 산학협력 세미나 개최 안내",                    "2026-04-30", dept + " 사무실", "행사",  (int)(30 + deptId),     false, List.of(3,4)),
+            new NoticeDto(base+7, dept + " 졸업작품 심사 일정 공지",                      "2026-04-28", dept + " 사무실", "학사",  (int)(25 + deptId),     false, List.of(4)),
+            new NoticeDto(base+8, dept + " 교내 해커톤 참가 모집",                        "2026-04-25", "학생처",         "행사",  (int)(15 + deptId),     false, List.of(2,3,4))
         );
     }
 

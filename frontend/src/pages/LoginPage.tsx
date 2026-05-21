@@ -28,6 +28,7 @@ export default function LoginPage() {
         setError('')
         sessionStorage.setItem('isLoggedIn', 'true')
         sessionStorage.setItem('username', id)
+        sessionStorage.setItem('name', result.name || id)
         sessionStorage.setItem('memberType', memberType)
         sessionStorage.setItem('grade', result.grade != null ? String(result.grade) : '')
         window.dispatchEvent(new Event('loginChanged'))

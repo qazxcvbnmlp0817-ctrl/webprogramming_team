@@ -11,6 +11,8 @@ public class PostWriteRequestDto {
     private String visibility; // public, grade
     private String scopeType;  // dept, faculty, univ
     private Long scopeId;
+    private String authorUsername;
+    private List<PostAttachmentDto> attachments;
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
@@ -28,4 +30,8 @@ public class PostWriteRequestDto {
     public void setScopeType(String scopeType) { this.scopeType = scopeType; }
     public Long getScopeId() { return scopeId; }
     public void setScopeId(Long scopeId) { this.scopeId = scopeId; }
+    public String getAuthorUsername() { return authorUsername; }
+    public void setAuthorUsername(String authorUsername) { this.authorUsername = authorUsername; }
+    public List<PostAttachmentDto> getAttachments() { return attachments; }
+    public void setAttachments(List<PostAttachmentDto> attachments) { this.attachments = attachments; }
 }

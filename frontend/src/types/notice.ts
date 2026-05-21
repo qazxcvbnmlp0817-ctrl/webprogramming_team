@@ -1,3 +1,5 @@
+import type { PostAttachmentDto } from './post'
+
 export interface NoticeDto {
   id: number
   title: string
@@ -6,4 +8,7 @@ export interface NoticeDto {
   category: string
   viewCount: number
   featured: boolean
+  targetGrades: number[]
+  content?: string | null
+  attachments?: PostAttachmentDto[] | null
 }

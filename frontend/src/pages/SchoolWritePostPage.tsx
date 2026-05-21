@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import { useDept } from '../context/DeptContext'
+import type { PostAttachmentDto } from '../types/post'
 
 const CATEGORIES = ['자유게시판', '질문', '스터디', '취업후기']
 
@@ -22,6 +23,7 @@ export default function SchoolWritePostPage() {
   const [visibility, setVisibility]     = useState<'public' | 'grade'>('public')
 
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
+  const [imageFiles, setImageFiles]       = useState<File[]>([])
   const [files, setFiles]                 = useState<File[]>([])
 
   const imageInputRef = useRef<HTMLInputElement>(null)
@@ -29,6 +31,7 @@ export default function SchoolWritePostPage() {
 
   function handleImageAdd(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = Array.from(e.target.files ?? [])
+    setImageFiles(prev => [...prev, ...selected])
     setImagePreviews(prev => [...prev, ...selected.map(f => URL.createObjectURL(f))])
     e.target.value = ''
   }
@@ -36,6 +39,7 @@ export default function SchoolWritePostPage() {
   function handleImageRemove(idx: number) {
     URL.revokeObjectURL(imagePreviews[idx])
     setImagePreviews(prev => prev.filter((_, i) => i !== idx))
+    setImageFiles(prev => prev.filter((_, i) => i !== idx))
   }
 
   function handleFileAdd(e: React.ChangeEvent<HTMLInputElement>) {
@@ -54,7 +58,19 @@ export default function SchoolWritePostPage() {
       alert('제목과 내용을 입력해주세요.')
       return
     }
+
+    let uploadedAttachments: PostAttachmentDto[] = []
+    const allFiles = [...imageFiles, ...files]
+    if (allFiles.length > 0) {
+      const formData = new FormData()
+      allFiles.forEach(f => formData.append('files', f))
+      const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData })
+      if (!uploadRes.ok) { alert('파일 업로드에 실패했습니다.'); return }
+      uploadedAttachments = await uploadRes.json()
+    }
+
     const author = sessionStorage.getItem('name') ?? '작성자'
+    const authorUsername = sessionStorage.getItem('username') ?? ''
     const res = await fetch('/api/univ/posts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -63,9 +79,11 @@ export default function SchoolWritePostPage() {
         content,
         category,
         author,
+        authorUsername,
         targetGrades,
         visibility,
         scopeId: selectedUniversityId ?? 1,
+        attachments: uploadedAttachments,
       }),
     })
     if (res.ok) {

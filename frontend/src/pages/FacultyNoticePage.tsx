@@ -11,13 +11,15 @@ import { useDept } from '../context/DeptContext'
 import { useDeptFetch } from '../hooks/useDeptFetch'
 
 const NOTICE_TABS = ['전체', '학사', '장학', '행사', '취업']
+const GRADE_TABS  = ['전체', '1학년', '2학년', '3학년', '4학년']
 
 export default function FacultyNoticePage() {
   const { facultyId } = useParams<{ facultyId: string }>()
   const { selectedUniversityId } = useDept()
   const navigate = useNavigate()
-  const [active, setActive] = useState('전체')
-  const [search, setSearch] = useState('')
+  const [active, setActive]           = useState('전체')
+  const [gradeFilter, setGradeFilter] = useState('전체')
+  const [search, setSearch]           = useState('')
 
   const canWrite = ['professor', 'admin'].includes(sessionStorage.getItem('memberType') ?? '')
 
@@ -32,8 +34,9 @@ export default function FacultyNoticePage() {
   const filtered = useMemo(() => notices.filter(n => {
     const catOk    = active === '전체' || n.category === active
     const searchOk = search === '' || n.title.toLowerCase().includes(search.toLowerCase())
-    return catOk && searchOk
-  }), [notices, active, search])
+    const gradeOk  = gradeFilter === '전체' || (n.targetGrades ?? [1,2,3,4]).includes(Number(gradeFilter[0]))
+    return catOk && searchOk && gradeOk
+  }), [notices, active, gradeFilter, search])
 
   const school  = univ?.schools.find(s => s.faculties.some(f => f.id === facultyIdNum))
   const faculty = school?.faculties.find(f => f.id === facultyIdNum)
@@ -105,29 +108,53 @@ export default function FacultyNoticePage() {
               </div>
             </div>
             <FilterTabs tabs={NOTICE_TABS} active={active} onChange={setActive} />
+            <div className="flex flex-wrap gap-2 mb-6">
+              {GRADE_TABS.map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setGradeFilter(tab)}
+                  aria-pressed={gradeFilter === tab}
+                  className={`px-3 py-1 text-xs border font-medium transition ${
+                    gradeFilter === tab ? 'border-black bg-black text-white' : 'border-gray-400 text-gray-600 hover:border-black hover:text-black'
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
 
             <div className="flex flex-col lg:flex-row gap-8">
               <div className="flex-1">
-                {filtered.map(notice => (
+                {filtered.map(notice => {
+                  const thumbUrl = notice.attachments?.find(a => a.isImage)?.url
+                  return (
                   <div
                     key={notice.id}
+                    onClick={() => navigate(`/notice/${notice.id}`)}
                     className="flex gap-4 py-4 border-b border-gray-200 hover:bg-gray-50 transition cursor-pointer"
                   >
-                    <div className="w-20 h-16 bg-gray-200 flex-shrink-0 flex items-center justify-center border border-gray-300">
-                      <i className="fas fa-image text-gray-400 text-sm" />
-                    </div>
+                    {thumbUrl && (
+                      <img src={thumbUrl} alt="" className="w-20 h-16 object-cover flex-shrink-0 border border-gray-300" />
+                    )}
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-black hover:underline leading-snug line-clamp-2">
                         {notice.title}
                       </p>
                       <div className="flex items-center flex-wrap gap-3 mt-1.5 text-xs text-gray-500">
                         <span className="border border-black text-black px-1.5 py-0.5 font-medium">{notice.category}</span>
+                        {(notice.targetGrades ?? []).length > 0 && (notice.targetGrades ?? []).length < 4 && (
+                          <span className="border border-gray-400 text-gray-500 px-1.5 py-0.5">
+                            {(notice.targetGrades ?? []).map(g => `${g}학년`).join('·')}
+                          </span>
+                        )}
+                        <span className="font-medium text-gray-700">{notice.author}</span>
                         <span>{notice.date}</span>
                         <span><i className="fas fa-eye mr-0.5" />{notice.viewCount}</span>
                       </div>
                     </div>
                   </div>
-                ))}
+                  )
+                })}
                 {filtered.length === 0 && (
                   <div className="py-16 text-center text-gray-400">
                     <i className="fas fa-inbox text-3xl mb-3 block" />공지사항이 없습니다.

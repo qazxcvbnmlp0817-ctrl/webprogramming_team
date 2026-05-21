@@ -1,7 +1,7 @@
 package com.example.demo.entity;
 
 import jakarta.persistence.*;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "NOTICES")
@@ -30,13 +30,19 @@ public class Notice {
     private boolean featured;
 
     @Column(nullable = false)
-    private LocalDate createdDate;
+    private LocalDateTime createdDate;
 
     @Column(nullable = false)
     private String scopeType; // dept, faculty, univ
 
     @Column(nullable = false)
     private Long scopeId;
+
+    @Column
+    private String targetGrades; // 쉼표 구분 (예: "1,2,3,4")
+
+    @Column
+    private String authorUsername;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -52,10 +58,14 @@ public class Notice {
     public void setViewCount(int viewCount) { this.viewCount = viewCount; }
     public boolean isFeatured() { return featured; }
     public void setFeatured(boolean featured) { this.featured = featured; }
-    public LocalDate getCreatedDate() { return createdDate; }
-    public void setCreatedDate(LocalDate createdDate) { this.createdDate = createdDate; }
+    public LocalDateTime getCreatedDate() { return createdDate; }
+    public void setCreatedDate(LocalDateTime createdDate) { this.createdDate = createdDate; }
     public String getScopeType() { return scopeType; }
     public void setScopeType(String scopeType) { this.scopeType = scopeType; }
     public Long getScopeId() { return scopeId; }
     public void setScopeId(Long scopeId) { this.scopeId = scopeId; }
+    public String getTargetGrades() { return targetGrades; }
+    public void setTargetGrades(String targetGrades) { this.targetGrades = targetGrades; }
+    public String getAuthorUsername() { return authorUsername; }
+    public void setAuthorUsername(String authorUsername) { this.authorUsername = authorUsername; }
 }

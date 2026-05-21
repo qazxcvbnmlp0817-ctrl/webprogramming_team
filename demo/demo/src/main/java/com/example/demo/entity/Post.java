@@ -1,7 +1,7 @@
 package com.example.demo.entity;
 
 import jakarta.persistence.*;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "POSTS")
@@ -28,7 +28,7 @@ public class Post {
     private int viewCount;
 
     @Column(nullable = false)
-    private LocalDate createdDate;
+    private LocalDateTime createdDate;
 
     private boolean featured;
     private int commentCount;
@@ -36,6 +36,8 @@ public class Post {
     private String imageUrl;
 
     private String targetGrades; // 쉼표 구분 "1,2,3,4"
+
+    private String authorUsername; // 로그인 ID (수정/삭제 권한 확인용)
 
     @Column(nullable = false)
     private String visibility; // public, grade
@@ -60,8 +62,8 @@ public class Post {
     public void setCategory(String category) { this.category = category; }
     public int getViewCount() { return viewCount; }
     public void setViewCount(int viewCount) { this.viewCount = viewCount; }
-    public LocalDate getCreatedDate() { return createdDate; }
-    public void setCreatedDate(LocalDate createdDate) { this.createdDate = createdDate; }
+    public LocalDateTime getCreatedDate() { return createdDate; }
+    public void setCreatedDate(LocalDateTime createdDate) { this.createdDate = createdDate; }
     public boolean isFeatured() { return featured; }
     public void setFeatured(boolean featured) { this.featured = featured; }
     public int getCommentCount() { return commentCount; }
@@ -78,4 +80,6 @@ public class Post {
     public void setScopeType(String scopeType) { this.scopeType = scopeType; }
     public Long getScopeId() { return scopeId; }
     public void setScopeId(Long scopeId) { this.scopeId = scopeId; }
+    public String getAuthorUsername() { return authorUsername; }
+    public void setAuthorUsername(String authorUsername) { this.authorUsername = authorUsername; }
 }
