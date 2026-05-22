@@ -63,7 +63,7 @@ function ProtectedSuperAdmin({ children }: { children: ReactNode }) {
 
 function ProtectedSchoolAdmin({ children }: { children: ReactNode }) {
   const role = sessionStorage.getItem('adminRole')
-  if (role !== 'SCHOOL_ADMIN') return <Navigate to="/universities" replace />
+  if (role !== 'SUPER_ADMIN' && role !== 'SCHOOL_ADMIN') return <Navigate to="/universities" replace />
   return <>{children}</>
 }
 
