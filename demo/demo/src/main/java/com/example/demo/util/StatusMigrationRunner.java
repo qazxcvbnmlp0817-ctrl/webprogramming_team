@@ -31,7 +31,16 @@ public class StatusMigrationRunner implements CommandLineRunner {
             ).executeUpdate();
         } catch (Exception e) {
             // APPROVED column may not exist if schema is fresh; log and continue
-            System.out.println("[StatusMigrationRunner] Migration skipped: " + e.getMessage());
+            System.out.println("[StatusMigrationRunner] Status backfill skipped: " + e.getMessage());
+        }
+
+        // The APPROVED column is no longer on the entity, so JPA INSERTs omit it.
+        // Oracle's original NOT NULL constraint must be relaxed so new signups succeed.
+        try {
+            em.createNativeQuery("ALTER TABLE APP_USERS MODIFY (APPROVED NULL)").executeUpdate();
+        } catch (Exception e) {
+            // Already nullable, or column doesn't exist on fresh schema — ignore.
+            System.out.println("[StatusMigrationRunner] APPROVED nullable migration skipped: " + e.getMessage());
         }
     }
 }
