@@ -66,12 +66,17 @@ webprogramming_team-main/
 │           ├── SignupPage.tsx              # 회원가입 (6단계)
 │           ├── MyPage.tsx                  # 마이페이지
 │           ├── FindIdPage.tsx              # 아이디 찾기
-│           └── FindPasswordPage.tsx        # 비밀번호 찾기
+│           ├── FindPasswordPage.tsx        # 비밀번호 찾기
+│           └── admin/
+│               ├── SuperAdminPage.tsx      # 최고 관리자 대시보드 + 가입 승인 + 역할 부여
+│               ├── SchoolAdminPage.tsx     # 학교 관리자 6탭 대시보드
+│               ├── DeptAdminPage.tsx       # 학과 관리자 6탭 + 학과 페이지 임베드
+│               └── FacultyAdminPage.tsx    # 학부 관리자 6탭 + 학부 페이지 임베드
 │
 └── demo/demo/                       # Spring Boot
     └── src/main/java/com/example/demo/
-        ├── entity/                  # JPA 엔티티 (10개 테이블)
-        │   ├── User.java            → APP_USERS
+        ├── entity/                  # JPA 엔티티
+        │   ├── User.java            → APP_USERS   (status, adminRole 포함)
         │   ├── Notice.java          → NOTICES
         │   ├── Post.java            → POSTS
         │   ├── Schedule.java        → SCHEDULES
@@ -80,10 +85,13 @@ webprogramming_team-main/
         │   ├── FacultyGroup.java    → FACULTY_GROUPS
         │   ├── Department.java      → DEPTS
         │   ├── Professor.java       → PROFESSORS
-        │   └── CurriculumItem.java  → CURRICULUM_ITEMS
+        │   ├── CurriculumItem.java  → CURRICULUM_ITEMS
+        │   ├── PageVisit.java       → PAGE_VISITS (방문자 추적)
+        │   └── AdminLog.java        → ADMIN_LOGS  (관리자 액션 로그)
         ├── repository/              # Spring Data JPA
         ├── service/
         │   ├── AuthService.java     # 로그인·회원가입·아이디/비번 찾기
+        │   ├── AdminService.java    # 어드민 대시보드 통계/사용자/승인 로직
         │   ├── NoticeService.java
         │   ├── PostService.java
         │   ├── ScheduleService.java
@@ -97,11 +105,17 @@ webprogramming_team-main/
         │   ├── SchoolController.java
         │   ├── UniversityController.java
         │   ├── DepartmentController.java
+        │   ├── SuperAdminController.java    # /api/admin/super/*
+        │   ├── SchoolAdminController.java   # /api/admin/school/*
+        │   ├── DeptAdminController.java     # /api/admin/dept/*
+        │   ├── FacultyAdminController.java  # /api/admin/faculty/*
         │   └── SpaController.java   # React SPA 폴백
         ├── dto/                     # 요청/응답 DTO
         └── util/
-            ├── DataInitializer.java # 최초 실행 시 시드 데이터 삽입
-            └── DummyDataHelper.java # DB 비어 있을 때 폴백 더미 데이터
+            ├── DataInitializer.java        # 최초 실행 시 시드 데이터 삽입
+            ├── AdminUserInitializer.java   # SUPER_ADMIN 시드 계정 생성
+            ├── StatusMigrationRunner.java  # APPROVED → STATUS 컬럼 마이그레이션
+            └── DummyDataHelper.java        # DB 비어 있을 때 폴백 더미 데이터
 ```
 
 ---
@@ -183,6 +197,35 @@ SCHEDULES (일정)     — scopeType: dept | faculty | univ
 | GET | `/api/school/schedules?schoolId=` | 단과대 일정 |
 | GET | `/api/school/info?schoolId=` | 단과대 정보 |
 
+### 관리자 API
+
+모든 어드민 엔드포인트는 `X-Username` 요청 헤더로 사용자를 식별하고 백엔드에서 `adminRole` 가드를 통과해야 호출 가능합니다 (실패 시 403).
+
+**최고 관리자 (`SUPER_ADMIN` 전용)** — `/api/admin/super/*`
+| Method | 경로 | 설명 |
+|--------|------|------|
+| GET | `/api/admin/super/stats` | 전체 사용자/학교/방문자 통계 |
+| GET | `/api/admin/super/schools` | 등록 학교 목록 |
+| GET | `/api/admin/super/visitors` | 30일 방문자 추이 |
+| GET | `/api/admin/super/infra` | 서버 메모리/스레드/업타임 |
+| GET | `/api/admin/super/users` | 관리자 역할 보유 사용자 |
+| PUT | `/api/admin/super/users/{id}/role` | 사용자 역할 부여/회수 |
+| GET | `/api/admin/super/pending-admins` | 관리자 가입 승인 대기 목록 |
+| PUT | `/api/admin/super/users/{id}/approve-admin` | 가입 승인/거절 + 역할 부여 |
+| PUT | `/api/admin/super/users/{id}/approve` | (구) 일반 승인 토글 |
+
+**학교 관리자 (`SCHOOL_ADMIN` + `SUPER_ADMIN`)** — `/api/admin/school/*`
+- SUPER_ADMIN은 `?univId=X` 쿼리로 학교 지정, SCHOOL_ADMIN은 본인 학교 자동 해석
+- `/stats`, `/visitors` (단/학부/학과 통합 집계), `/posts`, `/notices`, `/users`, `/all-users`, `/pending-users` (admin 신청 제외), `/users/{id}/status`, `/users/{id}/role`, `/logs`, `/monthly-stats`
+
+**학과 관리자 (`SUPER` + `SCHOOL` + `DEPT_ADMIN`)** — `/api/admin/dept/*`
+- SUPER/SCHOOL은 `?deptId=X` 쿼리로 지정, DEPT_ADMIN은 본인 학과 자동 해석
+- `/stats`, `/visitors`, `/posts`, `/notices`, `/users`, `/users/{id}/status`, `/monthly-stats`
+
+**학부 관리자 (`SUPER` + `SCHOOL` 전용, DEPT_ADMIN 차단)** — `/api/admin/faculty/*`
+- `?facultyId=X` 쿼리 필수
+- 동일한 9개 엔드포인트 셋
+
 ---
 
 ## 실행 방법
@@ -239,8 +282,13 @@ cd demo/demo
 
 - **BCrypt 암호화**: 회원가입 시 비밀번호 BCrypt 해시 저장, 로그인 시 검증
 - **회원 유형**: `student`(학생) / `professor`(교수) / `staff`(직원) / `admin`(관리자)
+- **사용자 상태 (`APP_USERS.STATUS`)**: `ACTIVE` / `PENDING_APPROVAL` / `SUSPENDED` / `DELETED`
+- **관리자 역할 (`APP_USERS.ADMIN_ROLE`)**: `SUPER_ADMIN` (전 시스템) / `SCHOOL_ADMIN` (자기 학교) / `DEPT_ADMIN` (자기 학과)
+- **관리자 가입 흐름**: `memberType=admin`으로 가입 시 `status=PENDING_APPROVAL`, `adminRole=null`. SUPER_ADMIN이 SuperAdminPage에서 역할 선택 후 승인 시 ACTIVE + 역할 부여.
 - **공개 범위**: 게시글 작성 시 `all`(전체) / `student`(학생만) / `professor`(교수만) 선택 가능
 - **학년 필터**: 학생 게시글에 대상 학년(1~4학년) 태그 설정 가능
+- **AdminBanner**: 일반 페이지에 떠 있는 "관리자 페이지" 진입 버튼. 역할별로 다른 어드민 대시보드로 라우팅
+- **임베디드 모드**: `<DepartmentPage embedded />` / `<FacultyPage embedded />`로 어드민 대시보드의 "학과/학부 페이지" 탭 안에 일반 페이지를 표시 (Navbar/AdminBanner 숨김)
 - **DummyDataHelper**: DB에 공지·게시글·일정이 없을 경우 더미 데이터로 폴백
 - **SPA 라우팅**: SpaController가 모든 프론트엔드 경로를 `index.html`로 포워딩
 

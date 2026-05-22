@@ -557,3 +557,150 @@ return '/universities'
 | `application.properties` | 포트(8080), 정적 리소스 no-cache 설정 |
 | `utils/scheduleUtils.ts` | `groupByMonth(ScheduleDto[])` 공유 함수. SchedulePage·FacultySchedulePage·SchoolSchedulePage가 import |
 | `vite.config.ts` | 빌드 출력 경로(`static/`), `/api` 프록시 설정 |
+
+---
+
+## 14. 관리자 시스템 (2026-05-22 추가)
+
+> 일부 상단 섹션(11번 인증 — "인메모리" 등)은 2026-05-20 Oracle DB 연동 후 갱신되지 않았습니다. 이 섹션이 현재 동작 기준입니다.
+
+### 14.1 역할 모델
+
+`APP_USERS` 테이블의 두 컬럼이 권한 결정에 사용됩니다.
+
+| 컬럼 | 값 | 의미 |
+|------|-----|------|
+| `STATUS` | `ACTIVE` | 정상 사용자 — 로그인 가능 |
+|          | `PENDING_APPROVAL` | 관리자 가입 신청 대기 — 로그인 차단 |
+|          | `SUSPENDED` | 정지됨 — 로그인 차단 |
+|          | `DELETED` | 소프트 삭제 — 로그인 차단 |
+| `ADMIN_ROLE` | `SUPER_ADMIN` | 전 시스템 + 모든 학교 관리 |
+|              | `SCHOOL_ADMIN` | 자기 학교의 학부/학과/사용자 관리 |
+|              | `DEPT_ADMIN` | 자기 학과만 관리 |
+|              | `null` | 일반 사용자 |
+
+### 14.2 인증 흐름
+
+1. **회원가입** (`AuthService.signup`)
+   - 일반 사용자(`student`/`professor`/`staff`) → `STATUS=ACTIVE`, `ADMIN_ROLE=null`
+   - 관리자 신청(`memberType=admin`) → `STATUS=PENDING_APPROVAL`, `ADMIN_ROLE=null` (역할은 승인자가 결정)
+
+2. **로그인** (`AuthService.login`)
+   - `STATUS` 분기:
+     - `PENDING_APPROVAL` → "관리자 승인 후 이용 가능합니다."
+     - `SUSPENDED` → "계정이 정지되었습니다."
+     - `DELETED` → "존재하지 않는 계정입니다."
+     - `ACTIVE` → 성공
+   - 성공 응답에 `adminRole`, `universityId` 포함. DEPT_ADMIN의 경우 `deptId`도 함께 반환 (universityId + department 이름으로 역추적)
+   - 프론트가 sessionStorage에 `adminRole`, `universityId`, `deptId`(있으면) 저장
+
+3. **API 인증**
+   - 클라이언트가 `X-Username` 헤더로 username 전송 (간이 인증)
+   - 각 어드민 컨트롤러가 `userRepository.findByUsername(username).getAdminRole()`로 역할 검증
+   - 권한 미달 시 `403 Forbidden` → 프론트의 `handle403`이 `/universities`로 리다이렉트
+
+### 14.3 어드민 페이지와 라우트
+
+| 경로 | 페이지 | 허용 역할 |
+|------|--------|-----------|
+| `/admin/super` | SuperAdminPage | SUPER_ADMIN |
+| `/admin/school/:id` | SchoolAdminPage | SUPER_ADMIN, SCHOOL_ADMIN |
+| `/admin/dept/:id` | DeptAdminPage | SUPER_ADMIN, SCHOOL_ADMIN, DEPT_ADMIN |
+| `/admin/faculty/:id` | FacultyAdminPage | SUPER_ADMIN, SCHOOL_ADMIN |
+
+- `:id`는 대상 스코프 id (universityId / facultyId / deptId)
+- DEPT_ADMIN은 `/admin/dept/{본인 학과 id}`만 의미 있음 — 다른 id를 넣어도 백엔드가 본인 학과로 강제 해석
+
+`App.tsx`의 라우트 가드 컴포넌트:
+- `ProtectedSuperAdmin` / `ProtectedSchoolAdmin` / `ProtectedFacultyAdmin` / `ProtectedAdmin`(역할 무관, 어드민이면 통과)
+
+### 14.4 AdminBanner — 일반 페이지의 어드민 진입 동선
+
+`AdminBanner` 컴포넌트가 일반 페이지에 떠 있으면서 해당 페이지의 스코프에 해당하는 어드민 대시보드로 이동시킵니다.
+
+| 스코프 | 표시되는 페이지 | 허용 역할 |
+|--------|-----------------|-----------|
+| `selection` | `/universities` | 모든 어드민 |
+| `school` | UniversityShowPage / SchoolBoardPage 등 | SUPER, SCHOOL |
+| `dept` | DepartmentPage / BoardPage 등 | SUPER, SCHOOL, DEPT |
+
+`selection` 스코프의 URL 결정 로직:
+- SUPER → `/admin/super`
+- SCHOOL → `/admin/school/{sessionStorage.universityId}`
+- DEPT → `/admin/dept/{sessionStorage.deptId}` (없으면 학교 대시보드로 폴백)
+
+### 14.5 어드민 대시보드 구조
+
+**SuperAdminPage** — 단일 페이지 스크롤 대시보드
+- 4-카드 통계 (총 사용자, 7일/30일 신규 가입, 등록 학교)
+- 차트 (방문자 추이, 사용자 현황)
+- 등록 학교 목록 + 서버 인프라
+- **관리자 가입 승인 대기 섹션** — 역할 드롭다운 + 승인/거절
+- 관리자 계정 관리 테이블
+
+**SchoolAdminPage / DeptAdminPage / FacultyAdminPage** — 6탭 구조 (동일 패턴)
+
+| 탭 | 내용 |
+|----|------|
+| 개요 | 통계 카드 + 방문자 라인 차트 + 콘텐츠 비율 도넛 차트 |
+| 학교/학과/학부 페이지 | 일반 페이지를 `embedded` 모드로 임베드 (Navbar/AdminBanner 숨김) |
+| 게시글 관리 | 페이지네이션 + 삭제 |
+| 공지 관리 | 페이지네이션 + 삭제 |
+| 사용자 | 학교/학과/학부 소속 사용자 + 상태 변경 (ACTIVE/SUSPENDED/DELETED) |
+| 통계 | 6개월 월간 신규가입/게시글/방문자 바 차트 |
+
+학과/학부 대시보드 헤더에는 `[학과 글쓰기]`, `[공지 작성]` 버튼이 있어 기존 `/dept/board/write`, `/dept/notice/write` (또는 `/school/faculty/:id/*/write`) 라우트로 DeptContext 설정 후 이동합니다.
+
+### 14.6 백엔드 — 스코프 해석 패턴
+
+각 어드민 컨트롤러는 동일한 패턴의 `resolveXxxId` 헬퍼를 가집니다.
+
+```java
+private Long resolveDeptId(String username, Long deptIdParam) {
+    User user = lookup(username);  // 없으면 403
+    String role = user.getAdminRole();
+    if ("SUPER_ADMIN".equals(role)) {
+        require(deptIdParam != null);  // 400 if null
+        return deptIdParam;
+    }
+    if ("SCHOOL_ADMIN".equals(role)) {
+        require(deptIdParam != null);
+        // dept → faculty → school 거슬러올라가 본인 학교 소속인지 확인
+        verifyOwnsScope(user, deptIdParam);
+        return deptIdParam;
+    }
+    if ("DEPT_ADMIN".equals(role)) {
+        // 사용자 (universityId, department) 이름으로 dept id 역추적
+        return adminService.resolveDeptIdByName(...);
+    }
+    throw 403;
+}
+```
+
+같은 패턴이 `SchoolAdminController.resolveUnivId`, `FacultyAdminController.resolveFacultyId`에 적용됩니다. FacultyAdminController는 DEPT_ADMIN 분기를 의도적으로 빼서 403을 반환합니다 (학과 관리자가 상위 학부를 못 보도록).
+
+### 14.7 ADMIN_LOGS — 관리자 액션 감사 로그
+
+모든 상태 변경/역할 부여/승인/거절은 `AdminLog` 엔티티에 기록됩니다.
+
+| 컬럼 | 설명 |
+|------|------|
+| `actorUsername` | 액션 수행자 |
+| `actionType` | `APPROVE` / `REJECT` / `SUSPEND` / `UNSUSPEND` / `DELETE` / `ROLE_GRANT` / `ROLE_REVOKE` |
+| `targetUsername` | 대상 사용자 (nullable) |
+| `detail` | 사람이 읽을 수 있는 설명 |
+| `universityId` | 스코프 필터링용 학교 id |
+| `createdAt` | 액션 시각 |
+
+`SchoolAdminPage`의 "활동 로그" 탭에서 학교 스코프로 필터링해 표시. DeptAdminPage/FacultyAdminPage에는 로그 탭 없음 (out of scope).
+
+### 14.8 시드 데이터 / 마이그레이션
+
+- `AdminUserInitializer` (`@Order(2)`) — 앱 시작 시 SUPER_ADMIN 시드 계정 자동 생성 (없으면)
+- `StatusMigrationRunner` (`@Order(3)`) — 구버전 `APPROVED BOOLEAN` 컬럼을 기준으로 신규 `STATUS` 컬럼 백필. 후속 실행에서는 `ALTER TABLE APP_USERS MODIFY (APPROVED NULL)`을 PL/SQL EXCEPTION 블록으로 idempotent하게 실행해 NOT NULL 제약 제거 (회원가입 시 INSERT에 APPROVED 누락돼도 통과)
+
+### 14.9 관련 설계 문서
+
+- `docs/superpowers/specs/2026-05-22-school-admin-v2-design.md` — 학교 관리자 v2 (status 시스템, 가입 승인, 활동 로그)
+- `docs/superpowers/specs/2026-05-22-dept-faculty-admin-design.md` — Dept/Faculty 관리자 대시보드 설계
+- `docs/superpowers/plans/2026-05-22-dept-faculty-admin.md` — Dept/Faculty 구현 계획
