@@ -86,7 +86,8 @@ export default function SchoolAdminPage() {
   const handleRoleChange = async (userId: number, currentRole: string | null) => {
     const newRole = currentRole === 'DEPT_ADMIN' ? '' : 'DEPT_ADMIN'
     await updateSchoolUserRole(userId, newRole, univId)
-    fetchSchoolUsers(univId).then(setAdminUsers)
+    await fetchSchoolUsers(univId).then(setAdminUsers)
+    fetchAdminLogs(univId).then(setLogs)
   }
 
   const filteredUsers = allUsers.filter(u => {
