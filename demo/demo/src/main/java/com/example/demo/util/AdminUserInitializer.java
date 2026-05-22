@@ -46,7 +46,7 @@ public class AdminUserInitializer implements CommandLineRunner {
         user.setPassword(passwordEncoder.encode(password));
         user.setName(name);
         user.setMemberType("admin");
-        user.setApproved(true);
+        user.setStatus("ACTIVE");
         user.setAdminRole(adminRole);
         user.setUniversityId(universityId);
         user.setDepartment(department);
