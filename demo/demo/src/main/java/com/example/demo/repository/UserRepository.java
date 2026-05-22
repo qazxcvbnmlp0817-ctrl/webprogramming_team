@@ -20,6 +20,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // School admin: all users in a university
     List<User> findByUniversityId(String universityId);
 
+    // Dept/Faculty admin: users in a specific department (matched by name)
+    List<User> findByUniversityIdAndDepartment(String universityId, String department);
+
     // School admin: pending-approval users in a university
     List<User> findByUniversityIdAndStatus(String universityId, String status);
 

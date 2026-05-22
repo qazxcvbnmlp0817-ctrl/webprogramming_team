@@ -1,6 +1,9 @@
 package com.example.demo.service;
 
 import com.example.demo.entity.AdminLog;
+import com.example.demo.entity.CollegeSchool;
+import com.example.demo.entity.Department;
+import com.example.demo.entity.Notice;
 import com.example.demo.entity.PageVisit;
 import com.example.demo.entity.Post;
 import com.example.demo.entity.User;
@@ -125,8 +128,12 @@ public class AdminService {
     }
 
     public Map<String, Object> getSchoolPosts(Long univId, int page) {
+        return getScopedPosts("univ", univId, page);
+    }
+
+    public Map<String, Object> getScopedPosts(String scopeType, Long scopeId, int page) {
         Page<Post> postPage = postRepository.findByScopeTypeAndScopeId(
-                "univ", univId,
+                scopeType, scopeId,
                 PageRequest.of(page, 20, Sort.by(Sort.Direction.DESC, "createdDate")));
 
         List<Map<String, Object>> posts = postPage.getContent().stream().map(p -> {
@@ -144,6 +151,30 @@ public class AdminService {
         result.put("posts",         posts);
         result.put("totalPages",    postPage.getTotalPages());
         result.put("totalElements", postPage.getTotalElements());
+        return result;
+    }
+
+    public Map<String, Object> getScopedNotices(String scopeType, Long scopeId, int page) {
+        Page<Notice> nPage = noticeRepository.findByScopeTypeAndScopeId(
+                scopeType, scopeId,
+                PageRequest.of(page, 20, Sort.by(Sort.Direction.DESC, "createdDate")));
+
+        List<Map<String, Object>> notices = nPage.getContent().stream().map(n -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id",          n.getId());
+            m.put("title",       n.getTitle());
+            m.put("author",      n.getAuthor());
+            m.put("category",    n.getCategory());
+            m.put("viewCount",   n.getViewCount());
+            m.put("featured",    n.isFeatured());
+            m.put("createdDate", n.getCreatedDate() != null ? n.getCreatedDate().toString() : "");
+            return m;
+        }).collect(Collectors.toList());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("notices",       notices);
+        result.put("totalPages",    nPage.getTotalPages());
+        result.put("totalElements", nPage.getTotalElements());
         return result;
     }
 
@@ -269,6 +300,211 @@ public class AdminService {
     private Long parseUnivId(String s) {
         if (s == null || s.isBlank()) return null;
         try { return Long.parseLong(s); } catch (NumberFormatException e) { return null; }
+    }
+
+    // ── Dept Admin ───────────────────────────────────────────────────────────
+
+    public Map<String, Object> getDeptStats(Long deptId) {
+        long totalPosts   = postRepository.countByScopeTypeAndScopeId("dept", deptId);
+        long totalNotices = noticeRepository.countByScopeTypeAndScopeId("dept", deptId);
+        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
+        long todayVisitors = pageVisitRepository
+            .countByScopeTypeAndScopeIdAndVisitedAtAfter("dept", deptId, todayStart);
+        Map<String, Object> result = new HashMap<>();
+        result.put("totalPosts", totalPosts);
+        result.put("totalNotices", totalNotices);
+        result.put("todayVisitors", todayVisitors);
+        return result;
+    }
+
+    public List<Map<String, Object>> getDeptVisitorTrend(Long deptId) {
+        LocalDateTime since = LocalDate.now().minusDays(29).atStartOfDay();
+        List<PageVisit> visits = pageVisitRepository
+            .findByScopeTypeAndScopeIdAndVisitedAtAfter("dept", deptId, since);
+        return aggregateByDay(visits);
+    }
+
+    public Map<String, Object> getDeptPosts(Long deptId, int page) {
+        return getScopedPosts("dept", deptId, page);
+    }
+
+    public Map<String, Object> deleteDeptPost(Long postId, Long deptId, String actor) {
+        Post p = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found: " + postId));
+        if (!"dept".equals(p.getScopeType()) || !deptId.equals(p.getScopeId())) {
+            throw new RuntimeException("Post scope mismatch");
+        }
+        postRepository.deleteById(postId);
+        logAction(actor, "DELETE", null, "dept post#" + postId, deptToUnivId(deptId));
+        return Map.of("success", true);
+    }
+
+    public Map<String, Object> getDeptNotices(Long deptId, int page) {
+        return getScopedNotices("dept", deptId, page);
+    }
+
+    public Map<String, Object> deleteDeptNotice(Long noticeId, Long deptId, String actor) {
+        Notice n = noticeRepository.findById(noticeId)
+                .orElseThrow(() -> new RuntimeException("Notice not found: " + noticeId));
+        if (!"dept".equals(n.getScopeType()) || !deptId.equals(n.getScopeId())) {
+            throw new RuntimeException("Notice scope mismatch");
+        }
+        noticeRepository.deleteById(noticeId);
+        logAction(actor, "DELETE", null, "dept notice#" + noticeId, deptToUnivId(deptId));
+        return Map.of("success", true);
+    }
+
+    public List<Map<String, Object>> getDeptUsers(Long deptId) {
+        Department d = departmentRepository.findById(deptId)
+                .orElseThrow(() -> new RuntimeException("Department not found: " + deptId));
+        Long univId = deptToUnivId(deptId);
+        if (univId == null) return Collections.emptyList();
+        return userRepository.findByUniversityIdAndDepartment(String.valueOf(univId), d.getName())
+                .stream().map(this::toUserMap).collect(Collectors.toList());
+    }
+
+    public Map<String, Object> updateDeptUserStatus(Long userId, String status,
+                                                      Long deptId, String actor) {
+        return updateUserStatus(userId, status, actor, deptToUnivId(deptId));
+    }
+
+    public List<Map<String, Object>> getDeptMonthlyStats(Long deptId) {
+        Long univ = deptToUnivId(deptId);
+        List<Map<String, Object>> result = new ArrayList<>();
+        YearMonth now = YearMonth.now();
+        for (int i = 5; i >= 0; i--) {
+            YearMonth ym = now.minusMonths(i);
+            LocalDateTime start = ym.atDay(1).atStartOfDay();
+            LocalDateTime end   = ym.atEndOfMonth().atTime(23, 59, 59);
+            long signups  = univ != null ? userRepository
+                .countByUniversityIdAndCreatedDateBetween(String.valueOf(univ), start, end) : 0;
+            long posts    = postRepository.countByScopeTypeAndScopeIdAndCreatedDateBetween("dept", deptId, start, end);
+            long visitors = pageVisitRepository.countByScopeTypeAndScopeIdAndVisitedAtBetween("dept", deptId, start, end);
+            Map<String, Object> m = new HashMap<>();
+            m.put("month", ym.toString());
+            m.put("signups", signups);
+            m.put("posts", posts);
+            m.put("visitors", visitors);
+            result.add(m);
+        }
+        return result;
+    }
+
+    public Long deptToUnivId(Long deptId) {
+        return departmentRepository.findById(deptId)
+                .flatMap(d -> facultyGroupRepository.findById(d.getFacultyId()))
+                .flatMap(f -> collegeSchoolRepository.findById(f.getSchoolId()))
+                .map(CollegeSchool::getUniversityId)
+                .orElse(null);
+    }
+
+    // ── Faculty Admin ────────────────────────────────────────────────────────
+
+    public Map<String, Object> getFacultyStats(Long facultyId) {
+        long totalPosts   = postRepository.countByScopeTypeAndScopeId("faculty", facultyId);
+        long totalNotices = noticeRepository.countByScopeTypeAndScopeId("faculty", facultyId);
+        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
+        long todayVisitors = pageVisitRepository
+            .countByScopeTypeAndScopeIdAndVisitedAtAfter("faculty", facultyId, todayStart);
+        Map<String, Object> result = new HashMap<>();
+        result.put("totalPosts", totalPosts);
+        result.put("totalNotices", totalNotices);
+        result.put("todayVisitors", todayVisitors);
+        return result;
+    }
+
+    public List<Map<String, Object>> getFacultyVisitorTrend(Long facultyId) {
+        LocalDateTime since = LocalDate.now().minusDays(29).atStartOfDay();
+        List<PageVisit> visits = pageVisitRepository
+            .findByScopeTypeAndScopeIdAndVisitedAtAfter("faculty", facultyId, since);
+        return aggregateByDay(visits);
+    }
+
+    public Map<String, Object> getFacultyPosts(Long facultyId, int page) {
+        return getScopedPosts("faculty", facultyId, page);
+    }
+
+    public Map<String, Object> deleteFacultyPost(Long postId, Long facultyId, String actor) {
+        Post p = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found: " + postId));
+        if (!"faculty".equals(p.getScopeType()) || !facultyId.equals(p.getScopeId())) {
+            throw new RuntimeException("Post scope mismatch");
+        }
+        postRepository.deleteById(postId);
+        logAction(actor, "DELETE", null, "faculty post#" + postId, facultyToUnivId(facultyId));
+        return Map.of("success", true);
+    }
+
+    public Map<String, Object> getFacultyNotices(Long facultyId, int page) {
+        return getScopedNotices("faculty", facultyId, page);
+    }
+
+    public Map<String, Object> deleteFacultyNotice(Long noticeId, Long facultyId, String actor) {
+        Notice n = noticeRepository.findById(noticeId)
+                .orElseThrow(() -> new RuntimeException("Notice not found: " + noticeId));
+        if (!"faculty".equals(n.getScopeType()) || !facultyId.equals(n.getScopeId())) {
+            throw new RuntimeException("Notice scope mismatch");
+        }
+        noticeRepository.deleteById(noticeId);
+        logAction(actor, "DELETE", null, "faculty notice#" + noticeId, facultyToUnivId(facultyId));
+        return Map.of("success", true);
+    }
+
+    public List<Map<String, Object>> getFacultyUsers(Long facultyId) {
+        List<String> deptNames = departmentRepository.findByFacultyIdOrderByIdAsc(facultyId)
+                .stream().map(Department::getName).collect(Collectors.toList());
+        if (deptNames.isEmpty()) return Collections.emptyList();
+        Long univId = facultyToUnivId(facultyId);
+        if (univId == null) return Collections.emptyList();
+        String univStr = String.valueOf(univId);
+        return deptNames.stream()
+                .flatMap(n -> userRepository.findByUniversityIdAndDepartment(univStr, n).stream())
+                .map(this::toUserMap)
+                .collect(Collectors.toList());
+    }
+
+    public Map<String, Object> updateFacultyUserStatus(Long userId, String status,
+                                                         Long facultyId, String actor) {
+        return updateUserStatus(userId, status, actor, facultyToUnivId(facultyId));
+    }
+
+    public List<Map<String, Object>> getFacultyMonthlyStats(Long facultyId) {
+        Long univ = facultyToUnivId(facultyId);
+        List<Map<String, Object>> result = new ArrayList<>();
+        YearMonth now = YearMonth.now();
+        for (int i = 5; i >= 0; i--) {
+            YearMonth ym = now.minusMonths(i);
+            LocalDateTime start = ym.atDay(1).atStartOfDay();
+            LocalDateTime end   = ym.atEndOfMonth().atTime(23, 59, 59);
+            long signups  = univ != null ? userRepository
+                .countByUniversityIdAndCreatedDateBetween(String.valueOf(univ), start, end) : 0;
+            long posts    = postRepository.countByScopeTypeAndScopeIdAndCreatedDateBetween("faculty", facultyId, start, end);
+            long visitors = pageVisitRepository.countByScopeTypeAndScopeIdAndVisitedAtBetween("faculty", facultyId, start, end);
+            Map<String, Object> m = new HashMap<>();
+            m.put("month", ym.toString());
+            m.put("signups", signups);
+            m.put("posts", posts);
+            m.put("visitors", visitors);
+            result.add(m);
+        }
+        return result;
+    }
+
+    public Long facultyToUnivId(Long facultyId) {
+        return facultyGroupRepository.findById(facultyId)
+                .flatMap(f -> collegeSchoolRepository.findById(f.getSchoolId()))
+                .map(CollegeSchool::getUniversityId)
+                .orElse(null);
+    }
+
+    /** Reverse lookup: given a university and a department name, return its id. */
+    public Long resolveDeptIdByName(Long universityId, String deptName) {
+        return collegeSchoolRepository.findByUniversityIdOrderByIdAsc(universityId).stream()
+                .flatMap(s -> facultyGroupRepository.findBySchoolIdOrderByIdAsc(s.getId()).stream())
+                .flatMap(f -> departmentRepository.findByFacultyIdOrderByIdAsc(f.getId()).stream())
+                .filter(d -> deptName.equals(d.getName()))
+                .map(Department::getId)
+                .findFirst().orElse(null);
     }
 
     // ── Private helpers ──────────────────────────────────────────────────────
