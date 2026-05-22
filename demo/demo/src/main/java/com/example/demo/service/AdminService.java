@@ -54,7 +54,7 @@ public class AdminService {
 
     public List<Map<String, Object>> getGlobalVisitorTrend() {
         List<PageVisit> visits = pageVisitRepository
-                .findByVisitedAtAfter(LocalDateTime.now().minusDays(30));
+                .findByVisitedAtAfter(LocalDate.now().minusDays(29).atStartOfDay());
         return aggregateByDay(visits);
     }
 
@@ -96,7 +96,7 @@ public class AdminService {
     public List<Map<String, Object>> getSchoolVisitorTrend(Long univId) {
         List<PageVisit> visits = pageVisitRepository
                 .findByScopeTypeAndScopeIdAndVisitedAtAfter("univ", univId,
-                        LocalDateTime.now().minusDays(30));
+                        LocalDate.now().minusDays(29).atStartOfDay());
         return aggregateByDay(visits);
     }
 
