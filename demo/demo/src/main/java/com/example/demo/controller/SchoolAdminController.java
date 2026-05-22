@@ -28,88 +28,129 @@ public class SchoolAdminController {
         this.postService = postService;
     }
 
-    private Long verifySchoolAndGetUnivId(String username) {
+    // Accepts SUPER_ADMIN (passes univId param) or SCHOOL_ADMIN (univId from profile)
+    private Long resolveUnivId(String username, Long univIdParam) {
         if (username == null || username.isBlank())
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "인증 정보 없음");
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "사용자 없음"));
-        if (!"SCHOOL_ADMIN".equals(user.getAdminRole()))
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "권한 없음");
-        if (user.getUniversityId() == null || user.getUniversityId().isBlank())
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "학교 미연결");
-        return Long.parseLong(user.getUniversityId());
+        String role = user.getAdminRole();
+        if ("SUPER_ADMIN".equals(role)) {
+            if (univIdParam == null)
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "univId 파라미터 필요");
+            return univIdParam;
+        }
+        if ("SCHOOL_ADMIN".equals(role)) {
+            if (user.getUniversityId() == null || user.getUniversityId().isBlank())
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "학교 미연결");
+            return Long.parseLong(user.getUniversityId());
+        }
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "권한 없음");
     }
 
-    private User verifySchool(String username) {
-        if (username == null || username.isBlank())
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "인증 정보 없음");
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "사용자 없음"));
-        if (!"SCHOOL_ADMIN".equals(user.getAdminRole()))
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "권한 없음");
-        if (user.getUniversityId() == null || user.getUniversityId().isBlank())
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "학교 미연결");
-        return user;
+    private String resolveActor(String username) {
+        return username != null ? username : "unknown";
     }
 
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> getStats(
-            @RequestHeader(value = "X-Username", required = false) String username) {
-        Long univId = verifySchoolAndGetUnivId(username);
-        return ResponseEntity.ok(adminService.getSchoolStats(univId));
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @RequestParam(required = false) Long univId) {
+        Long id = resolveUnivId(username, univId);
+        return ResponseEntity.ok(adminService.getSchoolStats(id));
     }
 
     @GetMapping("/visitors")
     public ResponseEntity<List<Map<String, Object>>> getVisitors(
-            @RequestHeader(value = "X-Username", required = false) String username) {
-        Long univId = verifySchoolAndGetUnivId(username);
-        return ResponseEntity.ok(adminService.getSchoolVisitorTrend(univId));
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @RequestParam(required = false) Long univId) {
+        Long id = resolveUnivId(username, univId);
+        return ResponseEntity.ok(adminService.getSchoolVisitorTrend(id));
     }
 
     @GetMapping("/posts")
     public ResponseEntity<Map<String, Object>> getPosts(
             @RequestHeader(value = "X-Username", required = false) String username,
-            @RequestParam(defaultValue = "0") int page) {
-        Long univId = verifySchoolAndGetUnivId(username);
-        return ResponseEntity.ok(adminService.getSchoolPosts(univId, page));
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) Long univId) {
+        Long id = resolveUnivId(username, univId);
+        return ResponseEntity.ok(adminService.getSchoolPosts(id, page));
     }
 
     @DeleteMapping("/posts/{postId}")
     public ResponseEntity<Map<String, Object>> deletePost(
             @RequestHeader(value = "X-Username", required = false) String username,
-            @PathVariable Long postId) {
-        verifySchoolAndGetUnivId(username);
+            @PathVariable Long postId,
+            @RequestParam(required = false) Long univId) {
+        resolveUnivId(username, univId);
         postService.delete(postId);
         return ResponseEntity.ok(Map.of("success", true));
     }
 
     @GetMapping("/users")
-    public ResponseEntity<List<Map<String, Object>>> getUsers(
-            @RequestHeader(value = "X-Username", required = false) String username) {
-        User caller = verifySchool(username);
-        return ResponseEntity.ok(adminService.getSchoolAdminUsers(caller.getUniversityId()));
+    public ResponseEntity<List<Map<String, Object>>> getAdminUsers(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @RequestParam(required = false) Long univId) {
+        Long id = resolveUnivId(username, univId);
+        return ResponseEntity.ok(adminService.getSchoolAdminUsers(String.valueOf(id)));
+    }
+
+    @GetMapping("/all-users")
+    public ResponseEntity<List<Map<String, Object>>> getAllUsers(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @RequestParam(required = false) Long univId) {
+        Long id = resolveUnivId(username, univId);
+        return ResponseEntity.ok(adminService.getSchoolAllUsers(id));
+    }
+
+    @GetMapping("/pending-users")
+    public ResponseEntity<List<Map<String, Object>>> getPendingUsers(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @RequestParam(required = false) Long univId) {
+        Long id = resolveUnivId(username, univId);
+        return ResponseEntity.ok(adminService.getSchoolPendingUsers(id));
+    }
+
+    @PutMapping("/users/{id}/status")
+    public ResponseEntity<Map<String, Object>> updateStatus(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body,
+            @RequestParam(required = false) Long univId) {
+        Long resolvedUnivId = resolveUnivId(username, univId);
+        String newStatus = body.get("status");
+        if (newStatus == null || newStatus.isBlank())
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "status 필드 필요");
+        return ResponseEntity.ok(adminService.updateUserStatus(id, newStatus,
+                resolveActor(username), resolvedUnivId));
+    }
+
+    @GetMapping("/logs")
+    public ResponseEntity<List<Map<String, Object>>> getLogs(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @RequestParam(required = false) Long univId) {
+        Long id = resolveUnivId(username, univId);
+        return ResponseEntity.ok(adminService.getAdminLogs(id));
+    }
+
+    @GetMapping("/monthly-stats")
+    public ResponseEntity<List<Map<String, Object>>> getMonthlyStats(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @RequestParam(required = false) Long univId) {
+        Long id = resolveUnivId(username, univId);
+        return ResponseEntity.ok(adminService.getSchoolMonthlyStats(id));
     }
 
     @PutMapping("/users/{id}/role")
     public ResponseEntity<Map<String, Object>> updateRole(
             @RequestHeader(value = "X-Username", required = false) String username,
             @PathVariable Long id,
-            @RequestBody Map<String, String> body) {
-        verifySchoolAndGetUnivId(username);
+            @RequestBody Map<String, String> body,
+            @RequestParam(required = false) Long univId) {
+        resolveUnivId(username, univId);
         String role = body.get("role");
         if (role != null && !role.isBlank() && !"DEPT_ADMIN".equals(role))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "School Admin은 DEPT_ADMIN만 부여 가능");
         return ResponseEntity.ok(adminService.updateUserRole(id, role));
-    }
-
-    @PutMapping("/users/{id}/approve")
-    public ResponseEntity<Map<String, Object>> approveUser(
-            @RequestHeader(value = "X-Username", required = false) String username,
-            @PathVariable Long id,
-            @RequestBody Map<String, Boolean> body) {
-        verifySchoolAndGetUnivId(username);
-        Boolean approved = body.get("approved");
-        if (approved == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "approved 필드 필요");
-        return ResponseEntity.ok(adminService.approveUser(id, approved));
     }
 }
