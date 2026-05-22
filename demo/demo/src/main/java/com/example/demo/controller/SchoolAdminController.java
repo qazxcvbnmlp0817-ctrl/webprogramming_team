@@ -47,6 +47,8 @@ public class SchoolAdminController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "사용자 없음"));
         if (!"SCHOOL_ADMIN".equals(user.getAdminRole()))
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "권한 없음");
+        if (user.getUniversityId() == null || user.getUniversityId().isBlank())
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "학교 미연결");
         return user;
     }
 
