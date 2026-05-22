@@ -1,5 +1,6 @@
 package com.example.demo.service;
 
+import com.example.demo.entity.AdminLog;
 import com.example.demo.entity.PageVisit;
 import com.example.demo.entity.Post;
 import com.example.demo.entity.User;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.lang.management.ManagementFactory;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -23,17 +25,29 @@ public class AdminService {
     private final PostRepository postRepository;
     private final NoticeRepository noticeRepository;
     private final UniversityRepository universityRepository;
+    private final CollegeSchoolRepository collegeSchoolRepository;
+    private final FacultyGroupRepository facultyGroupRepository;
+    private final DepartmentRepository departmentRepository;
+    private final AdminLogRepository adminLogRepository;
 
     public AdminService(UserRepository userRepository,
                         PageVisitRepository pageVisitRepository,
                         PostRepository postRepository,
                         NoticeRepository noticeRepository,
-                        UniversityRepository universityRepository) {
+                        UniversityRepository universityRepository,
+                        CollegeSchoolRepository collegeSchoolRepository,
+                        FacultyGroupRepository facultyGroupRepository,
+                        DepartmentRepository departmentRepository,
+                        AdminLogRepository adminLogRepository) {
         this.userRepository = userRepository;
         this.pageVisitRepository = pageVisitRepository;
         this.postRepository = postRepository;
         this.noticeRepository = noticeRepository;
         this.universityRepository = universityRepository;
+        this.collegeSchoolRepository = collegeSchoolRepository;
+        this.facultyGroupRepository = facultyGroupRepository;
+        this.departmentRepository = departmentRepository;
+        this.adminLogRepository = adminLogRepository;
     }
 
     // ── Super Admin ──────────────────────────────────────────────────────────
@@ -83,8 +97,7 @@ public class AdminService {
     public Map<String, Object> getSchoolStats(Long univId) {
         long totalPosts   = postRepository.countByScopeTypeAndScopeId("univ", univId);
         long totalNotices = noticeRepository.countByScopeTypeAndScopeId("univ", univId);
-        long todayVisitors = pageVisitRepository.countByScopeTypeAndScopeIdAndVisitedAtAfter(
-                "univ", univId, LocalDate.now().atStartOfDay());
+        long todayVisitors = getAggregatedTodayVisitors(univId);
 
         Map<String, Object> result = new HashMap<>();
         result.put("totalPosts",    totalPosts);
@@ -94,10 +107,21 @@ public class AdminService {
     }
 
     public List<Map<String, Object>> getSchoolVisitorTrend(Long univId) {
-        List<PageVisit> visits = pageVisitRepository
-                .findByScopeTypeAndScopeIdAndVisitedAtAfter("univ", univId,
-                        LocalDate.now().minusDays(29).atStartOfDay());
-        return aggregateByDay(visits);
+        LocalDateTime since = LocalDate.now().minusDays(29).atStartOfDay();
+        List<PageVisit> univVisits = pageVisitRepository
+                .findByScopeTypeAndScopeIdAndVisitedAtAfter("univ", univId, since);
+
+        List<Long> facultyIds = getFacultyIds(univId);
+        List<Long> deptIds = getDeptIds(facultyIds);
+
+        List<PageVisit> all = new ArrayList<>(univVisits);
+        if (!facultyIds.isEmpty()) {
+            all.addAll(pageVisitRepository.findByScopeTypeAndScopeIdInAndVisitedAtAfter("faculty", facultyIds, since));
+        }
+        if (!deptIds.isEmpty()) {
+            all.addAll(pageVisitRepository.findByScopeTypeAndScopeIdInAndVisitedAtAfter("dept", deptIds, since));
+        }
+        return aggregateByDay(all);
     }
 
     public Map<String, Object> getSchoolPosts(Long univId, int page) {
@@ -128,6 +152,53 @@ public class AdminService {
                 .stream().map(this::toUserMap).collect(Collectors.toList());
     }
 
+    public List<Map<String, Object>> getSchoolAllUsers(Long univId) {
+        return userRepository.findByUniversityId(String.valueOf(univId))
+                .stream().map(this::toUserMap).collect(Collectors.toList());
+    }
+
+    public List<Map<String, Object>> getSchoolPendingUsers(Long univId) {
+        return userRepository.findByUniversityIdAndStatus(String.valueOf(univId), "PENDING_APPROVAL")
+                .stream().map(this::toUserMap).collect(Collectors.toList());
+    }
+
+    public List<Map<String, Object>> getAdminLogs(Long univId) {
+        return adminLogRepository.findTop50ByUniversityIdOrderByCreatedAtDesc(univId)
+                .stream().map(log -> {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("id",             log.getId());
+                    m.put("actionType",     log.getActionType());
+                    m.put("actorUsername",  log.getActorUsername());
+                    m.put("targetUsername", log.getTargetUsername());
+                    m.put("detail",         log.getDetail());
+                    m.put("createdAt",      log.getCreatedAt().toString());
+                    return m;
+                }).collect(Collectors.toList());
+    }
+
+    public List<Map<String, Object>> getSchoolMonthlyStats(Long univId) {
+        String univIdStr = String.valueOf(univId);
+        List<Map<String, Object>> result = new ArrayList<>();
+        YearMonth now = YearMonth.now();
+        for (int i = 5; i >= 0; i--) {
+            YearMonth ym = now.minusMonths(i);
+            LocalDateTime start = ym.atDay(1).atStartOfDay();
+            LocalDateTime end   = ym.atEndOfMonth().atTime(23, 59, 59);
+
+            long signups  = userRepository.countByUniversityIdAndCreatedDateBetween(univIdStr, start, end);
+            long posts    = postRepository.countByScopeTypeAndScopeIdAndCreatedDateBetween("univ", univId, start, end);
+            long visitors = pageVisitRepository.countByScopeTypeAndScopeIdAndVisitedAtBetween("univ", univId, start, end);
+
+            Map<String, Object> m = new HashMap<>();
+            m.put("month",    ym.toString());
+            m.put("signups",  signups);
+            m.put("posts",    posts);
+            m.put("visitors", visitors);
+            result.add(m);
+        }
+        return result;
+    }
+
     // ── Shared ───────────────────────────────────────────────────────────────
 
     public Map<String, Object> updateUserRole(Long userId, String role) {
@@ -138,15 +209,83 @@ public class AdminService {
         return Map.of("success", true);
     }
 
-    public Map<String, Object> approveUser(Long userId, boolean approved) {
+    public Map<String, Object> updateUserStatus(Long userId, String newStatus,
+                                                  String actorUsername, Long univId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));
-        user.setApproved(approved);
+        String oldStatus = user.getStatus();
+        user.setStatus(newStatus);
         userRepository.save(user);
+        logAction(actorUsername, statusToAction(oldStatus, newStatus), user.getUsername(),
+                  oldStatus + " → " + newStatus, univId);
         return Map.of("success", true);
     }
 
+    // Backward compat: SuperAdminController still calls approveUser(id, boolean)
+    public Map<String, Object> approveUser(Long userId, boolean approved) {
+        return updateUserStatus(userId, approved ? "ACTIVE" : "PENDING_APPROVAL",
+                                "system", null);
+    }
+
     // ── Private helpers ──────────────────────────────────────────────────────
+
+    private long getAggregatedTodayVisitors(Long univId) {
+        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
+        long count = pageVisitRepository.countByScopeTypeAndScopeIdAndVisitedAtAfter("univ", univId, todayStart);
+
+        List<Long> facultyIds = getFacultyIds(univId);
+        if (!facultyIds.isEmpty()) {
+            count += pageVisitRepository.countByScopeTypeAndScopeIdInAndVisitedAtAfter("faculty", facultyIds, todayStart);
+        }
+        List<Long> deptIds = getDeptIds(facultyIds);
+        if (!deptIds.isEmpty()) {
+            count += pageVisitRepository.countByScopeTypeAndScopeIdInAndVisitedAtAfter("dept", deptIds, todayStart);
+        }
+        return count;
+    }
+
+    private List<Long> getFacultyIds(Long univId) {
+        List<Long> schoolIds = collegeSchoolRepository.findByUniversityIdOrderByIdAsc(univId)
+                .stream().map(s -> s.getId()).collect(Collectors.toList());
+        if (schoolIds.isEmpty()) return Collections.emptyList();
+        return schoolIds.stream()
+                .flatMap(sid -> facultyGroupRepository.findBySchoolIdOrderByIdAsc(sid).stream())
+                .map(f -> f.getId())
+                .collect(Collectors.toList());
+    }
+
+    private List<Long> getDeptIds(List<Long> facultyIds) {
+        if (facultyIds.isEmpty()) return Collections.emptyList();
+        return facultyIds.stream()
+                .flatMap(fid -> departmentRepository.findByFacultyIdOrderByIdAsc(fid).stream())
+                .map(d -> d.getId())
+                .collect(Collectors.toList());
+    }
+
+    private void logAction(String actor, String actionType, String target,
+                            String detail, Long univId) {
+        try {
+            AdminLog log = new AdminLog();
+            log.setActorUsername(actor);
+            log.setActionType(actionType);
+            log.setTargetUsername(target);
+            log.setDetail(detail);
+            log.setUniversityId(univId);
+            log.setCreatedAt(LocalDateTime.now());
+            adminLogRepository.save(log);
+        } catch (Exception e) {
+            System.out.println("[AdminLog] Failed to write log: " + e.getMessage());
+        }
+    }
+
+    private String statusToAction(String oldStatus, String newStatus) {
+        if ("ACTIVE".equals(newStatus) && "PENDING_APPROVAL".equals(oldStatus)) return "APPROVE";
+        if ("DELETED".equals(newStatus) && "PENDING_APPROVAL".equals(oldStatus)) return "REJECT";
+        if ("SUSPENDED".equals(newStatus)) return "SUSPEND";
+        if ("ACTIVE".equals(newStatus) && "SUSPENDED".equals(oldStatus)) return "UNSUSPEND";
+        if ("DELETED".equals(newStatus)) return "DELETE";
+        return "STATUS_CHANGE";
+    }
 
     private List<Map<String, Object>> aggregateByDay(List<PageVisit> visits) {
         Map<String, Long> byDay = new LinkedHashMap<>();
@@ -167,9 +306,13 @@ public class AdminService {
         m.put("id",           u.getId());
         m.put("username",     u.getUsername());
         m.put("name",         u.getName());
+        m.put("memberType",   u.getMemberType());
         m.put("adminRole",    u.getAdminRole());
-        m.put("approved",     u.isApproved());
+        m.put("status",       u.getStatus() != null ? u.getStatus() : "ACTIVE");
+        m.put("approved",     "ACTIVE".equals(u.getStatus()));
+        m.put("department",   u.getDepartment());
         m.put("universityId", u.getUniversityId());
+        m.put("createdDate",  u.getCreatedDate() != null ? u.getCreatedDate().toString() : "");
         return m;
     }
 }
