@@ -158,7 +158,9 @@ public class AdminService {
     }
 
     public List<Map<String, Object>> getSchoolPendingUsers(Long univId) {
-        return userRepository.findByUniversityIdAndStatus(String.valueOf(univId), "PENDING_APPROVAL")
+        // Exclude admin signups — those are routed to SUPER_ADMIN for role assignment.
+        return userRepository.findByUniversityIdAndStatusAndMemberTypeNot(
+                        String.valueOf(univId), "PENDING_APPROVAL", "admin")
                 .stream().map(this::toUserMap).collect(Collectors.toList());
     }
 
@@ -225,6 +227,48 @@ public class AdminService {
     public Map<String, Object> approveUser(Long userId, boolean approved) {
         return updateUserStatus(userId, approved ? "ACTIVE" : "PENDING_APPROVAL",
                                 "system", null);
+    }
+
+    // ── Super admin: pending admin signups ───────────────────────────────────
+
+    public List<Map<String, Object>> getPendingAdmins() {
+        return userRepository.findByStatusAndMemberType("PENDING_APPROVAL", "admin")
+                .stream().map(this::toUserMap).collect(Collectors.toList());
+    }
+
+    /**
+     * approve=true  → status=ACTIVE; adminRole set when {@code role} non-blank.
+     * approve=false → status=DELETED (rejection; user can no longer log in).
+     */
+    public Map<String, Object> approveAdmin(Long userId, boolean approve,
+                                              String role, String actorUsername) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+        if (approve) {
+            user.setStatus("ACTIVE");
+            if (role != null && !role.isBlank()) {
+                user.setAdminRole(role);
+            }
+            userRepository.save(user);
+            Long univ = parseUnivId(user.getUniversityId());
+            logAction(actorUsername, "APPROVE", user.getUsername(),
+                      role != null && !role.isBlank()
+                          ? "관리자 가입 승인 (role=" + role + ")"
+                          : "관리자 가입 승인 (역할 미지정)",
+                      univ);
+        } else {
+            user.setStatus("DELETED");
+            userRepository.save(user);
+            Long univ = parseUnivId(user.getUniversityId());
+            logAction(actorUsername, "REJECT", user.getUsername(),
+                      "관리자 가입 거절", univ);
+        }
+        return Map.of("success", true);
+    }
+
+    private Long parseUnivId(String s) {
+        if (s == null || s.isBlank()) return null;
+        try { return Long.parseLong(s); } catch (NumberFormatException e) { return null; }
     }
 
     // ── Private helpers ──────────────────────────────────────────────────────

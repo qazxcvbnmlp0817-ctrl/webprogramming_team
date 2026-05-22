@@ -23,6 +23,15 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // School admin: pending-approval users in a university
     List<User> findByUniversityIdAndStatus(String universityId, String status);
 
+    // School admin: pending-approval list excluding a memberType (used to hide
+    // admin-role applications from school admins — those are handled by SUPER_ADMIN).
+    List<User> findByUniversityIdAndStatusAndMemberTypeNot(String universityId,
+                                                            String status,
+                                                            String memberType);
+
+    // Super admin: pending admin signups across all schools
+    List<User> findByStatusAndMemberType(String status, String memberType);
+
     // Monthly stats: signup count in a university within a date range
     long countByUniversityIdAndCreatedDateBetween(String universityId,
                                                    LocalDateTime start,

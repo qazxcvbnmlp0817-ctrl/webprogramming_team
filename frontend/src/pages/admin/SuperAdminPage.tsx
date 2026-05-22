@@ -9,9 +9,12 @@ import { Line, Bar } from 'react-chartjs-2'
 import Navbar from '../../components/Navbar'
 import {
   fetchSuperStats, fetchSuperSchools, fetchSuperVisitors,
-  fetchSuperInfra, fetchSuperUsers, updateUserRole, approveUser
+  fetchSuperInfra, fetchSuperUsers, updateUserRole, approveUser,
+  fetchPendingAdmins, approveAdmin,
 } from '../../api/adminSuper'
-import type { SuperStats, School, VisitorPoint, InfraStats, AdminUser } from '../../api/adminSuper'
+import type {
+  SuperStats, School, VisitorPoint, InfraStats, AdminUser, PendingAdmin,
+} from '../../api/adminSuper'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler)
 
@@ -22,6 +25,9 @@ export default function SuperAdminPage() {
   const [visitors, setVisitors] = useState<VisitorPoint[]>([])
   const [infra, setInfra]     = useState<InfraStats | null>(null)
   const [users, setUsers]     = useState<AdminUser[]>([])
+  const [pending, setPending] = useState<PendingAdmin[]>([])
+  // Role chosen per pending row before clicking 승인. Default SCHOOL_ADMIN.
+  const [pendingRoles, setPendingRoles] = useState<Record<number, string>>({})
   const [loading, setLoading] = useState(true)
 
   const loadAll = () =>
@@ -31,8 +37,9 @@ export default function SuperAdminPage() {
       fetchSuperVisitors(),
       fetchSuperInfra(),
       fetchSuperUsers(),
-    ]).then(([s, sch, v, i, u]) => {
-      setStats(s); setSchools(sch); setVisitors(v); setInfra(i); setUsers(u)
+      fetchPendingAdmins(),
+    ]).then(([s, sch, v, i, u, p]) => {
+      setStats(s); setSchools(sch); setVisitors(v); setInfra(i); setUsers(u); setPending(p)
       setLoading(false)
     }).catch(() => setLoading(false))
 
@@ -48,6 +55,21 @@ export default function SuperAdminPage() {
     await approveUser(userId, approved)
     const updated = await fetchSuperUsers()
     setUsers(updated)
+  }
+
+  const handlePendingApprove = async (userId: number) => {
+    const role = pendingRoles[userId] ?? 'SCHOOL_ADMIN'
+    if (!window.confirm(`${role} 권한으로 승인하시겠습니까?`)) return
+    await approveAdmin(userId, true, role)
+    const [p, u] = await Promise.all([fetchPendingAdmins(), fetchSuperUsers()])
+    setPending(p); setUsers(u)
+  }
+
+  const handlePendingReject = async (userId: number) => {
+    if (!window.confirm('이 가입 신청을 거절하시겠습니까? 거절 후에는 로그인이 불가합니다.')) return
+    await approveAdmin(userId, false)
+    const p = await fetchPendingAdmins()
+    setPending(p)
   }
 
   const visitorLineData = {
@@ -175,6 +197,71 @@ export default function SuperAdminPage() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+
+        {/* 관리자 가입 승인 대기 */}
+        <div className="border-2 border-black p-6">
+          <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">
+            관리자 가입 승인 대기
+            {pending.length > 0 && (
+              <span className="ml-2 inline-flex items-center justify-center min-w-[1.5rem] h-5 bg-amber-100 border border-amber-400 text-amber-700 text-[10px] font-bold px-1.5">
+                {pending.length}
+              </span>
+            )}
+          </h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b-2 border-black text-xs uppercase tracking-wide text-gray-500">
+                  <th className="text-left pb-3 pr-4">이름</th>
+                  <th className="text-left pb-3 pr-4">아이디</th>
+                  <th className="text-left pb-3 pr-4">학교 ID</th>
+                  <th className="text-left pb-3 pr-4">소속</th>
+                  <th className="text-left pb-3 pr-4">신청일</th>
+                  <th className="text-left pb-3 pr-4">부여 역할</th>
+                  <th className="text-left pb-3">처리</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pending.map((u, i) => (
+                  <tr key={u.id} className={`border-b border-gray-100 ${i % 2 === 0 ? 'bg-gray-50/50' : ''}`}>
+                    <td className="py-3 pr-4 font-medium">{u.name}</td>
+                    <td className="py-3 pr-4 text-gray-500">{u.username}</td>
+                    <td className="py-3 pr-4 text-gray-400 text-xs">{u.universityId ?? '-'}</td>
+                    <td className="py-3 pr-4 text-gray-500 text-xs">{u.department ?? '-'}</td>
+                    <td className="py-3 pr-4 text-gray-400 text-xs">{u.createdDate ? u.createdDate.slice(0, 10) : '-'}</td>
+                    <td className="py-3 pr-4">
+                      <select
+                        value={pendingRoles[u.id] ?? 'SCHOOL_ADMIN'}
+                        onChange={e => setPendingRoles(prev => ({ ...prev, [u.id]: e.target.value }))}
+                        className="border border-gray-300 text-xs px-2 py-1 bg-white"
+                      >
+                        <option value="SCHOOL_ADMIN">SCHOOL_ADMIN</option>
+                        <option value="DEPT_ADMIN">DEPT_ADMIN</option>
+                      </select>
+                    </td>
+                    <td className="py-3 space-x-2 whitespace-nowrap">
+                      <button
+                        onClick={() => handlePendingApprove(u.id)}
+                        className="text-xs border border-green-400 text-green-600 px-3 py-1 hover:bg-green-50 transition"
+                      >
+                        승인
+                      </button>
+                      <button
+                        onClick={() => handlePendingReject(u.id)}
+                        className="text-xs border border-red-300 text-red-500 px-3 py-1 hover:bg-red-50 transition"
+                      >
+                        거절
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {pending.length === 0 && (
+                  <tr><td colSpan={7} className="py-8 text-center text-gray-400 text-sm">대기 중인 관리자 가입 신청이 없습니다.</td></tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 

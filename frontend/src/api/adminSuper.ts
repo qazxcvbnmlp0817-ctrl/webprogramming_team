@@ -40,10 +40,16 @@ export interface AdminUser {
   id: number
   username: string
   name: string
+  memberType: string
   adminRole: string | null
+  status: string
   approved: boolean
+  department: string | null
   universityId: string | null
+  createdDate: string
 }
+
+export type PendingAdmin = AdminUser
 
 export async function fetchSuperStats(): Promise<SuperStats> {
   const res = await fetch('/api/admin/super/stats', { headers: headers() })
@@ -89,6 +95,25 @@ export async function approveUser(userId: number, approved: boolean): Promise<vo
     method: 'PUT',
     headers: headers(),
     body: JSON.stringify({ approved }),
+  })
+  handle403(res)
+}
+
+export async function fetchPendingAdmins(): Promise<PendingAdmin[]> {
+  const res = await fetch('/api/admin/super/pending-admins', { headers: headers() })
+  handle403(res)
+  return res.json()
+}
+
+export async function approveAdmin(
+  userId: number,
+  approve: boolean,
+  role?: string,
+): Promise<void> {
+  const res = await fetch(`/api/admin/super/users/${userId}/approve-admin`, {
+    method: 'PUT',
+    headers: headers(),
+    body: JSON.stringify({ approve, role: role ?? null }),
   })
   handle403(res)
 }

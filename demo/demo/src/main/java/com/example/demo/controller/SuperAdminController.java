@@ -98,4 +98,24 @@ public class SuperAdminController {
         if (approved == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "approved 필드 필요");
         return ResponseEntity.ok(adminService.approveUser(id, approved));
     }
+
+    @GetMapping("/pending-admins")
+    public ResponseEntity<List<Map<String, Object>>> getPendingAdmins(
+            @RequestHeader(value = "X-Username", required = false) String username) {
+        verifySuper(username);
+        return ResponseEntity.ok(adminService.getPendingAdmins());
+    }
+
+    @PutMapping("/users/{id}/approve-admin")
+    public ResponseEntity<Map<String, Object>> approveAdmin(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> body) {
+        verifySuper(username);
+        Object approveRaw = body.get("approve");
+        if (!(approveRaw instanceof Boolean approve))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "approve 필드 필요 (boolean)");
+        String role = body.get("role") == null ? null : body.get("role").toString();
+        return ResponseEntity.ok(adminService.approveAdmin(id, approve, role, username));
+    }
 }

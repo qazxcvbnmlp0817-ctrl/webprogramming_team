@@ -36,10 +36,22 @@ public class StatusMigrationRunner implements CommandLineRunner {
 
         // The APPROVED column is no longer on the entity, so JPA INSERTs omit it.
         // Oracle's original NOT NULL constraint must be relaxed so new signups succeed.
+        //
+        // Wrapped in a PL/SQL block that swallows ORA-01451 (column already nullable)
+        // and ORA-00904 (column does not exist on fresh schemas). Catching the
+        // exception in Java is not enough — Hibernate marks the surrounding
+        // @Transactional rollback-only when the SQL fails, causing the method
+        // to fail at commit. Handling the error inside Oracle prevents that.
         try {
-            em.createNativeQuery("ALTER TABLE APP_USERS MODIFY (APPROVED NULL)").executeUpdate();
+            em.createNativeQuery(
+                "BEGIN " +
+                "  EXECUTE IMMEDIATE 'ALTER TABLE APP_USERS MODIFY (APPROVED NULL)'; " +
+                "EXCEPTION " +
+                "  WHEN OTHERS THEN " +
+                "    IF SQLCODE != -1451 AND SQLCODE != -904 THEN RAISE; END IF; " +
+                "END;"
+            ).executeUpdate();
         } catch (Exception e) {
-            // Already nullable, or column doesn't exist on fresh schema — ignore.
             System.out.println("[StatusMigrationRunner] APPROVED nullable migration skipped: " + e.getMessage());
         }
     }
