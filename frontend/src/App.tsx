@@ -33,6 +33,9 @@ import NoticeDetailPage from './pages/NoticeDetailPage'
 import NoticeEditPage from './pages/NoticeEditPage'
 import PostDetailPage from './pages/PostDetailPage'
 import PostEditPage from './pages/PostEditPage'
+import SuperAdminPage  from './pages/admin/SuperAdminPage'
+import SchoolAdminPage from './pages/admin/SchoolAdminPage'
+import DeptAdminPage   from './pages/admin/DeptAdminPage'
 
 function ProtectedSchool({ children }: { children: ReactNode }) {
   const { selectedUniversityId } = useDept()
@@ -43,6 +46,24 @@ function ProtectedSchool({ children }: { children: ReactNode }) {
 function ProtectedDept({ children }: { children: ReactNode }) {
   const { selectedDeptId } = useDept()
   if (!selectedDeptId) return <Navigate to="/universities" replace />
+  return <>{children}</>
+}
+
+function ProtectedAdmin({ children }: { children: ReactNode }) {
+  const role = sessionStorage.getItem('adminRole')
+  if (!role) return <Navigate to="/universities" replace />
+  return <>{children}</>
+}
+
+function ProtectedSuperAdmin({ children }: { children: ReactNode }) {
+  const role = sessionStorage.getItem('adminRole')
+  if (role !== 'SUPER_ADMIN') return <Navigate to="/universities" replace />
+  return <>{children}</>
+}
+
+function ProtectedSchoolAdmin({ children }: { children: ReactNode }) {
+  const role = sessionStorage.getItem('adminRole')
+  if (role !== 'SCHOOL_ADMIN') return <Navigate to="/universities" replace />
   return <>{children}</>
 }
 
@@ -100,6 +121,11 @@ export default function App() {
           <Route path="/mypage"        element={<MyPage />} />
           <Route path="/find-id"       element={<FindIdPage />} />
           <Route path="/find-password" element={<FindPasswordPage />} />
+
+          {/* 어드민 페이지 */}
+          <Route path="/admin/super"      element={<ProtectedSuperAdmin><SuperAdminPage /></ProtectedSuperAdmin>} />
+          <Route path="/admin/school/:id" element={<ProtectedSchoolAdmin><SchoolAdminPage /></ProtectedSchoolAdmin>} />
+          <Route path="/admin/dept/:id"   element={<ProtectedAdmin><DeptAdminPage /></ProtectedAdmin>} />
 
           {/* 게시글 상세 / 수정 — scope 무관 */}
           <Route path="/post/:postId"      element={<PostDetailPage />} />
