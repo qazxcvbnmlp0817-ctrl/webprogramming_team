@@ -6,6 +6,7 @@ import { fetchSchedules } from '../api/schedules'
 import { useDept } from '../context/DeptContext'
 import { useDeptFetch } from '../hooks/useDeptFetch'
 import { groupByMonth } from '../utils/scheduleUtils'
+import AdminBanner from '../components/common/AdminBanner'
 
 const SCHEDULE_TABS = ['전체', '학사', '행사', '시험', '기타']
 
@@ -39,6 +40,8 @@ export default function SchedulePage() {
           )}
         </div>
       </section>
+
+      <AdminBanner scope="dept" targetId={selectedDeptId ?? undefined} />
 
       <main className="max-w-6xl mx-auto px-4 py-8">
         {loading ? (

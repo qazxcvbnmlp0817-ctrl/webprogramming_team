@@ -6,6 +6,7 @@ import Pagination from '../components/Pagination'
 import { fetchSchoolPosts } from '../api/school'
 import { useDeptFetch } from '../hooks/useDeptFetch'
 import { useDept } from '../context/DeptContext'
+import AdminBanner from '../components/common/AdminBanner'
 
 const TABS         = ['전체', '자유게시판', '질문', '스터디', '취업후기']
 const GRADE_TABS   = ['전체', '1학년', '2학년', '3학년', '4학년']
@@ -76,6 +77,8 @@ export default function SchoolBoardPage() {
           )}
         </div>
       </section>
+
+      <AdminBanner scope="school" targetId={selectedUniversityId ?? undefined} />
 
       <main className="max-w-6xl mx-auto px-4 py-8">
         {loading ? (

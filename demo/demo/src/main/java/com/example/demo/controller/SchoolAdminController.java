@@ -3,7 +3,6 @@ package com.example.demo.controller;
 import com.example.demo.entity.User;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.service.AdminService;
-import com.example.demo.service.PostService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,14 +17,11 @@ public class SchoolAdminController {
 
     private final AdminService adminService;
     private final UserRepository userRepository;
-    private final PostService postService;
 
     public SchoolAdminController(AdminService adminService,
-                                  UserRepository userRepository,
-                                  PostService postService) {
+                                  UserRepository userRepository) {
         this.adminService = adminService;
         this.userRepository = userRepository;
-        this.postService = postService;
     }
 
     // Accepts SUPER_ADMIN (passes univId param) or SCHOOL_ADMIN (univId from profile)
@@ -82,9 +78,8 @@ public class SchoolAdminController {
             @RequestHeader(value = "X-Username", required = false) String username,
             @PathVariable Long postId,
             @RequestParam(required = false) Long univId) {
-        resolveUnivId(username, univId);
-        postService.delete(postId);
-        return ResponseEntity.ok(Map.of("success", true));
+        Long resolvedUnivId = resolveUnivId(username, univId);
+        return ResponseEntity.ok(adminService.deleteSchoolPost(postId, resolvedUnivId, resolveActor(username)));
     }
 
     @GetMapping("/users")
@@ -147,10 +142,10 @@ public class SchoolAdminController {
             @PathVariable Long id,
             @RequestBody Map<String, String> body,
             @RequestParam(required = false) Long univId) {
-        resolveUnivId(username, univId);
+        Long resolvedUnivId = resolveUnivId(username, univId);
         String role = body.get("role");
         if (role != null && !role.isBlank() && !"DEPT_ADMIN".equals(role))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "School Admin은 DEPT_ADMIN만 부여 가능");
-        return ResponseEntity.ok(adminService.updateUserRole(id, role));
+        return ResponseEntity.ok(adminService.updateUserRole(id, role, resolveActor(username), resolvedUnivId));
     }
 }

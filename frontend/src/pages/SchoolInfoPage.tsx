@@ -6,6 +6,7 @@ import { useDept } from '../context/DeptContext'
 import { getSchoolExtra } from '../data/schoolExtras'
 import RoleActionBar from '../components/common/RoleActionBar'
 import { useCurrentRole } from '../hooks/useCurrentRole'
+import AdminBanner from '../components/common/AdminBanner'
 
 export default function SchoolInfoPage() {
   const { selectedUniversityId, selectedUniversityName } = useDept()
@@ -83,6 +84,7 @@ export default function SchoolInfoPage() {
         </div>
       </section>
 
+      <AdminBanner scope="school" targetId={selectedUniversityId ?? undefined} />
       <RoleActionBar role={role} scope="school" />
 
       <main className="max-w-6xl mx-auto px-4 py-10 space-y-12">

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import type { UniversityDto } from '../types/university'
 import { fetchUniversities } from '../api/universities'
 import { useDept } from '../context/DeptContext'
+import AdminBanner from '../components/common/AdminBanner'
 
 export default function UniversityListPage() {
   const [universities, setUniversities] = useState<UniversityDto[]>([])
@@ -63,6 +64,8 @@ export default function UniversityListPage() {
           <p className="text-gray-400 text-sm md:text-base">소속 대학교를 선택하세요</p>
         </div>
       </section>
+
+      <AdminBanner scope="selection" />
 
       <main className="max-w-6xl mx-auto px-4 py-10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

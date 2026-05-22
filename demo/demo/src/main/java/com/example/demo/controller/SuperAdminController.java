@@ -85,7 +85,14 @@ public class SuperAdminController {
             @PathVariable Long id,
             @RequestBody Map<String, String> body) {
         verifySuper(username);
-        return ResponseEntity.ok(adminService.updateUserRole(id, body.get("role")));
+        Long univId = userRepository.findById(id)
+                .map(u -> {
+                    try {
+                        return (u.getUniversityId() != null && !u.getUniversityId().isBlank())
+                               ? Long.parseLong(u.getUniversityId()) : null;
+                    } catch (NumberFormatException e) { return null; }
+                }).orElse(null);
+        return ResponseEntity.ok(adminService.updateUserRole(id, body.get("role"), username, univId));
     }
 
     @PutMapping("/users/{id}/approve")
@@ -96,7 +103,7 @@ public class SuperAdminController {
         verifySuper(username);
         Boolean approved = body.get("approved");
         if (approved == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "approved 필드 필요");
-        return ResponseEntity.ok(adminService.approveUser(id, approved));
+        return ResponseEntity.ok(adminService.approveUser(id, approved, username));
     }
 
     @GetMapping("/pending-admins")

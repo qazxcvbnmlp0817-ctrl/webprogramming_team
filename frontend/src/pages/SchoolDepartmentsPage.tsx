@@ -5,6 +5,7 @@ import { fetchUniversity } from '../api/universities'
 import { useDept } from '../context/DeptContext'
 import { useDeptFetch } from '../hooks/useDeptFetch'
 import type { UniversityDto } from '../types/university'
+import AdminBanner from '../components/common/AdminBanner'
 
 export default function SchoolDepartmentsPage() {
   const { selectedUniversityId, setDept } = useDept()
@@ -51,6 +52,8 @@ export default function SchoolDepartmentsPage() {
           )}
         </div>
       </section>
+
+      <AdminBanner scope="school" targetId={selectedUniversityId ?? undefined} />
 
       <main className="max-w-6xl mx-auto px-4 py-8">
         {loading || !univ ? (

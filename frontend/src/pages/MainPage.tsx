@@ -7,6 +7,7 @@ import MiniCalendar from '../components/MiniCalendar'
 import type { NoticeDto } from '../types/notice'
 import type { PostDto } from '../types/post'
 import type { ScheduleDto } from '../types/schedule'
+import AdminBanner from '../components/common/AdminBanner'
 
 export default function MainPage() {
   const { selectedDeptId, selectedDeptName } = useDept()
@@ -50,6 +51,8 @@ export default function MainPage() {
           </div>
         </div>
       </section>
+
+      <AdminBanner scope="dept" targetId={selectedDeptId ?? undefined} />
 
       <main className="max-w-6xl mx-auto px-4 py-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">

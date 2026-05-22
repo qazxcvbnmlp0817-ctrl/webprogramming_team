@@ -97,6 +97,17 @@ public class AdminService {
 
     // ── School Admin ─────────────────────────────────────────────────────────
 
+    public Map<String, Object> deleteSchoolPost(Long postId, Long univId, String actor) {
+        Post p = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found: " + postId));
+        if (!"univ".equals(p.getScopeType()) || !univId.equals(p.getScopeId())) {
+            throw new RuntimeException("Post scope mismatch");
+        }
+        postRepository.deleteById(postId);
+        logAction(actor, "DELETE", null, "univ post#" + postId, univId);
+        return Map.of("success", true);
+    }
+
     public Map<String, Object> getSchoolStats(Long univId) {
         long totalPosts   = postRepository.countByScopeTypeAndScopeId("univ", univId);
         long totalNotices = noticeRepository.countByScopeTypeAndScopeId("univ", univId);
@@ -234,11 +245,19 @@ public class AdminService {
 
     // ── Shared ───────────────────────────────────────────────────────────────
 
-    public Map<String, Object> updateUserRole(Long userId, String role) {
+    public Map<String, Object> updateUserRole(Long userId, String role,
+                                               String actor, Long univId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));
-        user.setAdminRole(role == null || role.isBlank() ? null : role);
+        String oldRole = user.getAdminRole();
+        boolean grant = role != null && !role.isBlank();
+        user.setAdminRole(grant ? role : null);
         userRepository.save(user);
+        logAction(actor,
+                  grant ? "ROLE_GRANT" : "ROLE_REVOKE",
+                  user.getUsername(),
+                  grant ? "역할 부여: " + role : "역할 박탈 (이전: " + oldRole + ")",
+                  univId);
         return Map.of("success", true);
     }
 
@@ -254,10 +273,9 @@ public class AdminService {
         return Map.of("success", true);
     }
 
-    // Backward compat: SuperAdminController still calls approveUser(id, boolean)
-    public Map<String, Object> approveUser(Long userId, boolean approved) {
+    public Map<String, Object> approveUser(Long userId, boolean approved, String actor) {
         return updateUserStatus(userId, approved ? "ACTIVE" : "PENDING_APPROVAL",
-                                "system", null);
+                                actor, null);
     }
 
     // ── Super admin: pending admin signups ───────────────────────────────────

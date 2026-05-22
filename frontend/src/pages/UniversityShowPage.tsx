@@ -4,12 +4,13 @@ import type { UniversityDto } from '../types/university'
 import { fetchUniversity } from '../api/universities'
 import { useDept } from '../context/DeptContext'
 import Navbar from '../components/Navbar'
+import AdminBanner from '../components/common/AdminBanner'
 
 // ── 메인 ──────────────────────────────────────────────────────────────────────
 export default function UniversityShowPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { setUniversityInfo } = useDept()
+  const { setUniversityInfo, selectedUniversityId } = useDept()
 
   const [univ, setUniv] = useState<UniversityDto | null>(null)
   const today = new Date().toLocaleDateString('ko-KR', {
@@ -54,6 +55,8 @@ export default function UniversityShowPage() {
           </div>
         </div>
       </section>
+
+      <AdminBanner scope="school" targetId={selectedUniversityId ?? undefined} />
 
       <main className="max-w-6xl mx-auto px-4 py-10 space-y-10">
 

@@ -8,6 +8,7 @@ import Pagination from '../components/Pagination'
 import { fetchNotices } from '../api/notices'
 import { useDept } from '../context/DeptContext'
 import { useDeptFetch } from '../hooks/useDeptFetch'
+import AdminBanner from '../components/common/AdminBanner'
 
 const NOTICE_TABS = ['전체', '학사', '장학', '행사', '취업']
 const GRADE_TABS  = ['전체', '1학년', '2학년', '3학년', '4학년']
@@ -69,6 +70,8 @@ export default function NoticePage() {
           )}
         </div>
       </section>
+
+      <AdminBanner scope="dept" targetId={selectedDeptId ?? undefined} />
 
       <main className="max-w-6xl mx-auto px-4 py-8">
         {loading ? (

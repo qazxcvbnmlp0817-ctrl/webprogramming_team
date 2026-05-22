@@ -7,6 +7,7 @@ import { fetchSchoolSchedules } from '../api/school'
 import { useDeptFetch } from '../hooks/useDeptFetch'
 import { useDept } from '../context/DeptContext'
 import { groupByMonth } from '../utils/scheduleUtils'
+import AdminBanner from '../components/common/AdminBanner'
 
 const TABS = ['전체', '학사', '행사', '시험', '기타']
 
@@ -37,6 +38,8 @@ export default function SchoolSchedulePage() {
           <h1 className="text-xl font-bold"><i className="fas fa-calendar-alt mr-2" />학교 일정</h1>
         </div>
       </section>
+
+      <AdminBanner scope="school" targetId={selectedUniversityId ?? undefined} />
 
       <main className="max-w-6xl mx-auto px-4 py-8">
         {loading ? (
