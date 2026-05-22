@@ -27,10 +27,11 @@ public class User {
     private String department;
     private String studentId;
     private String phone;
-    private Integer grade; // 1,2,3,4 (학생만), 교수/관리자는 null
+    private Integer grade;
 
+    // status: ACTIVE | PENDING_APPROVAL | SUSPENDED | DELETED
     @Column(nullable = false)
-    private boolean approved; // 관리자 승인 여부 (admin은 false로 시작)
+    private String status = "ACTIVE";
 
     private String adminRole; // SUPER_ADMIN | SCHOOL_ADMIN | DEPT_ADMIN | null
 
@@ -58,8 +59,8 @@ public class User {
     public void setPhone(String phone) { this.phone = phone; }
     public Integer getGrade() { return grade; }
     public void setGrade(Integer grade) { this.grade = grade; }
-    public boolean isApproved() { return approved; }
-    public void setApproved(boolean approved) { this.approved = approved; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
     public String getAdminRole() { return adminRole; }
     public void setAdminRole(String adminRole) { this.adminRole = adminRole; }
     public java.time.LocalDateTime getCreatedDate() { return createdDate; }
