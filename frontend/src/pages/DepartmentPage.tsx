@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { ReactNode } from 'react'
 import Navbar from '../components/Navbar'
 import DepartmentHero from '../components/department/DepartmentHero'
 import DepartmentGuideCards from '../components/department/DepartmentGuideCards'
@@ -21,31 +22,41 @@ import { fetchDepartmentDetail } from '../api/departments'
 import { useDept } from '../context/DeptContext'
 import { getDepartmentExtra } from '../data/departmentExtras'
 import { useDeptFetch } from '../hooks/useDeptFetch'
+import AdminBanner from '../components/common/AdminBanner'
 
-export default function DepartmentPage() {
+interface DepartmentPageProps {
+  embedded?: boolean
+}
+
+export default function DepartmentPage({ embedded = false }: DepartmentPageProps = {}) {
   const { selectedDeptId, selectedUniversityName, selectedSchoolName } = useDept()
   const { data: dept, loading, error } = useDeptFetch(fetchDepartmentDetail, selectedDeptId)
   const [reportOpen, setReportOpen] = useState(false)
   const role = useCurrentRole()
 
-  if (loading) {
-    return (
+  const Frame = ({ children }: { children: ReactNode }) =>
+    embedded ? <>{children}</> : (
       <div className="bg-white text-black font-sans min-h-screen">
         <Navbar />
         <div className="pt-14" />
+        {children}
+      </div>
+    )
+
+  if (loading) {
+    return (
+      <Frame>
         <div className="py-28 text-center text-gray-500">
           <i className="fas fa-spinner fa-spin text-3xl mb-3 block" />
           불러오는 중...
         </div>
-      </div>
+      </Frame>
     )
   }
 
   if (error || !dept) {
     return (
-      <div className="bg-white text-black font-sans min-h-screen">
-        <Navbar />
-        <div className="pt-14" />
+      <Frame>
         <div className="max-w-xl mx-auto px-4 py-28 text-center">
           <i className="fas fa-triangle-exclamation text-4xl text-gray-400 mb-4 block" />
           <h1 className="text-2xl font-black">학과 정보를 불러올 수 없습니다</h1>
@@ -60,7 +71,7 @@ export default function DepartmentPage() {
             다시 시도
           </button>
         </div>
-      </div>
+      </Frame>
     )
   }
 
@@ -73,10 +84,7 @@ export default function DepartmentPage() {
   ]
 
   return (
-    <div className="bg-white text-black font-sans min-h-screen">
-      <Navbar />
-      <div className="pt-14" />
-
+    <Frame>
       <main>
         <DepartmentHero
           dept={dept}
@@ -84,7 +92,8 @@ export default function DepartmentPage() {
           universityName={selectedUniversityName}
           schoolName={selectedSchoolName}
         />
-        <RoleActionBar role={role} scope="department" />
+        {!embedded && <AdminBanner scope="dept" targetId={selectedDeptId ?? undefined} />}
+        {!embedded && <RoleActionBar role={role} scope="department" />}
         <DepartmentSectionNav />
         <DepartmentGuideCards guideCards={extra.guideCards} />
         <DepartmentOverview dept={dept} extra={extra} />
@@ -147,9 +156,9 @@ export default function DepartmentPage() {
         <DepartmentCommunityTags />
         <FacilitySection facilities={extra.facilities} />
         <ContactSection dept={dept} studentLife={extra.studentLife} />
-        <FaqSection faqs={extra.faqs} onReportClick={() => setReportOpen(true)} />
+        <FaqSection faqs={extra.faqs} onReportClick={embedded ? () => {} : () => setReportOpen(true)} />
       </main>
-      <InfoReportModal open={reportOpen} onClose={() => setReportOpen(false)} />
-    </div>
+      {!embedded && <InfoReportModal open={reportOpen} onClose={() => setReportOpen(false)} />}
+    </Frame>
   )
 }

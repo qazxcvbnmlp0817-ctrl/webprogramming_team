@@ -9,9 +9,16 @@ import { useDeptFetch } from '../hooks/useDeptFetch'
 import type { NoticeDto } from '../types/notice'
 import type { PostDto } from '../types/post'
 import type { ScheduleDto } from '../types/schedule'
+import AdminBanner from '../components/common/AdminBanner'
 
-export default function FacultyPage() {
-  const { facultyId } = useParams<{ facultyId: string }>()
+interface FacultyPageProps {
+  embedded?: boolean
+  facultyIdOverride?: number
+}
+
+export default function FacultyPage({ embedded = false, facultyIdOverride }: FacultyPageProps = {}) {
+  const params = useParams<{ facultyId: string }>()
+  const facultyId = facultyIdOverride != null ? String(facultyIdOverride) : params.facultyId
   const { selectedUniversityId } = useDept()
 
   const facultyIdNum = facultyId ? Number(facultyId) : null
@@ -44,11 +51,7 @@ export default function FacultyPage() {
 
   const base = `/school/faculty/${facultyId}`
 
-  return (
-    <div className="bg-white text-black font-sans">
-      <Navbar />
-      <div className="pt-14" />
-
+  const body = (<>
       {/* 히어로 */}
       <section className="bg-black text-white py-16 px-4">
         <div className="max-w-6xl mx-auto text-center">
@@ -72,6 +75,8 @@ export default function FacultyPage() {
           </div>
         </div>
       </section>
+
+      {!embedded && <AdminBanner scope="school" targetId={selectedUniversityId ?? undefined} />}
 
       <main className="max-w-6xl mx-auto px-4 py-10">
         {loading ? (
@@ -179,6 +184,15 @@ export default function FacultyPage() {
           </>
         )}
       </main>
+  </>)
+
+  if (embedded) return body
+
+  return (
+    <div className="bg-white text-black font-sans">
+      <Navbar />
+      <div className="pt-14" />
+      {body}
     </div>
   )
 }

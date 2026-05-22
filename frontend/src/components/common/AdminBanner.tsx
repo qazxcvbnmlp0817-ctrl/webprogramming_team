@@ -30,8 +30,9 @@ function adminUrl(scope: AdminBannerScope, role: NonNullable<AdminRole>, targetI
       const univ = sessionStorage.getItem('universityId')
       return univ ? `/admin/school/${univ}` : '/admin/super'
     }
-    // DEPT_ADMIN: no stable dept id in sessionStorage yet — fall back to school admin
-    // page so they can pick context, or super admin redirect if they have no school.
+    // DEPT_ADMIN
+    const dept = sessionStorage.getItem('deptId')
+    if (dept) return `/admin/dept/${dept}`
     const univ = sessionStorage.getItem('universityId')
     return univ ? `/admin/school/${univ}` : '/universities'
   }

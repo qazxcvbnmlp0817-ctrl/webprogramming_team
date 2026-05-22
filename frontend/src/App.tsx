@@ -33,9 +33,10 @@ import NoticeDetailPage from './pages/NoticeDetailPage'
 import NoticeEditPage from './pages/NoticeEditPage'
 import PostDetailPage from './pages/PostDetailPage'
 import PostEditPage from './pages/PostEditPage'
-import SuperAdminPage  from './pages/admin/SuperAdminPage'
-import SchoolAdminPage from './pages/admin/SchoolAdminPage'
-import DeptAdminPage   from './pages/admin/DeptAdminPage'
+import SuperAdminPage   from './pages/admin/SuperAdminPage'
+import SchoolAdminPage  from './pages/admin/SchoolAdminPage'
+import DeptAdminPage    from './pages/admin/DeptAdminPage'
+import FacultyAdminPage from './pages/admin/FacultyAdminPage'
 
 function ProtectedSchool({ children }: { children: ReactNode }) {
   const { selectedUniversityId } = useDept()
@@ -62,6 +63,13 @@ function ProtectedSuperAdmin({ children }: { children: ReactNode }) {
 }
 
 function ProtectedSchoolAdmin({ children }: { children: ReactNode }) {
+  const role = sessionStorage.getItem('adminRole')
+  if (role !== 'SUPER_ADMIN' && role !== 'SCHOOL_ADMIN') return <Navigate to="/universities" replace />
+  return <>{children}</>
+}
+
+function ProtectedFacultyAdmin({ children }: { children: ReactNode }) {
+  // DEPT_ADMIN is below faculty scope and intentionally blocked here.
   const role = sessionStorage.getItem('adminRole')
   if (role !== 'SUPER_ADMIN' && role !== 'SCHOOL_ADMIN') return <Navigate to="/universities" replace />
   return <>{children}</>
@@ -126,6 +134,7 @@ export default function App() {
           <Route path="/admin/super"      element={<ProtectedSuperAdmin><SuperAdminPage /></ProtectedSuperAdmin>} />
           <Route path="/admin/school/:id" element={<ProtectedSchoolAdmin><SchoolAdminPage /></ProtectedSchoolAdmin>} />
           <Route path="/admin/dept/:id"   element={<ProtectedAdmin><DeptAdminPage /></ProtectedAdmin>} />
+          <Route path="/admin/faculty/:id" element={<ProtectedFacultyAdmin><FacultyAdminPage /></ProtectedFacultyAdmin>} />
 
           {/* 게시글 상세 / 수정 — scope 무관 */}
           <Route path="/post/:postId"      element={<PostDetailPage />} />

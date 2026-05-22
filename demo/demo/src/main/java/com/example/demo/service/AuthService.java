@@ -18,10 +18,12 @@ import com.example.demo.repository.UserRepository;
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final AdminService adminService;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    public AuthService(UserRepository userRepository) {
+    public AuthService(UserRepository userRepository, AdminService adminService) {
         this.userRepository = userRepository;
+        this.adminService = adminService;
     }
 
     public Map<String, Object> login(LoginRequestDto request) {
@@ -73,6 +75,17 @@ public class AuthService {
         response.put("grade", user.getGrade());
         response.put("adminRole", user.getAdminRole());
         response.put("universityId", user.getUniversityId());
+
+        // DEPT_ADMIN: include resolved deptId so the client banner can deep-link
+        // straight to /admin/dept/{id}.
+        if ("DEPT_ADMIN".equals(user.getAdminRole())
+                && user.getUniversityId() != null && user.getDepartment() != null) {
+            try {
+                Long deptId = adminService.resolveDeptIdByName(
+                        Long.parseLong(user.getUniversityId()), user.getDepartment());
+                if (deptId != null) response.put("deptId", deptId);
+            } catch (NumberFormatException ignored) { /* leave deptId off */ }
+        }
         return response;
     }
 

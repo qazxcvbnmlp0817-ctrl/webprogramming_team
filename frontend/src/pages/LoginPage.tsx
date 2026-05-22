@@ -33,6 +33,8 @@ export default function LoginPage() {
         sessionStorage.setItem('grade', result.grade != null ? String(result.grade) : '')
         sessionStorage.setItem('adminRole', result.adminRole ?? '')
         sessionStorage.setItem('universityId', result.universityId ?? '')
+        if (result.deptId != null) sessionStorage.setItem('deptId', String(result.deptId))
+        else sessionStorage.removeItem('deptId')
         window.dispatchEvent(new Event('loginChanged'))
         navigate('/universities')
       } else {
