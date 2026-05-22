@@ -32,6 +32,10 @@ public class User {
     @Column(nullable = false)
     private boolean approved; // 관리자 승인 여부 (admin은 false로 시작)
 
+    private String adminRole; // SUPER_ADMIN | SCHOOL_ADMIN | DEPT_ADMIN | null
+
+    private java.time.LocalDateTime createdDate;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getUsername() { return username; }
@@ -56,4 +60,8 @@ public class User {
     public void setGrade(Integer grade) { this.grade = grade; }
     public boolean isApproved() { return approved; }
     public void setApproved(boolean approved) { this.approved = approved; }
+    public String getAdminRole() { return adminRole; }
+    public void setAdminRole(String adminRole) { this.adminRole = adminRole; }
+    public java.time.LocalDateTime getCreatedDate() { return createdDate; }
+    public void setCreatedDate(java.time.LocalDateTime createdDate) { this.createdDate = createdDate; }
 }

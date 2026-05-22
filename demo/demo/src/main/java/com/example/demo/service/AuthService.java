@@ -60,6 +60,8 @@ public class AuthService {
         response.put("username", user.getUsername());
         response.put("name", user.getName());
         response.put("grade", user.getGrade());
+        response.put("adminRole", user.getAdminRole());
+        response.put("universityId", user.getUniversityId());
         return response;
     }
 
@@ -84,6 +86,7 @@ public class AuthService {
         user.setPhone(request.getPhone());
         user.setGrade(request.getGrade());
         user.setApproved(!request.getMemberType().equals("admin"));
+        user.setCreatedDate(java.time.LocalDateTime.now());
 
         userRepository.save(user);
 
