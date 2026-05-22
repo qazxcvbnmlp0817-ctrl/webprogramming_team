@@ -30,7 +30,9 @@ public class User {
     private Integer grade;
 
     // status: ACTIVE | PENDING_APPROVAL | SUSPENDED | DELETED
-    @Column(nullable = false)
+    // Nullable at DDL level so Hibernate can add the column to existing Oracle
+    // tables that already have rows; StatusMigrationRunner backfills based on APPROVED.
+    @Column
     private String status = "ACTIVE";
 
     private String adminRole; // SUPER_ADMIN | SCHOOL_ADMIN | DEPT_ADMIN | null
