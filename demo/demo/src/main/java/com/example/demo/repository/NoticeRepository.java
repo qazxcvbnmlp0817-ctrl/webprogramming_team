@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface NoticeRepository extends JpaRepository<Notice, Long> {
     List<Notice> findByScopeTypeAndScopeIdOrderByCreatedDateDesc(String scopeType, Long scopeId);
+    long countByScopeTypeAndScopeId(String scopeType, Long scopeId);
 }
