@@ -48,9 +48,20 @@ public class AuthService {
             return response;
         }
 
-        if (user.getMemberType().equals("admin") && !user.isApproved()) {
+        String status = user.getStatus() != null ? user.getStatus() : "ACTIVE";
+        if ("PENDING_APPROVAL".equals(status)) {
             response.put("success", false);
             response.put("message", "관리자 승인 후 이용 가능합니다.");
+            return response;
+        }
+        if ("SUSPENDED".equals(status)) {
+            response.put("success", false);
+            response.put("message", "계정이 정지되었습니다.");
+            return response;
+        }
+        if ("DELETED".equals(status)) {
+            response.put("success", false);
+            response.put("message", "존재하지 않는 계정입니다.");
             return response;
         }
 
@@ -85,7 +96,7 @@ public class AuthService {
         user.setStudentId(request.getStudentId());
         user.setPhone(request.getPhone());
         user.setGrade(request.getGrade());
-        user.setApproved(!request.getMemberType().equals("admin"));
+        user.setStatus(request.getMemberType().equals("admin") ? "PENDING_APPROVAL" : "ACTIVE");
         user.setCreatedDate(java.time.LocalDateTime.now());
 
         userRepository.save(user);
