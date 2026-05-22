@@ -16,4 +16,15 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByAdminRoleIsNotNull();
     List<User> findByUniversityIdAndAdminRoleIsNotNull(String universityId);
     long countByCreatedDateAfter(LocalDateTime date);
+
+    // School admin: all users in a university
+    List<User> findByUniversityId(String universityId);
+
+    // School admin: pending-approval users in a university
+    List<User> findByUniversityIdAndStatus(String universityId, String status);
+
+    // Monthly stats: signup count in a university within a date range
+    long countByUniversityIdAndCreatedDateBetween(String universityId,
+                                                   LocalDateTime start,
+                                                   LocalDateTime end);
 }
