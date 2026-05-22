@@ -27,13 +27,13 @@ public class VisitInterceptor implements HandlerInterceptor {
         Long scopeId = null;
 
         try {
-            if (uri.startsWith("/api/posts") || uri.startsWith("/api/notices")) {
+            if (uri.equals("/api/posts") || uri.equals("/api/notices")) {
                 String raw = request.getParameter("deptId");
                 if (raw != null) { scopeType = "dept"; scopeId = Long.parseLong(raw); }
-            } else if (uri.startsWith("/api/univ/posts") || uri.startsWith("/api/univ/notices")) {
+            } else if (uri.equals("/api/univ/posts") || uri.equals("/api/univ/notices")) {
                 String raw = request.getParameter("univId");
                 if (raw != null) { scopeType = "univ"; scopeId = Long.parseLong(raw); }
-            } else if (uri.startsWith("/api/faculty/posts") || uri.startsWith("/api/faculty/notices")) {
+            } else if (uri.equals("/api/faculty/posts") || uri.equals("/api/faculty/notices")) {
                 String raw = request.getParameter("facultyId");
                 if (raw != null) { scopeType = "faculty"; scopeId = Long.parseLong(raw); }
             }
