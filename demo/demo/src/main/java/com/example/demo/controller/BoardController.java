@@ -122,10 +122,22 @@ public class BoardController {
         return ResponseEntity.ok(commentService.add(id, req));
     }
 
+    @PutMapping("/api/posts/{id}/comments/{commentId}")
+    public ResponseEntity<CommentDto> updateComment(@PathVariable Long id,
+                                                     @PathVariable Long commentId,
+                                                     @RequestBody CommentWriteRequestDto req) {
+        try { return ResponseEntity.ok(commentService.update(id, commentId, req)); }
+        catch (RuntimeException e) { return ResponseEntity.badRequest().build(); }
+    }
+
     @DeleteMapping("/api/posts/{id}/comments/{commentId}")
     public ResponseEntity<Void> deleteComment(@PathVariable Long id,
-                                               @PathVariable Long commentId) {
-        commentService.delete(id, commentId);
-        return ResponseEntity.noContent().build();
+                                               @PathVariable Long commentId,
+                                               @RequestParam(required = false) String username,
+                                               @RequestParam(required = false) String memberType) {
+        try {
+            commentService.delete(id, commentId, username, memberType);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) { return ResponseEntity.status(403).build(); }
     }
 }

@@ -23,14 +23,24 @@ public class Comment {
     @Column(nullable = false)
     private LocalDate createdDate;
 
-    public Long getId()                          { return id; }
-    public void setId(Long id)                   { this.id = id; }
-    public Long getPostId()                      { return postId; }
-    public void setPostId(Long postId)           { this.postId = postId; }
-    public String getAuthor()                    { return author; }
-    public void setAuthor(String author)         { this.author = author; }
-    public String getContent()                   { return content; }
-    public void setContent(String content)       { this.content = content; }
-    public LocalDate getCreatedDate()            { return createdDate; }
-    public void setCreatedDate(LocalDate d)      { this.createdDate = d; }
+    @Column
+    private String authorUsername;
+
+    @Column
+    private LocalDate modifiedDate;
+
+    public Long getId()                              { return id; }
+    public void setId(Long id)                       { this.id = id; }
+    public Long getPostId()                          { return postId; }
+    public void setPostId(Long postId)               { this.postId = postId; }
+    public String getAuthor()                        { return author; }
+    public void setAuthor(String author)             { this.author = author; }
+    public String getContent()                       { return content; }
+    public void setContent(String content)           { this.content = content; }
+    public LocalDate getCreatedDate()                { return createdDate; }
+    public void setCreatedDate(LocalDate d)          { this.createdDate = d; }
+    public String getAuthorUsername()                { return authorUsername; }
+    public void setAuthorUsername(String u)          { this.authorUsername = u; }
+    public LocalDate getModifiedDate()               { return modifiedDate; }
+    public void setModifiedDate(LocalDate d)         { this.modifiedDate = d; }
 }

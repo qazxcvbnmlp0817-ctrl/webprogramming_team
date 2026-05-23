@@ -9,7 +9,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
-@Order(2)
+@Order(3)
 public class AdminUserInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;

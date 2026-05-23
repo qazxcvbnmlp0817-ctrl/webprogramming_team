@@ -44,6 +44,9 @@ public class Notice {
     @Column
     private String authorUsername;
 
+    @Column
+    private Integer commentCount;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getTitle() { return title; }
@@ -68,4 +71,6 @@ public class Notice {
     public void setTargetGrades(String targetGrades) { this.targetGrades = targetGrades; }
     public String getAuthorUsername() { return authorUsername; }
     public void setAuthorUsername(String authorUsername) { this.authorUsername = authorUsername; }
+    public int getCommentCount() { return commentCount != null ? commentCount : 0; }
+    public void setCommentCount(int commentCount) { this.commentCount = commentCount; }
 }

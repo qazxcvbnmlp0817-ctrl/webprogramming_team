@@ -1,7 +1,10 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.NoticeCommentDto;
+import com.example.demo.dto.NoticeCommentWriteRequestDto;
 import com.example.demo.dto.NoticeDto;
 import com.example.demo.dto.NoticeWriteRequestDto;
+import com.example.demo.service.NoticeCommentService;
 import com.example.demo.service.NoticeService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,9 +16,12 @@ import java.util.Map;
 public class NoticeController {
 
     private final NoticeService noticeService;
+    private final NoticeCommentService noticeCommentService;
 
-    public NoticeController(NoticeService noticeService) {
-        this.noticeService = noticeService;
+    public NoticeController(NoticeService noticeService,
+                            NoticeCommentService noticeCommentService) {
+        this.noticeService        = noticeService;
+        this.noticeCommentService = noticeCommentService;
     }
 
     // ── GET ──────────────────────────────────────────────────────────────────
@@ -82,5 +88,37 @@ public class NoticeController {
     public ResponseEntity<?> deleteNotice(@PathVariable Long id) {
         noticeService.delete(id);
         return ResponseEntity.ok(Map.of("success", true));
+    }
+
+    // ── 댓글 ─────────────────────────────────────────────────────────────────
+
+    @GetMapping("/api/notices/{id}/comments")
+    public ResponseEntity<List<NoticeCommentDto>> getComments(@PathVariable Long id) {
+        return ResponseEntity.ok(noticeCommentService.getByNoticeId(id));
+    }
+
+    @PostMapping("/api/notices/{id}/comments")
+    public ResponseEntity<NoticeCommentDto> addComment(@PathVariable Long id,
+                                                        @RequestBody NoticeCommentWriteRequestDto req) {
+        return ResponseEntity.ok(noticeCommentService.add(id, req));
+    }
+
+    @PutMapping("/api/notices/{id}/comments/{commentId}")
+    public ResponseEntity<NoticeCommentDto> updateComment(@PathVariable Long id,
+                                                           @PathVariable Long commentId,
+                                                           @RequestBody NoticeCommentWriteRequestDto req) {
+        try { return ResponseEntity.ok(noticeCommentService.update(id, commentId, req)); }
+        catch (RuntimeException e) { return ResponseEntity.badRequest().build(); }
+    }
+
+    @DeleteMapping("/api/notices/{id}/comments/{commentId}")
+    public ResponseEntity<Void> deleteComment(@PathVariable Long id,
+                                               @PathVariable Long commentId,
+                                               @RequestParam(required = false) String username,
+                                               @RequestParam(required = false) String memberType) {
+        try {
+            noticeCommentService.delete(id, commentId, username, memberType);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) { return ResponseEntity.status(403).build(); }
     }
 }

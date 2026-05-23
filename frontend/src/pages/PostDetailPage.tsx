@@ -7,6 +7,7 @@ interface CommentDto {
   id: number
   postId: number
   author: string
+  authorUsername: string | null
   content: string
   date: string
 }
@@ -22,6 +23,8 @@ export default function PostDetailPage() {
   const [liked, setLiked]             = useState(false)
   const [likeCount, setLikeCount]     = useState(0)
   const [commentText, setCommentText] = useState('')
+  const [editingId, setEditingId]     = useState<number | null>(null)
+  const [editText, setEditText]       = useState('')
 
   const username   = sessionStorage.getItem('username') ?? ''
   const myName     = sessionStorage.getItem('name')     ?? ''
@@ -72,7 +75,7 @@ export default function PostDetailPage() {
     const res = await fetch(`/api/posts/${id}/comments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ author: myName, content: commentText }),
+      body: JSON.stringify({ author: myName, authorUsername: username, content: commentText }),
     })
     if (res.ok) {
       const newComment: CommentDto = await res.json()
@@ -84,10 +87,38 @@ export default function PostDetailPage() {
 
   async function handleCommentDelete(commentId: number) {
     if (!confirm('댓글을 삭제하시겠습니까?')) return
-    const res = await fetch(`/api/posts/${id}/comments/${commentId}`, { method: 'DELETE' })
+    const memberType = sessionStorage.getItem('memberType') ?? ''
+    const res = await fetch(
+      `/api/posts/${id}/comments/${commentId}?username=${encodeURIComponent(username)}&memberType=${memberType}`,
+      { method: 'DELETE' }
+    )
     if (res.ok) {
       setComments(prev => prev.filter(c => c.id !== commentId))
       setPost(prev => prev ? { ...prev, commentCount: prev.commentCount - 1 } : prev)
+    }
+  }
+
+  function startEdit(c: CommentDto) {
+    setEditingId(c.id)
+    setEditText(c.content)
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setEditText('')
+  }
+
+  async function handleCommentEdit(commentId: number) {
+    if (!editText.trim()) return
+    const res = await fetch(`/api/posts/${id}/comments/${commentId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: editText, authorUsername: username }),
+    })
+    if (res.ok) {
+      const updated: CommentDto = await res.json()
+      setComments(prev => prev.map(c => c.id === commentId ? updated : c))
+      cancelEdit()
     }
   }
 
@@ -112,7 +143,7 @@ export default function PostDetailPage() {
   if (!post) return null
 
   const memberType = sessionStorage.getItem('memberType') ?? ''
-  const isAuthor   = username === post.authorUsername || myName === post.author
+  const isAuthor = username === post.authorUsername || myName === post.author
   const canDelete  = isAuthor || memberType === 'admin'
   const gradeLabel = post.visibility === 'grade'
     ? post.targetGrades.map(g => `${g}학년`).join('·')
@@ -234,23 +265,59 @@ export default function PostDetailPage() {
           )}
 
           <ul className="flex flex-col gap-4 mb-6">
-            {comments.map(c => (
-              <li key={c.id} className="border-b border-gray-100 pb-3">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium">{c.author}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-400">{c.date}</span>
-                    {c.author === myName && (
-                      <button
-                        onClick={() => handleCommentDelete(c.id)}
-                        className="text-xs text-gray-400 hover:text-red-500"
-                      >삭제</button>
-                    )}
+            {comments.map(c => {
+              const isMyComment = c.authorUsername ? c.authorUsername === username : c.author === myName
+              return (
+                <li key={c.id} className="border-b border-gray-100 pb-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium">{c.author}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-400">{c.date}</span>
+                      {isMyComment && editingId !== c.id && (
+                        <>
+                          <button
+                            onClick={() => startEdit(c)}
+                            className="text-xs text-gray-400 hover:text-black"
+                          >수정</button>
+                          <button
+                            onClick={() => handleCommentDelete(c.id)}
+                            className="text-xs text-gray-400 hover:text-red-500"
+                          >삭제</button>
+                        </>
+                      )}
+                      {!isMyComment && memberType === 'admin' && (
+                        <button
+                          onClick={() => handleCommentDelete(c.id)}
+                          className="text-xs text-gray-400 hover:text-red-500"
+                        >삭제</button>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">{c.content}</p>
-              </li>
-            ))}
+                  {editingId === c.id ? (
+                    <div>
+                      <textarea
+                        value={editText}
+                        onChange={e => setEditText(e.target.value)}
+                        rows={3}
+                        className="border border-black px-3 py-2 text-sm outline-none resize-none w-full"
+                      />
+                      <div className="flex gap-2 justify-end mt-1">
+                        <button
+                          onClick={cancelEdit}
+                          className="text-xs border border-gray-400 px-3 py-1 hover:bg-gray-100"
+                        >취소</button>
+                        <button
+                          onClick={() => handleCommentEdit(c.id)}
+                          className="text-xs bg-black text-white px-3 py-1 hover:bg-gray-800"
+                        >저장</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{c.content}</p>
+                  )}
+                </li>
+              )
+            })}
           </ul>
 
           {isLoggedIn ? (

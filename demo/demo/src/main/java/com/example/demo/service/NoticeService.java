@@ -136,7 +136,8 @@ public class NoticeService {
                 parseGrades(n.getTargetGrades()),
                 n.getContent(),
                 fetchAttachments(n.getId()),
-                n.getAuthorUsername()
+                n.getAuthorUsername(),
+                n.getCommentCount()
         );
     }
 

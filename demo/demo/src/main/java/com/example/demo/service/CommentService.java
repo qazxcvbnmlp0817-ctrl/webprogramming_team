@@ -33,6 +33,7 @@ public class CommentService {
         Comment c = new Comment();
         c.setPostId(postId);
         c.setAuthor(req.getAuthor());
+        c.setAuthorUsername(req.getAuthorUsername());
         c.setContent(req.getContent());
         c.setCreatedDate(LocalDate.now());
         Comment saved = commentRepository.save(c);
@@ -46,7 +47,27 @@ public class CommentService {
     }
 
     @Transactional
-    public void delete(Long postId, Long commentId) {
+    public CommentDto update(Long postId, Long commentId, CommentWriteRequestDto req) {
+        Comment c = commentRepository.findById(commentId)
+                .orElseThrow(() -> new RuntimeException("Comment not found"));
+        if (!c.getPostId().equals(postId))
+            throw new RuntimeException("Comment does not belong to this post");
+        String stored = c.getAuthorUsername();
+        if (stored != null && !stored.equals(req.getAuthorUsername()))
+            throw new RuntimeException("No permission");
+        c.setContent(req.getContent());
+        c.setModifiedDate(LocalDate.now());
+        return toDto(commentRepository.save(c));
+    }
+
+    @Transactional
+    public void delete(Long postId, Long commentId, String username, String memberType) {
+        Comment c = commentRepository.findById(commentId)
+                .orElseThrow(() -> new RuntimeException("Comment not found"));
+        String stored = c.getAuthorUsername();
+        boolean isAdmin = "admin".equals(memberType);
+        if (!isAdmin && stored != null && !stored.equals(username))
+            throw new RuntimeException("No permission");
         commentRepository.deleteById(commentId);
         postRepository.findById(postId).ifPresent(post -> {
             post.setCommentCount((int) commentRepository.countByPostId(postId));
@@ -56,6 +77,7 @@ public class CommentService {
 
     private CommentDto toDto(Comment c) {
         return new CommentDto(c.getId(), c.getPostId(), c.getAuthor(),
-                              c.getContent(), c.getCreatedDate().toString());
+                              c.getAuthorUsername(), c.getContent(),
+                              c.getCreatedDate().toString());
     }
 }

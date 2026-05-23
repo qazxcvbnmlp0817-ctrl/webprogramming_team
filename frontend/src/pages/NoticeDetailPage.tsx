@@ -15,6 +15,16 @@ interface NoticeDetail {
   targetGrades: number[]
   content: string | null
   attachments: PostAttachmentDto[] | null
+  commentCount: number
+}
+
+interface NoticeCommentDto {
+  id: number
+  noticeId: number
+  author: string
+  authorUsername: string
+  content: string
+  date: string
 }
 
 export default function NoticeDetailPage() {
@@ -22,22 +32,88 @@ export default function NoticeDetailPage() {
   const navigate = useNavigate()
   const id = Number(noticeId)
 
-  const [notice, setNotice] = useState<NoticeDetail | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [notice, setNotice]           = useState<NoticeDetail | null>(null)
+  const [loading, setLoading]         = useState(true)
+  const [comments, setComments]       = useState<NoticeCommentDto[]>([])
+  const [commentText, setCommentText] = useState('')
+  const [editingId, setEditingId]     = useState<number | null>(null)
+  const [editText, setEditText]       = useState('')
 
   const username   = sessionStorage.getItem('username') ?? ''
   const myName     = sessionStorage.getItem('name')     ?? ''
   const memberType = sessionStorage.getItem('memberType') ?? ''
+  const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true'
 
   useEffect(() => {
     async function load() {
-      const res = await fetch(`/api/notices/${id}`)
-      if (!res.ok) { navigate(-1); return }
-      setNotice(await res.json())
+      const [noticeRes, commentRes] = await Promise.all([
+        fetch(`/api/notices/${id}`),
+        fetch(`/api/notices/${id}/comments`),
+      ])
+      if (!noticeRes.ok) { navigate(-1); return }
+      const [noticeData, commentData] = await Promise.all([
+        noticeRes.json(),
+        commentRes.json(),
+      ])
+      setNotice(noticeData)
+      setComments(commentData)
       setLoading(false)
     }
     load()
   }, [id, navigate])
+
+  async function handleCommentSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!commentText.trim()) return
+    if (!isLoggedIn) { alert('로그인이 필요합니다.'); return }
+    const res = await fetch(`/api/notices/${id}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ author: myName, authorUsername: username, content: commentText }),
+    })
+    if (res.ok) {
+      const newComment: NoticeCommentDto = await res.json()
+      setComments(prev => [...prev, newComment])
+      setCommentText('')
+      setNotice(prev => prev ? { ...prev, commentCount: (prev.commentCount ?? 0) + 1 } : prev)
+    }
+  }
+
+  async function handleCommentDelete(commentId: number) {
+    if (!confirm('댓글을 삭제하시겠습니까?')) return
+    const res = await fetch(
+      `/api/notices/${id}/comments/${commentId}?username=${encodeURIComponent(username)}&memberType=${memberType}`,
+      { method: 'DELETE' }
+    )
+    if (res.ok) {
+      setComments(prev => prev.filter(c => c.id !== commentId))
+      setNotice(prev => prev ? { ...prev, commentCount: (prev.commentCount ?? 1) - 1 } : prev)
+    }
+  }
+
+  function startEdit(c: NoticeCommentDto) {
+    setEditingId(c.id)
+    setEditText(c.content)
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setEditText('')
+  }
+
+  async function handleCommentEdit(commentId: number) {
+    if (!editText.trim()) return
+    const res = await fetch(`/api/notices/${id}/comments/${commentId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: editText, authorUsername: username }),
+    })
+    if (res.ok) {
+      const updated: NoticeCommentDto = await res.json()
+      setComments(prev => prev.map(c => c.id === commentId ? updated : c))
+      cancelEdit()
+    }
+  }
 
   async function handleDelete() {
     if (!confirm('공지사항을 삭제하시겠습니까?')) return
@@ -148,6 +224,99 @@ export default function NoticeDetailPage() {
             </ul>
           </div>
         )}
+
+        {/* 댓글 */}
+        <section>
+          <h2 className="text-base font-bold mb-4 border-b border-black pb-2">
+            댓글 <span className="text-gray-500 font-normal">{comments.length}</span>
+          </h2>
+
+          {comments.length === 0 && (
+            <p className="text-sm text-gray-400 mb-4">첫 댓글을 남겨보세요.</p>
+          )}
+
+          <ul className="flex flex-col gap-4 mb-6">
+            {comments.map(c => {
+              const isMyComment = c.authorUsername === username
+              return (
+                <li key={c.id} className="border-b border-gray-100 pb-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium">{c.author}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-400">{c.date}</span>
+                      {isMyComment && editingId !== c.id && (
+                        <>
+                          <button
+                            onClick={() => startEdit(c)}
+                            className="text-xs text-gray-400 hover:text-black"
+                          >수정</button>
+                          <button
+                            onClick={() => handleCommentDelete(c.id)}
+                            className="text-xs text-gray-400 hover:text-red-500"
+                          >삭제</button>
+                        </>
+                      )}
+                      {!isMyComment && memberType === 'admin' && (
+                        <button
+                          onClick={() => handleCommentDelete(c.id)}
+                          className="text-xs text-gray-400 hover:text-red-500"
+                        >삭제</button>
+                      )}
+                    </div>
+                  </div>
+                  {editingId === c.id ? (
+                    <div>
+                      <textarea
+                        value={editText}
+                        onChange={e => setEditText(e.target.value)}
+                        rows={3}
+                        className="border border-black px-3 py-2 text-sm outline-none resize-none w-full"
+                      />
+                      <div className="flex gap-2 justify-end mt-1">
+                        <button
+                          onClick={cancelEdit}
+                          className="text-xs border border-gray-400 px-3 py-1 hover:bg-gray-100"
+                        >취소</button>
+                        <button
+                          onClick={() => handleCommentEdit(c.id)}
+                          className="text-xs bg-black text-white px-3 py-1 hover:bg-gray-800"
+                        >저장</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{c.content}</p>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+
+          {isLoggedIn ? (
+            <form onSubmit={handleCommentSubmit} className="flex flex-col gap-2">
+              <textarea
+                value={commentText}
+                onChange={e => setCommentText(e.target.value)}
+                placeholder="댓글을 입력하세요..."
+                rows={3}
+                className="border border-black px-3 py-2 text-sm outline-none resize-none"
+              />
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  className="px-5 py-2 text-sm bg-black text-white font-medium hover:bg-gray-800 transition"
+                >댓글 등록</button>
+              </div>
+            </form>
+          ) : (
+            <p className="text-sm text-gray-400 text-center py-4">
+              댓글을 작성하려면{' '}
+              <button onClick={() => navigate('/login')} className="underline text-black">
+                로그인
+              </button>
+              하세요.
+            </p>
+          )}
+        </section>
       </main>
     </div>
   )
