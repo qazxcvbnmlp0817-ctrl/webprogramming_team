@@ -1,3 +1,4 @@
+import React from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { vi } from 'vitest'
@@ -20,7 +21,8 @@ vi.mock('../api/universities', () => ({
 }))
 
 vi.mock('../context/DeptContext', () => ({
-  useDept: () => ({ selectedDeptName: '컴퓨터공학과' }),
+  useDept: () => ({ selectedDeptId: 1, selectedDeptName: '컴퓨터공학과' }),
+  DeptProvider: ({ children }: { children: React.ReactNode }) => children,
 }))
 
 function renderPage() {

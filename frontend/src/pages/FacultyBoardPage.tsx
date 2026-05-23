@@ -27,10 +27,11 @@ export default function FacultyBoardPage() {
   const [gradeFilter, setGradeFilter] = useState('전체')
   const [sort, setSort]               = useState('최신순')
   const [search, setSearch]           = useState('')
+  const [searchType, setSearchType]   = useState<'제목' | '작성자' | '제목+작성자'>('제목+작성자')
   const [page, setPage]               = useState(1)
   const PER_PAGE = 10
 
-  useEffect(() => { setPage(1) }, [active, gradeFilter, sort, search])
+  useEffect(() => { setPage(1) }, [active, gradeFilter, sort, search, searchType])
 
   const school  = univ?.schools.find(s => s.faculties.some(f => f.id === facultyIdNum))
   const faculty = school?.faculties.find(f => f.id === facultyIdNum)
@@ -43,7 +44,10 @@ export default function FacultyBoardPage() {
 
     let result = posts.filter(p => {
       const catOk    = active === '전체' || p.category === active
-      const searchOk = search === '' || p.title.toLowerCase().includes(search.toLowerCase())
+      const q = search.toLowerCase()
+      const searchOk = q === ''
+        || (searchType !== '작성자' && p.title.toLowerCase().includes(q))
+        || (searchType !== '제목' && p.author.toLowerCase().includes(q))
       const gradeOk  = gradeFilter === '전체' || p.targetGrades.includes(Number(gradeFilter[0]))
       const visibleOk = p.visibility === 'public' || isPrivileged || p.targetGrades.includes(myGrade)
       return catOk && searchOk && gradeOk && visibleOk
@@ -52,7 +56,7 @@ export default function FacultyBoardPage() {
     if (sort === '추천순') result = [...result].sort((a, b) => b.likes - a.likes)
     if (sort === '댓글순') result = [...result].sort((a, b) => b.commentCount - a.commentCount)
     return result
-  }, [posts, active, gradeFilter, sort, search])
+  }, [posts, active, gradeFilter, sort, search, searchType])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
   const pageItems  = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE)
@@ -136,14 +140,18 @@ export default function FacultyBoardPage() {
           <>
             <div className="mb-4">
               <div className="flex items-center border border-black">
+                <div className="flex border-r border-black">
+                  {(['제목', '작성자', '제목+작성자'] as const).map(type => (
+                    <button key={type} onClick={() => setSearchType(type)}
+                      className={`px-3 py-2 text-xs font-medium whitespace-nowrap transition ${
+                        searchType === type ? 'bg-black text-white' : 'bg-white text-gray-500 hover:text-black'
+                      }`}>{type}</button>
+                  ))}
+                </div>
                 <i className="fas fa-search px-3 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="제목으로 검색..."
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  className="flex-1 py-2 pr-4 text-sm outline-none bg-white"
-                />
+                <input type="text" placeholder={`${searchType}으로 검색...`}
+                  value={search} onChange={e => setSearch(e.target.value)}
+                  className="flex-1 py-2 pr-4 text-sm outline-none bg-white" />
               </div>
             </div>
 

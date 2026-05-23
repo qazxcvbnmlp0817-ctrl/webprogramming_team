@@ -19,10 +19,11 @@ export default function SchoolNoticePage() {
   const [active, setActive]           = useState('전체')
   const [gradeFilter, setGradeFilter] = useState('전체')
   const [search, setSearch]           = useState('')
+  const [searchType, setSearchType]   = useState<'제목' | '작성자' | '제목+작성자'>('제목+작성자')
   const [page, setPage]               = useState(1)
   const PER_PAGE = 10
 
-  useEffect(() => { setPage(1) }, [active, gradeFilter, search])
+  useEffect(() => { setPage(1) }, [active, gradeFilter, search, searchType])
 
   const canWrite = ['professor', 'admin'].includes(sessionStorage.getItem('memberType') ?? '')
 
@@ -31,11 +32,14 @@ export default function SchoolNoticePage() {
   const notices  = data?.notices  ?? []
 
   const filtered = useMemo(() => notices.filter(n => {
-    const catOk    = active === '전체' || n.category === active
-    const searchOk = search === '' || n.title.toLowerCase().includes(search.toLowerCase())
-    const gradeOk  = gradeFilter === '전체' || (n.targetGrades ?? [1,2,3,4]).includes(Number(gradeFilter[0]))
+    const catOk  = active === '전체' || n.category === active
+    const q      = search.toLowerCase()
+    const searchOk = q === ''
+      || (searchType !== '작성자' && n.title.toLowerCase().includes(q))
+      || (searchType !== '제목' && n.author.toLowerCase().includes(q))
+    const gradeOk = gradeFilter === '전체' || (n.targetGrades ?? [1,2,3,4]).includes(Number(gradeFilter[0]))
     return catOk && searchOk && gradeOk
-  }), [notices, active, gradeFilter, search])
+  }), [notices, active, gradeFilter, search, searchType])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
   const pageItems  = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE)
@@ -84,14 +88,18 @@ export default function SchoolNoticePage() {
             )}
             <div className="mb-4">
               <div className="flex items-center border border-black">
+                <div className="flex border-r border-black">
+                  {(['제목', '작성자', '제목+작성자'] as const).map(type => (
+                    <button key={type} onClick={() => setSearchType(type)}
+                      className={`px-3 py-2 text-xs font-medium whitespace-nowrap transition ${
+                        searchType === type ? 'bg-black text-white' : 'bg-white text-gray-500 hover:text-black'
+                      }`}>{type}</button>
+                  ))}
+                </div>
                 <i className="fas fa-search px-3 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="제목으로 검색..."
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  className="flex-1 py-2 pr-4 text-sm outline-none bg-white"
-                />
+                <input type="text" placeholder={`${searchType}으로 검색...`}
+                  value={search} onChange={e => setSearch(e.target.value)}
+                  className="flex-1 py-2 pr-4 text-sm outline-none bg-white" />
               </div>
             </div>
             <FilterTabs tabs={TABS} active={active} onChange={setActive} />
@@ -129,6 +137,7 @@ export default function SchoolNoticePage() {
                         )}
                         <span className="font-medium text-gray-700">{notice.author}</span>
                         <span>{notice.date}</span>
+                        <span><i className="fas fa-comment mr-0.5" />{notice.commentCount}</span>
                         <span><i className="fas fa-eye mr-0.5" />{notice.viewCount}</span>
                       </div>
                     </div>

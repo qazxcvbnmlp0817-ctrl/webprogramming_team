@@ -1,11 +1,14 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import Navbar from './Navbar'
+import { DeptProvider } from '../context/DeptContext'
 
 function renderNavbar(currentPath = '/') {
   return render(
     <MemoryRouter initialEntries={[currentPath]}>
-      <Navbar />
+      <DeptProvider>
+        <Navbar />
+      </DeptProvider>
     </MemoryRouter>
   )
 }
@@ -21,7 +24,7 @@ test('공지사항 링크가 존재한다', () => {
 })
 
 test('/notice 경로에서 공지사항 링크가 활성화된다', () => {
-  renderNavbar('/notice')
+  renderNavbar('/dept/notice')
   const links = screen.getAllByText('공지사항')
   const activeLink = links.find(el => el.closest('a')?.className.includes('border-white'))
   expect(activeLink).toBeTruthy()

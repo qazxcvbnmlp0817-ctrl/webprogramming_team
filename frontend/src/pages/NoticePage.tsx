@@ -158,6 +158,7 @@ export default function NoticePage() {
                         )}
                         <span className="font-medium text-gray-700">{notice.author}</span>
                         <span>{notice.date}</span>
+                        <span><i className="fas fa-comment mr-0.5" />{notice.commentCount}</span>
                         <span><i className="fas fa-eye mr-0.5" />{notice.viewCount}</span>
                       </div>
                     </div>

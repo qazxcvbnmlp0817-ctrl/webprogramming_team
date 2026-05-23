@@ -11,4 +11,6 @@ export interface NoticeDto {
   targetGrades: number[]
   content?: string | null
   attachments?: PostAttachmentDto[] | null
+  authorUsername?: string | null
+  commentCount?: number
 }

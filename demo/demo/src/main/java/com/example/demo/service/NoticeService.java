@@ -120,7 +120,9 @@ public class NoticeService {
                 n.isFeatured(),
                 parseGrades(n.getTargetGrades()),
                 null,
-                fetchAttachments(n.getId())
+                fetchAttachments(n.getId()),
+                n.getAuthorUsername(),
+                n.getCommentCount()
         );
     }
 
