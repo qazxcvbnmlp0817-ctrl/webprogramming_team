@@ -1,47 +1,100 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import { useDept } from '../context/DeptContext'
 
 export default function LoginPage() {
   const navigate = useNavigate()
-  const [memberType, setMemberType] = useState<'student' | 'professor' | 'admin'>('student')
-  const [id, setId] = useState('')
+  const { setDept } = useDept()
+  const [memberType, setMemberType] = useState<'student' | 'staff' | 'admin'>('student')
+  const [staffRole, setStaffRole] = useState<'professor' | 'employee' | 'assistant' | ''>('')
+  const [enrollmentStatus, setEnrollmentStatus] = useState('')
+  const [id, setId] = useState(() => localStorage.getItem('savedId') ?? '')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [saveId, setSaveId] = useState(false)
+  const [saveId, setSaveId] = useState(() => !!localStorage.getItem('savedId'))
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!id || !password) {
-      setError('아이디 또는 비밀번호가 일치하지 않습니다.')
+
+    if (!id.trim()) { setError('아이디를 입력해주세요.'); return }
+    if (!password.trim()) { setError('비밀번호를 입력해주세요.'); return }
+    if (memberType === 'student' && !enrollmentStatus) {
+      setError('재학 상태를 선택해주세요.')
       return
     }
+    if (memberType === 'staff' && !staffRole) {
+      setError('교직원 구분을 선택해주세요.')
+      return
+    }
+
+    setLoading(true)
+    setError('')
+
+    const apiMemberType = memberType === 'staff' ? staffRole : memberType
+
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: id, password, memberType }),
+        body: JSON.stringify({ username: id, password, memberType: apiMemberType }),
       })
+
+      if (!res.ok) {
+        setError('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
+        return
+      }
+
       const result = await res.json()
+
       if (result.success) {
         setError('')
+
         sessionStorage.setItem('isLoggedIn', 'true')
         sessionStorage.setItem('username', id)
+        sessionStorage.setItem('memberType', apiMemberType)
         sessionStorage.setItem('name', result.name || id)
-        sessionStorage.setItem('memberType', memberType)
         sessionStorage.setItem('grade', result.grade != null ? String(result.grade) : '')
         sessionStorage.setItem('adminRole', result.adminRole ?? '')
-        sessionStorage.setItem('universityId', result.universityId ?? '')
         if (result.deptId != null) sessionStorage.setItem('deptId', String(result.deptId))
         else sessionStorage.removeItem('deptId')
+        if (result.department)       sessionStorage.setItem('department', result.department)
+        if (result.universityId)     sessionStorage.setItem('universityId', String(result.universityId))
+        if (result.college)          sessionStorage.setItem('college', result.college)
+        if (result.enrollmentStatus) sessionStorage.setItem('enrollmentStatus', result.enrollmentStatus)
+
+        if (result.department || result.universityId) {
+          setDept({
+            selectedDeptId: result.deptId ?? null,
+            selectedDeptName: result.department ?? null,
+            selectedUniversityId: result.universityId ? Number(result.universityId) : null,
+            selectedUniversityName: result.universityName ?? null,
+            selectedSchoolName: result.college ?? null,
+          })
+        }
+
+        if (saveId) {
+          localStorage.setItem('savedId', id)
+        } else {
+          localStorage.removeItem('savedId')
+        }
+
         window.dispatchEvent(new Event('loginChanged'))
-        navigate('/universities')
+
+        if (result.universityId) {
+          navigate('/school/departments')
+        } else {
+          navigate('/universities')
+        }
       } else {
         setError(result.message || '로그인에 실패했습니다.')
       }
     } catch {
-      setError('서버 연결에 실패했습니다.')
+      setError('서버 연결에 실패했습니다. 네트워크 상태를 확인해주세요.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -65,51 +118,67 @@ export default function LoginPage() {
           <div className="border-t border-black" />
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+
             <div>
               <p className="text-sm font-medium mb-1">회원 유형 선택</p>
               <div className="flex gap-4 border-2 border-black px-3 py-2">
-                {(['student', 'professor', 'admin'] as const).map((t, i) => (
+                {(['student', 'staff', 'admin'] as const).map((t, i) => (
                   <label key={t} className="flex items-center gap-1.5 text-sm cursor-pointer">
-                    <input
-                      type="radio"
-                      name="memberType"
-                      value={t}
-                      checked={memberType === t}
-                      onChange={() => setMemberType(t)}
-                      className="accent-black"
-                    />
-                    {['학생', '교수/조교', '관리자'][i]}
+                    <input type="radio" name="memberType" value={t} checked={memberType === t}
+                      onChange={() => { setMemberType(t); setEnrollmentStatus(''); setStaffRole('') }}
+                      className="accent-black" />
+                    {['학생', '교직원', '관리자'][i]}
                   </label>
                 ))}
               </div>
             </div>
 
+            {memberType === 'staff' && (
+              <div>
+                <label className="block text-sm font-medium mb-1">교직원 구분</label>
+                <select
+                  value={staffRole}
+                  onChange={e => { setStaffRole(e.target.value as typeof staffRole); setError('') }}
+                  className="w-full border-2 border-black px-3 py-2 text-sm outline-none bg-white"
+                >
+                  <option value="">선택해주세요</option>
+                  <option value="professor">교수</option>
+                  <option value="employee">직원</option>
+                  <option value="assistant">조교</option>
+                </select>
+              </div>
+            )}
+
+            {memberType === 'student' && (
+              <div>
+                <label className="block text-sm font-medium mb-1">재학 상태</label>
+                <select value={enrollmentStatus} onChange={e => { setEnrollmentStatus(e.target.value); setError('') }}
+                  className="w-full border-2 border-black px-3 py-2 text-sm outline-none bg-white">
+                  <option value="">선택해주세요</option>
+                  <option value="freshman">신입생</option>
+                  <option value="enrolled">재학생</option>
+                  <option value="graduated">졸업생</option>
+                </select>
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium mb-1">아이디</label>
-              <input
-                type="text"
-                placeholder="학번/교번 또는 아이디 입력"
-                value={id}
-                onChange={e => setId(e.target.value)}
+              <input type="text" placeholder="학번/교번 또는 아이디 입력" value={id}
+                onChange={e => { setId(e.target.value); setError('') }}
                 className="w-full border-2 border-black px-3 py-2 text-sm outline-none focus:bg-gray-50"
-              />
+                autoComplete="username" />
             </div>
 
             <div>
               <label className="block text-sm font-medium mb-1">비밀번호</label>
               <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="비밀번호 입력"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
+                <input type={showPassword ? 'text' : 'password'} placeholder="비밀번호 입력" value={password}
+                  onChange={e => { setPassword(e.target.value); setError('') }}
                   className="w-full border-2 border-black px-3 py-2 pr-10 text-sm outline-none focus:bg-gray-50"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black"
-                >
+                  autoComplete="current-password" />
+                <button type="button" onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black">
                   {showPassword ? (
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-5 0-9-4-9-7s4-7 9-7a9.95 9.95 0 016.072 2.05M15 12a3 3 0 11-6 0 3 3 0 016 0zm4.243-4.243L4.757 19.243" />
@@ -125,12 +194,7 @@ export default function LoginPage() {
             </div>
 
             <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                checked={saveId}
-                onChange={e => setSaveId(e.target.checked)}
-                className="accent-black w-4 h-4"
-              />
+              <input type="checkbox" checked={saveId} onChange={e => setSaveId(e.target.checked)} className="accent-black w-4 h-4" />
               아이디 저장
             </label>
 
@@ -138,8 +202,9 @@ export default function LoginPage() {
               <p className="text-xs text-red-600 bg-red-50 border border-red-200 px-3 py-2">{error}</p>
             )}
 
-            <button type="submit" className="w-full bg-black text-white py-2.5 text-sm font-bold hover:opacity-80 transition">
-              로그인
+            <button type="submit" disabled={loading}
+              className="w-full bg-black text-white py-2.5 text-sm font-bold hover:opacity-80 transition disabled:opacity-50 disabled:cursor-not-allowed">
+              {loading ? '로그인 중...' : '로그인'}
             </button>
           </form>
 
@@ -151,15 +216,6 @@ export default function LoginPage() {
             <Link to="/find-id" className="hover:text-black hover:underline">아이디 찾기</Link>
             <span className="text-gray-300">|</span>
             <Link to="/find-password" className="hover:text-black hover:underline">비밀번호 찾기</Link>
-          </div>
-
-          <div className="bg-gray-50 border border-gray-200 px-4 py-3 text-xs text-gray-500">
-            <p className="font-medium text-gray-700 mb-1">⚠ 로그인 실패 시 메시지 예시</p>
-            <ul className="list-disc list-inside space-y-1">
-              <li>아이디 또는 비밀번호가 일치하지 않습니다.</li>
-              <li>회원 유형이 일치하지 않습니다.</li>
-              <li>관리자 승인 후 이용 가능합니다.</li>
-            </ul>
           </div>
 
         </div>
