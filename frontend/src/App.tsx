@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { DeptProvider, useDept } from './context/DeptContext'
+import IntroAnimation from './components/common/IntroAnimation'
 import Footer from './components/Footer'
 import UniversityListPage from './pages/UniversityListPage'
 import UniversityShowPage from './pages/UniversityShowPage'
@@ -76,6 +78,21 @@ function ProtectedFacultyAdmin({ children }: { children: ReactNode }) {
 }
 
 export default function App() {
+  const [introShown, setIntroShown] = useState(
+    () => !!sessionStorage.getItem('intro_shown')
+  )
+
+  if (!introShown) {
+    return (
+      <IntroAnimation
+        onComplete={() => {
+          sessionStorage.setItem('intro_shown', '1')
+          setIntroShown(true)
+        }}
+      />
+    )
+  }
+
   return (
     <DeptProvider>
       <BrowserRouter>
