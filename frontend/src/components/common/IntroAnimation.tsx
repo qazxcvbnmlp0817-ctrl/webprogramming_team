@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 interface Props {
   onComplete: () => void
@@ -6,17 +6,19 @@ interface Props {
 
 export default function IntroAnimation({ onComplete }: Props) {
   const [phase, setPhase] = useState<'hidden' | 'visible' | 'fadeout'>('hidden')
+  const onCompleteRef = useRef(onComplete)
+  useEffect(() => { onCompleteRef.current = onComplete })
 
   useEffect(() => {
     const t1 = setTimeout(() => setPhase('visible'), 500)
     const t2 = setTimeout(() => setPhase('fadeout'), 2500)
-    const t3 = setTimeout(() => onComplete(), 3000)
+    const t3 = setTimeout(() => onCompleteRef.current(), 3000)
     return () => {
       clearTimeout(t1)
       clearTimeout(t2)
       clearTimeout(t3)
     }
-  }, [onComplete])
+  }, [])
 
   return (
     <div
