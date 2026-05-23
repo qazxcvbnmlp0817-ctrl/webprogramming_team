@@ -1,19 +1,51 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import type { UniversityDto } from '../types/university'
 import { fetchUniversities } from '../api/universities'
 import { useDept } from '../context/DeptContext'
 import AdminBanner from '../components/common/AdminBanner'
+import UniversityCard, { activityScore } from '../components/common/UniversityCard'
+
+type SortMode = 'active' | 'alpha'
 
 export default function UniversityListPage() {
   const [universities, setUniversities] = useState<UniversityDto[]>([])
   const [menuOpen, setMenuOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [sortMode, setSortMode] = useState<SortMode>('active')
   const { setUniversityInfo } = useDept()
   const navigate = useNavigate()
 
   useEffect(() => {
     fetchUniversities().then(setUniversities)
   }, [])
+
+  const filtered = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    const list = q
+      ? universities.filter(u => u.name.toLowerCase().includes(q))
+      : [...universities]
+
+    if (sortMode === 'active') {
+      list.sort((a, b) => activityScore(b) - activityScore(a))
+    } else {
+      list.sort((a, b) => a.name.localeCompare(b.name, 'ko'))
+    }
+    return list
+  }, [universities, searchQuery, sortMode])
+
+  const maxScore = useMemo(
+    () => Math.max(...universities.map(activityScore), 1),
+    [universities]
+  )
+  const maxDepts = useMemo(
+    () => Math.max(...universities.map(u => u.totalDeptCount), 1),
+    [universities]
+  )
+  const maxSchools = useMemo(
+    () => Math.max(...universities.map(u => u.schools.length), 1),
+    [universities]
+  )
 
   const handleSelect = (univ: UniversityDto) => {
     setUniversityInfo(univ.id, univ.name)
@@ -68,33 +100,52 @@ export default function UniversityListPage() {
       <AdminBanner scope="selection" />
 
       <main className="max-w-6xl mx-auto px-4 py-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {universities.map(univ => (
+        <div className="mb-6 flex flex-col sm:flex-row gap-3">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="대학교 이름 검색..."
+            className="flex-1 border-2 border-black px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+          />
+          <div className="flex border-2 border-black overflow-hidden">
             <button
-              key={univ.id}
-              onClick={() => handleSelect(univ)}
-              className="group block w-full text-left border-2 border-black p-8 hover:bg-black hover:text-white transition cursor-pointer"
+              onClick={() => setSortMode('active')}
+              aria-label="활동 많은 순"
+              className={`px-4 py-2 text-sm font-medium transition ${
+                sortMode === 'active' ? 'bg-black text-white' : 'bg-white text-black hover:bg-gray-100'
+              }`}
             >
-              <div className="flex items-start gap-4">
-                <i className="fas fa-university text-3xl mt-0.5 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-2xl font-bold mb-2">{univ.name}</h2>
-                  <p className="text-sm text-gray-500 group-hover:text-gray-300 leading-snug">
-                    {univ.description}
-                  </p>
-                  <div className="mt-4 flex gap-4 text-xs text-gray-400">
-                    <span><i className="fas fa-building mr-1" />{univ.schools.length}개 단과대학</span>
-                    <span><i className="fas fa-door-open mr-1" />{univ.totalDeptCount}개 학과</span>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-6 pt-5 border-t border-gray-200 group-hover:border-gray-600 flex items-center justify-between text-sm font-medium">
-                <span>대학교 입장</span>
-                <i className="fas fa-arrow-right text-xs transition-transform group-hover:translate-x-1" />
-              </div>
+              활동 많은 순
             </button>
-          ))}
+            <button
+              onClick={() => setSortMode('alpha')}
+              aria-label="가나다 순"
+              className={`px-4 py-2 text-sm font-medium transition border-l-2 border-black ${
+                sortMode === 'alpha' ? 'bg-black text-white' : 'bg-white text-black hover:bg-gray-100'
+              }`}
+            >
+              가나다 순
+            </button>
+          </div>
         </div>
+
+        {filtered.length === 0 ? (
+          <p className="text-center text-gray-400 py-20">검색 결과가 없습니다.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {filtered.map(univ => (
+              <UniversityCard
+                key={univ.id}
+                univ={univ}
+                maxScore={maxScore}
+                maxDepts={maxDepts}
+                maxSchools={maxSchools}
+                onSelect={() => handleSelect(univ)}
+              />
+            ))}
+          </div>
+        )}
       </main>
     </div>
   )
