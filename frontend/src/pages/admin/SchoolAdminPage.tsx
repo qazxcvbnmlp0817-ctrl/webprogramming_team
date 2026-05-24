@@ -12,9 +12,12 @@ import {
   deleteSchoolPost, fetchSchoolUsers, updateSchoolUserRole,
   fetchSchoolAllUsers, fetchSchoolPendingUsers, updateUserStatus,
   fetchAdminLogs, fetchSchoolMonthlyStats,
+  fetchSchoolProfessors, fetchSchoolCourses, fetchSchoolAssignments,
+  createSchoolAssignment, deleteSchoolAssignment,
 } from '../../api/adminSchool'
 import type {
-  SchoolStats, VisitorPoint, PostItem, AdminUser, AdminLog, MonthlyStats
+  SchoolStats, VisitorPoint, PostItem, AdminUser, AdminLog, MonthlyStats,
+  ProfessorItem, CourseItem, AssignmentItem,
 } from '../../api/adminSchool'
 
 ChartJS.register(
@@ -22,8 +25,8 @@ ChartJS.register(
   BarElement, ArcElement, Title, Tooltip, Legend, Filler
 )
 
-type Tab = '개요' | '게시글 관리' | '전체 사용자' | '가입 승인' | '관리자 계정' | '활동 로그'
-const TABS: Tab[] = ['개요', '게시글 관리', '전체 사용자', '가입 승인', '관리자 계정', '활동 로그']
+type Tab = '개요' | '게시글 관리' | '전체 사용자' | '가입 승인' | '관리자 계정' | '활동 로그' | '교수 배정'
+const TABS: Tab[] = ['개요', '게시글 관리', '전체 사용자', '가입 승인', '관리자 계정', '활동 로그', '교수 배정']
 
 export default function SchoolAdminPage() {
   const navigate = useNavigate()
@@ -45,6 +48,13 @@ export default function SchoolAdminPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [loading, setLoading]       = useState(true)
   const [userFilter, setUserFilter] = useState<string>('전체')
+  const [professors, setProfessors]   = useState<ProfessorItem[]>([])
+  const [courses, setCourses]         = useState<CourseItem[]>([])
+  const [assignments, setAssignments] = useState<AssignmentItem[]>([])
+  const [selProfId, setSelProfId]     = useState<number | ''>('')
+  const [selCourseId, setSelCourseId] = useState<number | ''>('')
+  const [selDeptId, setSelDeptId]     = useState<number | ''>('')
+  const [assignError, setAssignError] = useState<string | null>(null)
 
   useEffect(() => {
     Promise.all([
@@ -68,6 +78,15 @@ export default function SchoolAdminPage() {
       setTotalPages(data.totalPages)
     })
   }, [page])
+
+  useEffect(() => {
+    if (tab !== '교수 배정') return
+    Promise.all([
+      fetchSchoolProfessors(univId),
+      fetchSchoolCourses(univId),
+      fetchSchoolAssignments(univId),
+    ]).then(([p, c, a]) => { setProfessors(p); setCourses(c); setAssignments(a) })
+  }, [tab, univId])
 
   const handleDeletePost = async (postId: number) => {
     if (!window.confirm('게시글을 삭제하시겠습니까?')) return
@@ -96,6 +115,28 @@ export default function SchoolAdminPage() {
     if (userFilter === '정지됨') return u.status === 'SUSPENDED'
     return true
   })
+
+  const handleCreateSchoolAssignment = async () => {
+    if (selProfId === '' || selCourseId === '' || selDeptId === '') {
+      setAssignError('교수, 강의, 학과를 모두 선택하세요')
+      return
+    }
+    try {
+      await createSchoolAssignment(selProfId, selCourseId, selDeptId, univId)
+      const updated = await fetchSchoolAssignments(univId)
+      setAssignments(updated)
+      setSelProfId(''); setSelCourseId(''); setSelDeptId('')
+      setAssignError(null)
+    } catch (e: unknown) {
+      setAssignError(e instanceof Error ? e.message : '배정 실패')
+    }
+  }
+
+  const handleDeleteSchoolAssignment = async (assignmentId: number) => {
+    if (!window.confirm('배정을 취소하시겠습니까?')) return
+    await deleteSchoolAssignment(assignmentId, univId)
+    setAssignments(prev => prev.filter(a => a.id !== assignmentId))
+  }
 
   const lineData = {
     labels: visitors.map(v => v.date.slice(5)),
@@ -452,6 +493,105 @@ export default function SchoolAdminPage() {
             </div>
           </div>
         )}
+
+        {tab === '교수 배정' && (() => {
+          const uniqueDeptIds = [...new Set(professors.map(p => p.deptId))]
+          return (
+            <div className="space-y-6">
+              <div className="border-2 border-black p-6">
+                <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">교수 배정 추가</h2>
+                <div className="flex flex-wrap gap-3 items-end">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-gray-500">학과 선택</label>
+                    <select
+                      value={selDeptId}
+                      onChange={e => {
+                        setSelDeptId(e.target.value === '' ? '' : Number(e.target.value))
+                        setSelProfId('')
+                        setSelCourseId('')
+                      }}
+                      className="border border-gray-300 text-sm px-3 py-2 focus:outline-none focus:border-black min-w-40"
+                    >
+                      <option value="">-- 학과 --</option>
+                      {uniqueDeptIds.map(did => (
+                        <option key={did} value={did}>학과 #{did}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-gray-500">교수 선택</label>
+                    <select
+                      value={selProfId}
+                      onChange={e => setSelProfId(e.target.value === '' ? '' : Number(e.target.value))}
+                      className="border border-gray-300 text-sm px-3 py-2 focus:outline-none focus:border-black min-w-48"
+                    >
+                      <option value="">-- 교수 --</option>
+                      {professors
+                        .filter(p => selDeptId === '' || p.deptId === selDeptId)
+                        .map(p => (
+                          <option key={p.id} value={p.id}>{p.name}{p.specialty ? ` (${p.specialty})` : ''}</option>
+                        ))}
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-gray-500">강의 선택</label>
+                    <select
+                      value={selCourseId}
+                      onChange={e => setSelCourseId(e.target.value === '' ? '' : Number(e.target.value))}
+                      className="border border-gray-300 text-sm px-3 py-2 focus:outline-none focus:border-black min-w-48"
+                    >
+                      <option value="">-- 강의 --</option>
+                      {courses
+                        .filter(c => selDeptId === '' || c.deptId === selDeptId)
+                        .map(c => (
+                          <option key={c.id} value={c.id}>{c.name}{c.year ? ` (${c.year})` : ''}</option>
+                        ))}
+                    </select>
+                  </div>
+                  <button
+                    onClick={handleCreateSchoolAssignment}
+                    className="border-2 border-black bg-black text-white text-sm px-5 py-2 hover:bg-white hover:text-black transition"
+                  >
+                    배정 추가
+                  </button>
+                </div>
+                {assignError && <p className="text-red-500 text-xs mt-2">{assignError}</p>}
+              </div>
+
+              <div className="border-2 border-black p-6">
+                <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">현재 배정 목록</h2>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b-2 border-black text-xs uppercase tracking-wide text-gray-500">
+                        <th className="text-left pb-3 pr-4">교수</th>
+                        <th className="text-left pb-3 pr-4">강의</th>
+                        <th className="text-left pb-3">관리</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {assignments.map((a, i) => (
+                        <tr key={a.id} className={`border-b border-gray-100 ${i % 2 === 0 ? 'bg-gray-50/50' : ''}`}>
+                          <td className="py-3 pr-4 font-medium">{a.professorName}</td>
+                          <td className="py-3 pr-4 text-gray-600">{a.courseName}</td>
+                          <td className="py-3">
+                            <button
+                              onClick={() => handleDeleteSchoolAssignment(a.id)}
+                              className="text-xs border border-red-300 text-red-500 px-3 py-1 hover:bg-red-50 transition"
+                            >취소</button>
+                          </td>
+                        </tr>
+                      ))}
+                      {assignments.length === 0 && (
+                        <tr><td colSpan={3} className="py-8 text-center text-gray-400 text-sm">배정된 강의가 없습니다.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )
+        })()}
 
       </main>
     </div>

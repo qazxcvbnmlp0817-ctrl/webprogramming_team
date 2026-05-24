@@ -146,3 +146,70 @@ export async function fetchSchoolMonthlyStats(univId?: number): Promise<MonthlyS
   handle403(res)
   return res.json()
 }
+
+export interface ProfessorItem {
+  id: number
+  name: string
+  specialty: string | null
+  email: string | null
+  deptId: number
+}
+
+export interface CourseItem {
+  id: number
+  name: string
+  year: string | null
+  credits: number
+  required: boolean
+  deptId: number
+}
+
+export interface AssignmentItem {
+  id: number
+  professorId: number
+  courseId: number
+  deptId: number
+  professorName: string
+  courseName: string
+}
+
+export async function fetchSchoolProfessors(univId?: number): Promise<ProfessorItem[]> {
+  const res = await fetch('/api/admin/school/professors' + qs(univParam(univId)), { headers: headers() })
+  handle403(res)
+  return res.json()
+}
+
+export async function fetchSchoolCourses(univId?: number): Promise<CourseItem[]> {
+  const res = await fetch('/api/admin/school/courses' + qs(univParam(univId)), { headers: headers() })
+  handle403(res)
+  return res.json()
+}
+
+export async function fetchSchoolAssignments(univId?: number): Promise<AssignmentItem[]> {
+  const res = await fetch('/api/admin/school/assignments' + qs(univParam(univId)), { headers: headers() })
+  handle403(res)
+  return res.json()
+}
+
+export async function createSchoolAssignment(
+  professorId: number, courseId: number, deptId: number, univId?: number
+): Promise<AssignmentItem> {
+  const res = await fetch('/api/admin/school/assignments' + qs(univParam(univId)), {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify({ professorId, courseId, deptId }),
+  })
+  if (!res.ok) {
+    handle403(res)
+    throw new Error(await res.text())
+  }
+  return res.json()
+}
+
+export async function deleteSchoolAssignment(assignmentId: number, univId?: number): Promise<void> {
+  const res = await fetch(
+    `/api/admin/school/assignments/${assignmentId}` + qs(univParam(univId)),
+    { method: 'DELETE', headers: headers() }
+  )
+  handle403(res)
+}
