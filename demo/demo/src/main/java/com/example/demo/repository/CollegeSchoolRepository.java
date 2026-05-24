@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface CollegeSchoolRepository extends JpaRepository<CollegeSchool, Long> {
     List<CollegeSchool> findByUniversityIdOrderByIdAsc(Long universityId);
+    List<CollegeSchool> findByUniversityId(Long universityId);
 }

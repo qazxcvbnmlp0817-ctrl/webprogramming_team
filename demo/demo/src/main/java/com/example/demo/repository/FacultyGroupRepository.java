@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface FacultyGroupRepository extends JpaRepository<FacultyGroup, Long> {
     List<FacultyGroup> findBySchoolIdOrderByIdAsc(Long schoolId);
+    List<FacultyGroup> findBySchoolId(Long schoolId);
 }
