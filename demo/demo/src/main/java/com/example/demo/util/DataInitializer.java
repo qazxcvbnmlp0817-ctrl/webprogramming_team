@@ -6,6 +6,9 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
 @Component
 public class DataInitializer implements CommandLineRunner {
 
@@ -30,10 +33,25 @@ public class DataInitializer implements CommandLineRunner {
         this.curriculumRepo = curriculumRepo;
     }
 
+    private static final String[] PROFESSOR_NAMES = {
+        "김민준", "이서준", "박지호", "최예준", "정시우", "강도윤", "조주원", "윤하준",
+        "장지훈", "임서진", "한지우", "오민서", "서유준", "신지안", "권하은", "황서연",
+        "안지유", "송윤아", "류민아", "전서아", "홍지수", "고하린", "문서윤", "양지원",
+        "손수아", "배지현", "백채원", "허예은", "유소연", "남지우", "심도현", "노재원",
+        "정기현", "하승현", "곽민혁", "성재훈", "차준혁", "주현우", "우태준", "구민재",
+        "민상현", "나종혁", "진성민", "지재훈", "엄태현", "석진우", "방승훈", "변현석",
+        "선우혁", "단현민", "도재영", "봉지민", "어승현", "형민준", "편재홍", "사윤석",
+        "탁민성", "망우현", "경재윤", "동지석", "반준호", "시태양", "애린서", "개민혁",
+        "래준석", "내지훈",
+    };
+
     @Override
     @Transactional
     public void run(String... args) {
-        if (universityRepo.count() > 0) return; // 이미 씨드된 경우 스킵
+        if (universityRepo.count() > 0) {
+            fixProfessorNamesIfNeeded();
+            return;
+        }
 
         // ── 목포대학교 ───────────────────────────────────────────────────────
         University mokpo = saveUniv("목포대학교", "서남권 중심 국립대학교");
@@ -90,10 +108,12 @@ public class DataInitializer implements CommandLineRunner {
         saveDept("전기공학과",   engSunFac.getId(), "전기공학과는 이론과 실무를 균형 있게 교육합니다.", "전남 순천시 중앙로 255", "061-750-3411", "dept22@sunchon.ac.kr", "평일 09:00~18:00");
 
         // ── 교수 및 교육과정 씨드 (전체 학과에 기본 데이터) ─────────────────
+        AtomicInteger nameIdx = new AtomicInteger(0);
         deptRepo.findAll().forEach(dept -> {
-            professorRepo.save(makeProfessor(dept.getName() + " / 이론 및 기초", "prof1@mokpo.ac.kr", dept.getId()));
-            professorRepo.save(makeProfessor(dept.getName() + " / 응용 및 실무", "prof2@mokpo.ac.kr", dept.getId()));
-            professorRepo.save(makeProfessor(dept.getName() + " / 연구 및 개발", "prof3@mokpo.ac.kr", dept.getId()));
+            int i = nameIdx.getAndAdd(3);
+            professorRepo.save(makeProfessor(PROFESSOR_NAMES[i % PROFESSOR_NAMES.length],     dept.getName() + " / 이론 및 기초", "prof" + (i+1) + "@mokpo.ac.kr", dept.getId()));
+            professorRepo.save(makeProfessor(PROFESSOR_NAMES[(i+1) % PROFESSOR_NAMES.length], dept.getName() + " / 응용 및 실무", "prof" + (i+2) + "@mokpo.ac.kr", dept.getId()));
+            professorRepo.save(makeProfessor(PROFESSOR_NAMES[(i+2) % PROFESSOR_NAMES.length], dept.getName() + " / 연구 및 개발", "prof" + (i+3) + "@mokpo.ac.kr", dept.getId()));
 
             curriculumRepo.save(makeCurriculum(dept.getName() + " 개론", "1학년", true,  3, dept.getId()));
             curriculumRepo.save(makeCurriculum("전공기초 실습",              "1학년", true,  2, dept.getId()));
@@ -102,6 +122,19 @@ public class DataInitializer implements CommandLineRunner {
             curriculumRepo.save(makeCurriculum("산학협력 세미나",            "3학년", false, 2, dept.getId()));
             curriculumRepo.save(makeCurriculum("캡스톤 디자인",              "4학년", true,  4, dept.getId()));
         });
+    }
+
+    private void fixProfessorNamesIfNeeded() {
+        List<Professor> profs = professorRepo.findAll();
+        if (profs.isEmpty()) return;
+        // 모든 교수 이름이 동일한 경우(초기 시딩 버그) 고유 이름으로 교체
+        String firstName = profs.get(0).getName();
+        boolean allSame = profs.stream().allMatch(p -> firstName.equals(p.getName()));
+        if (!allSame) return;
+        for (int i = 0; i < profs.size(); i++) {
+            profs.get(i).setName(PROFESSOR_NAMES[i % PROFESSOR_NAMES.length]);
+        }
+        professorRepo.saveAll(profs);
     }
 
     private University saveUniv(String name, String desc) {
@@ -138,9 +171,9 @@ public class DataInitializer implements CommandLineRunner {
         return deptRepo.save(d);
     }
 
-    private Professor makeProfessor(String specialty, String email, Long deptId) {
+    private Professor makeProfessor(String name, String specialty, String email, Long deptId) {
         Professor p = new Professor();
-        p.setName("교수");
+        p.setName(name);
         p.setSpecialty(specialty);
         p.setEmail(email);
         p.setDeptId(deptId);
