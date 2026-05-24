@@ -1,3 +1,5 @@
+import type { SchoolDraft } from '../types/schoolDraft'
+
 const headers = (): HeadersInit => ({
   'Content-Type': 'application/json',
   'X-Username': sessionStorage.getItem('username') ?? '',
@@ -116,4 +118,41 @@ export async function approveAdmin(
     body: JSON.stringify({ approve, role: role ?? null }),
   })
   handle403(res)
+}
+
+export async function fetchSchoolTree(id: number): Promise<SchoolDraft> {
+  const res = await fetch(`/api/admin/super/schools/${id}/tree`, { headers: headers() })
+  handle403(res)
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
+export async function createSchool(draft: SchoolDraft): Promise<{ id: number }> {
+  const res = await fetch('/api/admin/super/schools', {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify(draft),
+  })
+  handle403(res)
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
+export async function updateSchool(id: number, draft: SchoolDraft): Promise<void> {
+  const res = await fetch(`/api/admin/super/schools/${id}`, {
+    method: 'PUT',
+    headers: headers(),
+    body: JSON.stringify(draft),
+  })
+  handle403(res)
+  if (!res.ok) throw new Error(await res.text())
+}
+
+export async function deleteSchool(id: number): Promise<void> {
+  const res = await fetch(`/api/admin/super/schools/${id}`, {
+    method: 'DELETE',
+    headers: headers(),
+  })
+  handle403(res)
+  if (!res.ok) throw new Error(await res.text())
 }
