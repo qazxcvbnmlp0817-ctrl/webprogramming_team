@@ -39,6 +39,7 @@ import SuperAdminPage   from './pages/admin/SuperAdminPage'
 import SchoolAdminPage  from './pages/admin/SchoolAdminPage'
 import DeptAdminPage    from './pages/admin/DeptAdminPage'
 import FacultyAdminPage from './pages/admin/FacultyAdminPage'
+import CalendarPage from './pages/CalendarPage'
 
 function ProtectedSchool({ children }: { children: ReactNode }) {
   const { selectedUniversityId } = useDept()
@@ -146,6 +147,7 @@ export default function App() {
           <Route path="/mypage"        element={<MyPage />} />
           <Route path="/find-id"       element={<FindIdPage />} />
           <Route path="/find-password" element={<FindPasswordPage />} />
+          <Route path="/calendar"      element={<CalendarPage />} />
 
           {/* 어드민 페이지 */}
           <Route path="/admin/super"      element={<ProtectedSuperAdmin><SuperAdminPage /></ProtectedSuperAdmin>} />
