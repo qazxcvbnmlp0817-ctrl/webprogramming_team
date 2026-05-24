@@ -201,7 +201,7 @@ function ScheduleFormModal({ initial, defaultDate, onSave, onClose }: {
   const [title, setTitle]     = useState(initial?.title ?? '')
   const [date, setDate]       = useState(initial?.date ?? defaultDate ?? todayStr())
   const [startTime, setStart] = useState(initial?.startTime ?? '14:00')
-  const [endTime] = useState(initial?.endTime ?? '')
+  const [endTime, setEnd]     = useState(initial?.endTime ?? '')
   const [allDay, setAllDay]   = useState(initial?.allDay ?? false)
   const [cat, setCat]         = useState<LocalSchedule['category']>(initial?.category ?? 'meeting')
   const [status] = useState<LocalSchedule['status']>(initial?.status ?? 'scheduled')
@@ -237,6 +237,10 @@ function ScheduleFormModal({ initial, defaultDate, onSave, onClose }: {
             <label className="text-sm font-medium text-gray-700 w-16 flex-shrink-0">시간</label>
             <div className="flex items-center gap-2 flex-1">
               <input type="time" value={startTime} onChange={e => setStart(e.target.value)}
+                disabled={allDay}
+                className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-300" />
+              <span className="text-gray-400 text-sm flex-shrink-0">~</span>
+              <input type="time" value={endTime} onChange={e => setEnd(e.target.value)}
                 disabled={allDay}
                 className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-300" />
               <label className="flex items-center gap-1.5 text-sm text-gray-600 cursor-pointer flex-shrink-0">
