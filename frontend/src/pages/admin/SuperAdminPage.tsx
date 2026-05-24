@@ -7,6 +7,7 @@ import {
 } from 'chart.js'
 import { Line, Bar } from 'react-chartjs-2'
 import Navbar from '../../components/Navbar'
+import SchoolManagementTab from './SchoolManagementTab'
 import {
   fetchSuperStats, fetchSuperSchools, fetchSuperVisitors,
   fetchSuperInfra, fetchSuperUsers, updateUserRole, approveUser,
@@ -29,6 +30,9 @@ export default function SuperAdminPage() {
   // Role chosen per pending row before clicking 승인. Default SCHOOL_ADMIN.
   const [pendingRoles, setPendingRoles] = useState<Record<number, string>>({})
   const [loading, setLoading] = useState(true)
+
+  type Tab = '개요' | '학교 관리'
+  const [tab, setTab] = useState<Tab>('개요')
 
   const loadAll = () =>
     Promise.all([
@@ -133,6 +137,26 @@ export default function SuperAdminPage() {
         </div>
       </section>
 
+      {/* 탭 헤더 */}
+      <div className="border-b-2 border-black">
+        <div className="max-w-7xl mx-auto px-4 flex">
+          {(['개요', '학교 관리'] as Tab[]).map(t => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`px-5 py-3 text-xs font-bold uppercase tracking-widest transition border-b-2 -mb-[2px] ${
+                tab === t
+                  ? 'border-black text-black'
+                  : 'border-transparent text-gray-400 hover:text-black'
+              }`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {tab === '개요' && (
       <main className="max-w-7xl mx-auto px-4 py-8 space-y-8">
 
         {/* 통계 카드 */}
@@ -330,6 +354,13 @@ export default function SuperAdminPage() {
           </div>
         </div>
       </main>
+      )}
+
+      {tab === '학교 관리' && (
+        <main className="max-w-7xl mx-auto px-4 py-8">
+          <SchoolManagementTab />
+        </main>
+      )}
     </div>
   )
 }
