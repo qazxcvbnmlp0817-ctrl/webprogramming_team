@@ -284,6 +284,8 @@ Stop-Service OracleServiceFREE
 ✅ 더미 데이터 폴백 (DB에 글이 없으면 더미 표시)
 ✅ 교수 시간표 CRUD API (/api/professor/class-schedules)
 ✅ 학생 수강신청 + 시간표 조회 API (/api/student/*)
+✅ SUPER_ADMIN 학교 CRUD API (/api/admin/super/schools) — University·CollegeSchool·FacultyGroup·Department 전체 계층 생성·수정·cascade 삭제
+✅ SchoolCrudService — @Transactional Merge 수정, cascade 삭제 (학교 삭제 시 교수·수업·수강신청·공지 등 모두 제거)
 ```
 
 ### 자동 생성 테이블 목록

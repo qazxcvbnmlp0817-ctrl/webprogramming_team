@@ -10,7 +10,7 @@
 
 **목적:** 국립목포대학교 등 여러 대학교의 학과 공지사항, 게시판, 일정, 학과정보를 하나의 웹 포털로 통합하여 학생과 교직원이 편리하게 접근할 수 있도록 합니다.
 
-**현재 단계:** 프론트엔드 UI + REST API + Oracle DB 연동 완성. 로그인·회원가입·인증, 관리자 시스템(3단계 역할), 교수 수업 시간표 CRUD, 학생 수강신청·시간표 자동 동기화까지 구현 완료. Mock 교수/학생 계정이 앱 시작 시 자동 시딩됩니다.
+**현재 단계:** 프론트엔드 UI + REST API + Oracle DB 연동 완성. 로그인·회원가입·인증, 관리자 시스템(3단계 역할), 교수 수업 시간표 CRUD, 학생 수강신청·시간표 자동 동기화, SUPER_ADMIN 학교 계층 CRUD까지 구현 완료. Mock 교수/학생 계정이 앱 시작 시 자동 시딩됩니다.
 
 ---
 
@@ -363,6 +363,10 @@ webprogramming_team-main/
 | GET | `/api/student/enrollments?semester=` | Header: `X-Username` | 수강신청 목록 조회 |
 | POST | `/api/student/enrollments` | Header: `X-Username`, Body: `{courseId, semester}` | 수강신청 |
 | DELETE | `/api/student/enrollments/{enrollmentId}` | Header: `X-Username` | 수강신청 취소 |
+| GET | `/api/admin/super/schools/{id}/tree` | Header: `X-Username` (SUPER_ADMIN) | 학교 전체 트리 조회 |
+| POST | `/api/admin/super/schools` | Header: `X-Username`, Body: SchoolTreeDto | 학교 + 계층 일괄 생성 |
+| PUT | `/api/admin/super/schools/{id}` | Header: `X-Username`, Body: SchoolTreeDto | 학교 + 계층 Merge 수정 |
+| DELETE | `/api/admin/super/schools/{id}` | Header: `X-Username` (SUPER_ADMIN) | 학교 cascade 삭제 |
 
 ---
 
@@ -655,12 +659,19 @@ return '/universities'
 
 ### 14.5 어드민 대시보드 구조
 
-**SuperAdminPage** — 단일 페이지 스크롤 대시보드
+**SuperAdminPage** — "개요 | 학교 관리" 2탭 구조
+
+**개요 탭** (기존 스크롤 대시보드)
 - 4-카드 통계 (총 사용자, 7일/30일 신규 가입, 등록 학교)
 - 차트 (방문자 추이, 사용자 현황)
 - 등록 학교 목록 + 서버 인프라
 - **관리자 가입 승인 대기 섹션** — 역할 드롭다운 + 승인/거절
 - 관리자 계정 관리 테이블
+
+**학교 관리 탭** (신규, `SchoolManagementTab`)
+- 학교 목록 테이블 (ID, 이름, 설명, 편집/삭제 버튼)
+- 학교 생성/편집 폼: 이름·설명 + `SchoolTreeEditor`(단과대학→학부→학과 계층 편집)
+- 삭제: `window.confirm` 2회 확인 후 cascade 삭제
 
 **SchoolAdminPage / DeptAdminPage / FacultyAdminPage** — 6탭 구조 (동일 패턴)
 
@@ -867,3 +878,73 @@ APP_USERS (prof_kim, memberType=professor)
 | stu_kim1 | 김학생 | 컴퓨터공학과 | 1 | 컴퓨터공학과 개론, 전공기초 실습 |
 | stu_lee2 | 이학생 | 컴퓨터공학과 | 2 | 심화 이론 |
 | stu_park1 | 박학생 | 전기전자공학과 | 1 | 전기전자공학과 개론 |
+
+---
+
+## 16. School CRUD — SUPER_ADMIN 학교 계층 관리 (2026-05-24 추가)
+
+### 16.1 개요
+
+SUPER_ADMIN이 SuperAdminPage "학교 관리" 탭에서 University → CollegeSchool → FacultyGroup → Department 전체 계층을 GUI로 생성·수정·삭제할 수 있습니다.
+
+### 16.2 프론트엔드 구조
+
+```
+SuperAdminPage
+├── 개요 탭 (기존)
+└── 학교 관리 탭 → SchoolManagementTab
+      ├── list 뷰  : 학교 테이블 + [편집] [삭제]
+      └── form 뷰  : 학교명·설명 + SchoolTreeEditor
+                         └── CollegeEditor × n
+                               └── FacultyEditor × n
+                                     └── DeptRow × n
+```
+
+**상태 관리:** `SchoolDraft` (중첩 JSON) 를 로컬에서 편집 → 최종 버튼 클릭 시 단일 API 호출(all-or-nothing).
+
+**TypeScript 타입** (`types/schoolDraft.ts`):
+
+| 타입 | 필드 |
+|------|------|
+| `SchoolDraft` | name, description, colleges[] |
+| `CollegeDraft` | id\|null, name, description, faculties[] |
+| `FacultyDraft` | id\|null, name, departments[] (description 없음) |
+| `DeptDraft` | id\|null, name, description, phone, email |
+
+**불변 헬퍼** (`utils/schoolDraftHelpers.ts`): `addCollege/removeCollege/updateCollege`, `addFaculty/removeFaculty/updateFaculty`, `addDept/removeDept/updateDept` — 모두 순수 함수(spread 기반).
+
+### 16.3 백엔드 구조
+
+**SchoolCrudService.java** — 핵심 로직:
+
+| 메서드 | 설명 |
+|--------|------|
+| `getTree(univId)` | University → College → Faculty → Dept 전체 트리 조회 후 SchoolTreeDto 반환 |
+| `createSchool(req)` | `@Transactional` — University → CollegeSchool → FacultyGroup → Department 순차 저장 |
+| `updateSchool(univId, req)` | `@Transactional` — Merge 전략: 요청에 없는 기존 id는 cascade 삭제, id=null은 신규 생성, id 일치는 업데이트 |
+| `deleteSchool(univId)` | `@Transactional` — 하위 데이터 전체 cascade 삭제 + 소속 사용자 universityId null화 |
+
+**Cascade 삭제 순서** (`deleteDeptCascade` → `deleteFacultyCascade` → `deleteCollegeCascade`):
+1. ClassSchedule, Enrollment, ProfessorCourseAssignment, CurriculumItem, Professor 삭제
+2. "dept"/"faculty"/"univ" scope Notice·Post·Schedule 삭제 (`"univ"` scopeId = CollegeSchool.id, University.id 아님)
+3. Department → FacultyGroup → CollegeSchool → University 삭제
+4. 소속 사용자 universityId → null (계정 삭제 아님)
+
+**SchoolTreeDto.java** — CollegeDto·FacultyDto·DeptDto 내부 static 클래스 포함. FacultyDto에 description 없음 (FacultyGroup 엔티티 제약).
+
+### 16.4 API 엔드포인트
+
+모두 `X-Username` 헤더 + SUPER_ADMIN 역할 필요.
+
+| Method | 경로 | 설명 |
+|--------|------|------|
+| GET | `/api/admin/super/schools` | 학교 목록 (id, name, description) |
+| GET | `/api/admin/super/schools/{id}/tree` | 학교 전체 트리 (수정 폼 초기화) |
+| POST | `/api/admin/super/schools` | 학교 + 계층 일괄 생성 → 201 `{id}` |
+| PUT | `/api/admin/super/schools/{id}` | Merge 수정 → 204 |
+| DELETE | `/api/admin/super/schools/{id}` | Cascade 삭제 → 204 |
+
+### 16.5 관련 설계 문서
+
+- `docs/superpowers/specs/2026-05-24-school-crud-design.md` — 전체 설계 스펙
+- `docs/superpowers/plans/2026-05-24-school-crud.md` — 12-Task 구현 계획

@@ -31,7 +31,8 @@ webprogramming_team-main/
 │       │   ├── notices.ts
 │       │   ├── posts.ts
 │       │   ├── schedules.ts
-│       │   └── universities.ts
+│       │   ├── universities.ts
+│       │   └── adminSuper.ts        # SUPER_ADMIN API (학교 목록·트리·CRUD 포함)
 │       ├── components/
 │       │   ├── Navbar.tsx
 │       │   ├── Footer.tsx
@@ -68,7 +69,9 @@ webprogramming_team-main/
 │           ├── FindIdPage.tsx              # 아이디 찾기
 │           ├── FindPasswordPage.tsx        # 비밀번호 찾기
 │           └── admin/
-│               ├── SuperAdminPage.tsx      # 최고 관리자 대시보드 + 가입 승인 + 역할 부여
+│               ├── SuperAdminPage.tsx      # 최고 관리자 대시보드 (개요·학교 관리 2탭)
+│               ├── SchoolManagementTab.tsx # 학교 CRUD 탭 (목록·생성·편집 뷰)
+│               ├── SchoolTreeEditor.tsx    # 단과대학→학부→학과 계층 편집 컴포넌트
 │               ├── SchoolAdminPage.tsx     # 학교 관리자 6탭 대시보드
 │               ├── DeptAdminPage.tsx       # 학과 관리자 6탭 + 학과 페이지 임베드
 │               └── FacultyAdminPage.tsx    # 학부 관리자 6탭 + 학부 페이지 임베드
@@ -95,6 +98,7 @@ webprogramming_team-main/
         ├── service/
         │   ├── AuthService.java              # 로그인·회원가입·아이디/비번 찾기
         │   ├── AdminService.java             # 어드민 대시보드 통계/사용자/승인 로직
+        │   ├── SchoolCrudService.java        # 학교 계층 CRUD (getTree/create/update/cascade delete)
         │   ├── ProfessorScheduleService.java # 교수 시간표 CRUD + 학생 시간표 조회 + 수강신청
         │   ├── NoticeService.java
         │   ├── PostService.java
@@ -117,6 +121,7 @@ webprogramming_team-main/
         │   ├── FacultyAdminController.java       # /api/admin/faculty/*
         │   └── SpaController.java               # React SPA 폴백
         ├── dto/                     # 요청/응답 DTO
+        │   ├── SchoolTreeDto.java           # 학교 계층 트리 요청/응답 DTO (CollegeDto·FacultyDto·DeptDto 내부 클래스)
         │   ├── ClassScheduleDto.java        # 수업 시간표 응답 DTO
         │   └── ClassScheduleRequestDto.java # 수업 시간표 생성/수정 요청 DTO
         └── util/
@@ -256,7 +261,11 @@ SCHEDULES (일정)         — scopeType: dept | faculty | univ
 | Method | 경로 | 설명 |
 |--------|------|------|
 | GET | `/api/admin/super/stats` | 전체 사용자/학교/방문자 통계 |
-| GET | `/api/admin/super/schools` | 등록 학교 목록 |
+| GET | `/api/admin/super/schools` | 등록 학교 목록 (id, name, description) |
+| GET | `/api/admin/super/schools/{id}/tree` | 특정 학교 전체 트리 조회 (수정 폼 초기화용) |
+| POST | `/api/admin/super/schools` | 학교 + 전체 계층 일괄 생성 (all-or-nothing) |
+| PUT | `/api/admin/super/schools/{id}` | 학교 + 전체 계층 Merge 수정 |
+| DELETE | `/api/admin/super/schools/{id}` | 학교 + 모든 하위 데이터 cascade 삭제 |
 | GET | `/api/admin/super/visitors` | 30일 방문자 추이 |
 | GET | `/api/admin/super/infra` | 서버 메모리/스레드/업타임 |
 | GET | `/api/admin/super/users` | 관리자 역할 보유 사용자 |
@@ -338,6 +347,7 @@ cd demo/demo
 - **관리자 가입 흐름**: `memberType=admin`으로 가입 시 `status=PENDING_APPROVAL`, `adminRole=null`. SUPER_ADMIN이 SuperAdminPage에서 역할 선택 후 승인 시 ACTIVE + 역할 부여.
 - **교수-로그인 계정 연결**: `APP_USERS.PROFESSOR_ENTITY_ID` 컬럼으로 PROFESSORS 테이블 레코드와 연결. 교수 시간표 CRUD 시 해당 FK로 소유권 검증.
 - **수업 시간표 자동 동기화**: `CLASS_SCHEDULES`에 교수가 CRUD를 수행하면 학생 조회 시 즉시 반영. 별도 캐시/알림 없이 Enrollment → ClassSchedule DB 조인으로 구현.
+- **학교 CRUD (SUPER_ADMIN)**: SuperAdminPage "학교 관리" 탭에서 University→CollegeSchool→FacultyGroup→Department 전체 계층을 생성·수정·삭제. 수정 시 Merge 전략(요청에 없는 기존 id → cascade 삭제), 삭제 시 모든 하위 데이터(교수, 수강신청, 수업 시간표, 공지 등) cascade 삭제 + 소속 사용자 universityId null화. 단일 `@Transactional` all-or-nothing.
 - **수강신청 중복 방지**: `ENROLLMENTS(student_username, course_id, semester)` 복합 유니크 제약.
 - **공개 범위**: 게시글 작성 시 `all`(전체) / `student`(학생만) / `professor`(교수만) 선택 가능
 - **학년 필터**: 학생 게시글에 대상 학년(1~4학년) 태그 설정 가능
