@@ -76,7 +76,7 @@ webprogramming_team-main/
 └── demo/demo/                       # Spring Boot
     └── src/main/java/com/example/demo/
         ├── entity/                  # JPA 엔티티
-        │   ├── User.java            → APP_USERS   (status, adminRole 포함)
+        │   ├── User.java            → APP_USERS   (status, adminRole, professorEntityId 포함)
         │   ├── Notice.java          → NOTICES
         │   ├── Post.java            → POSTS
         │   ├── Schedule.java        → SCHEDULES
@@ -87,11 +87,15 @@ webprogramming_team-main/
         │   ├── Professor.java       → PROFESSORS
         │   ├── CurriculumItem.java  → CURRICULUM_ITEMS
         │   ├── PageVisit.java       → PAGE_VISITS (방문자 추적)
-        │   └── AdminLog.java        → ADMIN_LOGS  (관리자 액션 로그)
+        │   ├── AdminLog.java        → ADMIN_LOGS  (관리자 액션 로그)
+        │   ├── ClassSchedule.java   → CLASS_SCHEDULES (교수 수업 시간표)
+        │   ├── Enrollment.java      → ENROLLMENTS (학생 수강신청)
+        │   └── ProfessorCourseAssignment.java → PROF_COURSE_ASSIGNMENTS (교수-강좌 배정)
         ├── repository/              # Spring Data JPA
         ├── service/
-        │   ├── AuthService.java     # 로그인·회원가입·아이디/비번 찾기
-        │   ├── AdminService.java    # 어드민 대시보드 통계/사용자/승인 로직
+        │   ├── AuthService.java              # 로그인·회원가입·아이디/비번 찾기
+        │   ├── AdminService.java             # 어드민 대시보드 통계/사용자/승인 로직
+        │   ├── ProfessorScheduleService.java # 교수 시간표 CRUD + 학생 시간표 조회 + 수강신청
         │   ├── NoticeService.java
         │   ├── PostService.java
         │   ├── ScheduleService.java
@@ -105,17 +109,22 @@ webprogramming_team-main/
         │   ├── SchoolController.java
         │   ├── UniversityController.java
         │   ├── DepartmentController.java
-        │   ├── SuperAdminController.java    # /api/admin/super/*
-        │   ├── SchoolAdminController.java   # /api/admin/school/*
-        │   ├── DeptAdminController.java     # /api/admin/dept/*
-        │   ├── FacultyAdminController.java  # /api/admin/faculty/*
-        │   └── SpaController.java   # React SPA 폴백
+        │   ├── ProfessorScheduleController.java  # /api/professor/* (교수 전용)
+        │   ├── StudentScheduleController.java    # /api/student/*  (학생 전용)
+        │   ├── SuperAdminController.java         # /api/admin/super/*
+        │   ├── SchoolAdminController.java        # /api/admin/school/*
+        │   ├── DeptAdminController.java          # /api/admin/dept/*
+        │   ├── FacultyAdminController.java       # /api/admin/faculty/*
+        │   └── SpaController.java               # React SPA 폴백
         ├── dto/                     # 요청/응답 DTO
+        │   ├── ClassScheduleDto.java        # 수업 시간표 응답 DTO
+        │   └── ClassScheduleRequestDto.java # 수업 시간표 생성/수정 요청 DTO
         └── util/
-            ├── DataInitializer.java        # 최초 실행 시 시드 데이터 삽입
-            ├── AdminUserInitializer.java   # SUPER_ADMIN 시드 계정 생성
-            ├── StatusMigrationRunner.java  # APPROVED → STATUS 컬럼 마이그레이션
-            └── DummyDataHelper.java        # DB 비어 있을 때 폴백 더미 데이터
+            ├── DataInitializer.java           # 최초 실행 시 시드 + 교수명 마이그레이션 (@Order(4))
+            ├── AdminUserInitializer.java      # SUPER_ADMIN 시드 계정 생성
+            ├── ProfessorAccountInitializer.java # 교수/학생 Mock 계정 + 수강신청 + 시간표 시딩 (@Order(5))
+            ├── StatusMigrationRunner.java     # APPROVED → STATUS 컬럼 마이그레이션
+            └── DummyDataHelper.java           # DB 비어 있을 때 폴백 더미 데이터
 ```
 
 ---
@@ -129,16 +138,19 @@ UNIVERSITIES (대학)
               └── DEPTS (학과)
                     ├── PROFESSORS (교수)
                     └── CURRICULUM_ITEMS (교육과정)
+                          └── PROF_COURSE_ASSIGNMENTS (교수-강좌 배정)
+                                └── CLASS_SCHEDULES (수업 시간표)
 
-APP_USERS (회원)
-NOTICES   (공지사항) — scopeType: dept | faculty | univ
-POSTS     (게시글)   — scopeType: dept | faculty | univ
-SCHEDULES (일정)     — scopeType: dept | faculty | univ
+APP_USERS (회원)         — professorEntityId 컬럼으로 PROFESSORS 연결
+ENROLLMENTS (수강신청)   — studentUsername + courseId + semester (unique)
+NOTICES   (공지사항)     — scopeType: dept | faculty | univ
+POSTS     (게시글)       — scopeType: dept | faculty | univ
+SCHEDULES (일정)         — scopeType: dept | faculty | univ
 ```
 
-### 시드 데이터 (DataInitializer)
+### 시드 데이터 (DataInitializer + ProfessorAccountInitializer)
 
-최초 실행 시 UNIVERSITIES 테이블이 비어 있으면 자동 삽입됩니다.
+최초 실행 시 UNIVERSITIES 테이블이 비어 있으면 자동 삽입됩니다. 재실행 시 교수명이 모두 동일하면 자동 마이그레이션합니다.
 
 | 대학 | 단과대학 | 학부 | 학과 |
 |------|---------|------|------|
@@ -146,6 +158,26 @@ SCHEDULES (일정)     — scopeType: dept | faculty | univ
 | 순천대학교 | 2개 | 2개 | 4개 |
 
 각 학과마다 교수 3명 + 교육과정 6개 자동 생성.
+
+### Mock 계정 (ProfessorAccountInitializer — 목포대학교 기준)
+
+**교수 계정** (password: `prof1234`)
+
+| username | 이름 | 학과 | 담당 강좌 |
+|----------|------|------|----------|
+| prof_kim | 김민준 | 컴퓨터공학과 | 컴퓨터공학과 개론 |
+| prof_lee | 이서준 | 컴퓨터공학과 | 전공기초 실습 |
+| prof_park | 박지호 | 컴퓨터공학과 | 심화 이론 |
+| prof_choi | 최예준 | 전기전자공학과 | 전기전자공학과 개론 |
+| prof_jung | 정시우 | 정보통신공학과 | 정보통신공학과 개론 |
+
+**학생 계정** (password: `stu1234`)
+
+| username | 이름 | 학과 | 학년 | 수강신청 강좌 |
+|----------|------|------|------|--------------|
+| stu_kim1 | 김학생 | 컴퓨터공학과 | 1 | 컴퓨터공학과 개론, 전공기초 실습 |
+| stu_lee2 | 이학생 | 컴퓨터공학과 | 2 | 심화 이론 |
+| stu_park1 | 박학생 | 전기전자공학과 | 1 | 전기전자공학과 개론 |
 
 ---
 
@@ -196,6 +228,25 @@ SCHEDULES (일정)     — scopeType: dept | faculty | univ
 | POST | `/api/univ/posts` | 단과대 게시글 작성 |
 | GET | `/api/school/schedules?schoolId=` | 단과대 일정 |
 | GET | `/api/school/info?schoolId=` | 단과대 정보 |
+
+### 교수 시간표 (`/api/professor`) — `X-Username` 헤더 필수, professor 계정 전용
+
+| Method | 경로 | 설명 |
+|--------|------|------|
+| GET | `/api/professor/class-schedules` | 내 수업 시간표 전체 조회 |
+| GET | `/api/professor/class-schedules?semester=2025-1` | 학기별 수업 시간표 조회 |
+| POST | `/api/professor/class-schedules` | 수업 시간표 등록 |
+| PUT | `/api/professor/class-schedules/{id}` | 수업 시간표 수정 (수강생에 즉시 반영) |
+| DELETE | `/api/professor/class-schedules/{id}` | 수업 시간표 삭제 (수강생에서 즉시 제거) |
+
+### 학생 시간표 (`/api/student`) — `X-Username` 헤더 필수
+
+| Method | 경로 | 설명 |
+|--------|------|------|
+| GET | `/api/student/class-schedules?semester=2025-1` | 수강신청 기반 내 시간표 조회 |
+| GET | `/api/student/enrollments?semester=2025-1` | 수강신청 목록 조회 |
+| POST | `/api/student/enrollments` | 수강신청 (body: `{courseId, semester}`) |
+| DELETE | `/api/student/enrollments/{enrollmentId}` | 수강신청 취소 |
 
 ### 관리자 API
 
@@ -280,17 +331,21 @@ cd demo/demo
 
 ## 주요 구현 사항
 
-- **BCrypt 암호화**: 회원가입 시 비밀번호 BCrypt 해시 저장, 로그인 시 검증
+- **BCrypt 암호화**: 회원가입 및 Mock 계정 시딩 시 BCrypt 해시 저장, 로그인 시 검증
 - **회원 유형**: `student`(학생) / `professor`(교수) / `staff`(직원) / `admin`(관리자)
 - **사용자 상태 (`APP_USERS.STATUS`)**: `ACTIVE` / `PENDING_APPROVAL` / `SUSPENDED` / `DELETED`
 - **관리자 역할 (`APP_USERS.ADMIN_ROLE`)**: `SUPER_ADMIN` (전 시스템) / `SCHOOL_ADMIN` (자기 학교) / `DEPT_ADMIN` (자기 학과)
 - **관리자 가입 흐름**: `memberType=admin`으로 가입 시 `status=PENDING_APPROVAL`, `adminRole=null`. SUPER_ADMIN이 SuperAdminPage에서 역할 선택 후 승인 시 ACTIVE + 역할 부여.
+- **교수-로그인 계정 연결**: `APP_USERS.PROFESSOR_ENTITY_ID` 컬럼으로 PROFESSORS 테이블 레코드와 연결. 교수 시간표 CRUD 시 해당 FK로 소유권 검증.
+- **수업 시간표 자동 동기화**: `CLASS_SCHEDULES`에 교수가 CRUD를 수행하면 학생 조회 시 즉시 반영. 별도 캐시/알림 없이 Enrollment → ClassSchedule DB 조인으로 구현.
+- **수강신청 중복 방지**: `ENROLLMENTS(student_username, course_id, semester)` 복합 유니크 제약.
 - **공개 범위**: 게시글 작성 시 `all`(전체) / `student`(학생만) / `professor`(교수만) 선택 가능
 - **학년 필터**: 학생 게시글에 대상 학년(1~4학년) 태그 설정 가능
 - **AdminBanner**: 일반 페이지에 떠 있는 "관리자 페이지" 진입 버튼. 역할별로 다른 어드민 대시보드로 라우팅
 - **임베디드 모드**: `<DepartmentPage embedded />` / `<FacultyPage embedded />`로 어드민 대시보드의 "학과/학부 페이지" 탭 안에 일반 페이지를 표시 (Navbar/AdminBanner 숨김)
 - **DummyDataHelper**: DB에 공지·게시글·일정이 없을 경우 더미 데이터로 폴백
 - **SPA 라우팅**: SpaController가 모든 프론트엔드 경로를 `index.html`로 포워딩
+- **Oracle 데이터 영속성**: `ddl-auto=update` + Oracle 23ai Free — 서버 재시작 후에도 데이터 유지. DataInitializer는 최초 1회만 시딩하고 이후에는 마이그레이션만 수행.
 
 ---
 

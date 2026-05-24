@@ -10,7 +10,7 @@
 
 **목적:** 국립목포대학교 등 여러 대학교의 학과 공지사항, 게시판, 일정, 학과정보를 하나의 웹 포털로 통합하여 학생과 교직원이 편리하게 접근할 수 있도록 합니다.
 
-**현재 단계:** 프론트엔드 UI 및 REST API 뼈대 완성. 모든 페이지 UI와 더미 데이터가 구현되어 있으며, 로그인·회원가입·아이디/비밀번호 찾기 기능도 인메모리 방식으로 구현되어 있습니다. 공지·게시글 작성 페이지, 미니캘린더 컴포넌트, 단위 테스트가 추가되었습니다. 팀원이 실제 DB 연동 및 서비스 로직을 추가하면 됩니다.
+**현재 단계:** 프론트엔드 UI + REST API + Oracle DB 연동 완성. 로그인·회원가입·인증, 관리자 시스템(3단계 역할), 교수 수업 시간표 CRUD, 학생 수강신청·시간표 자동 동기화까지 구현 완료. Mock 교수/학생 계정이 앱 시작 시 자동 시딩됩니다.
 
 ---
 
@@ -26,8 +26,8 @@
 | 아이콘 | Font Awesome 6.5 (CDN) | 아이콘 |
 | 클라이언트 라우팅 | React Router v7 | SPA 페이지 전환 |
 | 빌드 도구 (백엔드) | Maven (mvnw) | 빌드, 의존성 관리 |
-| DB ORM | Spring Data JPA / Hibernate | DB 연동용 (현재 비활성화) |
-| DB | Oracle AI Database | 실제 데이터 저장소 (현재 미연동) |
+| DB ORM | Spring Data JPA / Hibernate (`ddl-auto=update`) | DB 연동 완료 |
+| DB | Oracle 23ai Free (`freepdb1`) | 실제 데이터 저장소 (로컬 설치) |
 | JDBC 드라이버 | ojdbc11 | Oracle DB 접속 |
 | 버전 관리 | Git | 팀 협업 |
 
@@ -216,30 +216,54 @@ webprogramming_team-main/
 │       │   ├── java/com/example/demo/
 │       │   │   ├── DemoApplication.java
 │       │   │   ├── controller/
-│       │   │   │   ├── SpaController.java        ← SPA 라우트 → index.html 포워딩
-│       │   │   │   ├── UniversityController.java ← GET /api/universities
-│       │   │   │   ├── DepartmentController.java ← GET /api/departments/:id
-│       │   │   │   ├── MainController.java       ← GET /api/main, /api/faculty/main
-│       │   │   │   ├── NoticeController.java     ← GET /api/notices
-│       │   │   │   ├── BoardController.java      ← GET /api/posts
-│       │   │   │   ├── ScheduleController.java   ← GET /api/schedules
-│       │   │   │   ├── SchoolController.java     ← GET /api/school/*
-│       │   │   │   └── AuthController.java       ← POST/GET /api/auth/* (인증)
+│       │   │   │   ├── SpaController.java              ← SPA 라우트 → index.html 포워딩
+│       │   │   │   ├── UniversityController.java       ← GET /api/universities
+│       │   │   │   ├── DepartmentController.java       ← GET /api/departments/:id
+│       │   │   │   ├── MainController.java             ← GET /api/main, /api/faculty/main
+│       │   │   │   ├── NoticeController.java           ← GET /api/notices
+│       │   │   │   ├── BoardController.java            ← GET /api/posts
+│       │   │   │   ├── ScheduleController.java         ← GET /api/schedules
+│       │   │   │   ├── SchoolController.java           ← GET /api/school/*
+│       │   │   │   ├── AuthController.java             ← POST/GET /api/auth/* (인증)
+│       │   │   │   ├── ProfessorScheduleController.java ← /api/professor/* (교수 전용 CRUD)
+│       │   │   │   ├── StudentScheduleController.java  ← /api/student/* (학생 수강신청·시간표)
+│       │   │   │   ├── SuperAdminController.java       ← /api/admin/super/*
+│       │   │   │   ├── SchoolAdminController.java      ← /api/admin/school/*
+│       │   │   │   ├── DeptAdminController.java        ← /api/admin/dept/*
+│       │   │   │   └── FacultyAdminController.java     ← /api/admin/faculty/*
 │       │   │   ├── service/
-│       │   │   │   └── AuthService.java          ← 인증 비즈니스 로직
+│       │   │   │   ├── AuthService.java                ← 인증 비즈니스 로직
+│       │   │   │   ├── AdminService.java               ← 어드민 통계/사용자/승인 로직
+│       │   │   │   └── ProfessorScheduleService.java   ← 교수 시간표 CRUD + 학생 수강신청
 │       │   │   ├── entity/
-│       │   │   │   └── User.java                 ← 회원 엔티티 (JPA 어노테이션 주석 처리)
+│       │   │   │   ├── User.java                      ← 회원 (professorEntityId 포함)
+│       │   │   │   ├── Professor.java                 ← 교수
+│       │   │   │   ├── CurriculumItem.java            ← 교육과정
+│       │   │   │   ├── ClassSchedule.java             ← 수업 시간표 (CLASS_SCHEDULES)
+│       │   │   │   ├── Enrollment.java                ← 수강신청 (ENROLLMENTS)
+│       │   │   │   ├── ProfessorCourseAssignment.java ← 교수-강좌 배정
+│       │   │   │   └── (University 트리, Notice, Post, Schedule, AdminLog, PageVisit)
 │       │   │   ├── repository/
-│       │   │   │   ├── UserRepository.java       ← 회원 저장소 인터페이스
-│       │   │   │   └── UserRepositoryImpl.java   ← 인메모리 구현체 (DB 연동 시 삭제)
-│       │   │   ├── dto/                          ← API 요청/응답 데이터 구조
-│       │   │   │   ├── (기존 DTO들...)
+│       │   │   │   ├── UserRepository.java                      ← 회원 저장소
+│       │   │   │   ├── ProfessorRepository.java                 ← 교수 저장소
+│       │   │   │   ├── CurriculumItemRepository.java            ← 교육과정
+│       │   │   │   ├── ClassScheduleRepository.java             ← 수업 시간표
+│       │   │   │   ├── EnrollmentRepository.java                ← 수강신청
+│       │   │   │   ├── ProfessorCourseAssignmentRepository.java ← 교수-강좌 배정
+│       │   │   │   └── (기타 University 트리, Notice, Post 등)
+│       │   │   ├── dto/
+│       │   │   │   ├── ClassScheduleDto.java          ← 수업 시간표 응답
+│       │   │   │   ├── ClassScheduleRequestDto.java   ← 수업 시간표 생성/수정 요청
 │       │   │   │   ├── LoginRequestDto.java
 │       │   │   │   ├── SignupRequestDto.java
 │       │   │   │   ├── FindIdRequestDto.java
 │       │   │   │   └── FindPasswordRequestDto.java
 │       │   │   └── util/
-│       │   │       └── DummyDataHelper.java      ← 모든 더미 데이터 집중 관리
+│       │   │       ├── DummyDataHelper.java             ← 더미 데이터 폴백
+│       │   │       ├── AdminUserInitializer.java        ← SUPER_ADMIN 시드 (@Order 3)
+│       │   │       ├── DataInitializer.java             ← 대학·학과 시드 + 마이그레이션 (@Order 4)
+│       │   │       ├── ProfessorAccountInitializer.java ← 교수/학생 Mock 시드 (@Order 5)
+│       │   │       └── StatusMigrationRunner.java       ← STATUS 컬럼 마이그레이션
 │       │   └── resources/
 │       │       ├── application.properties
 │       │       └── static/                       ← npm run build 결과물 (자동 생성)
@@ -330,6 +354,15 @@ webprogramming_team-main/
 | GET | `/api/auth/check-id` | `username` | 아이디 중복 확인 |
 | POST | `/api/auth/find-id` | Body: `{name, phone}` | 아이디 찾기 |
 | POST | `/api/auth/find-password` | Body: `{username, name, phone}` | 비밀번호 찾기 (임시 비밀번호 반환) |
+| GET | `/api/professor/class-schedules` | Header: `X-Username` | 교수 수업 시간표 전체 조회 |
+| GET | `/api/professor/class-schedules?semester=` | Header: `X-Username` | 학기별 수업 시간표 조회 |
+| POST | `/api/professor/class-schedules` | Header: `X-Username`, Body: 시간표 정보 | 수업 시간표 등록 |
+| PUT | `/api/professor/class-schedules/{id}` | Header: `X-Username`, Body: 수정 정보 | 수업 시간표 수정 |
+| DELETE | `/api/professor/class-schedules/{id}` | Header: `X-Username` | 수업 시간표 삭제 |
+| GET | `/api/student/class-schedules?semester=` | Header: `X-Username` | 수강신청 기반 내 시간표 조회 |
+| GET | `/api/student/enrollments?semester=` | Header: `X-Username` | 수강신청 목록 조회 |
+| POST | `/api/student/enrollments` | Header: `X-Username`, Body: `{courseId, semester}` | 수강신청 |
+| DELETE | `/api/student/enrollments/{enrollmentId}` | Header: `X-Username` | 수강신청 취소 |
 
 ---
 
@@ -455,11 +488,11 @@ const FOOTER_HIDDEN_PATHS = ['/universities']
 
 ### 현재 구조
 
-인증 기능이 `AuthController` → `AuthService` → `UserRepositoryImpl` 구조로 구현되어 있습니다.
+인증 기능이 `AuthController` → `AuthService` → `UserRepository` (JPA) 구조로 Oracle DB에 완전히 연동되어 있습니다.
 
-- **회원 저장소:** `UserRepositoryImpl`은 인메모리(`ArrayList`) 방식으로 동작합니다. 서버 재시작 시 데이터가 초기화됩니다.
-- **비밀번호:** 현재 평문 저장. DB 연동 시 BCrypt 암호화로 교체 예정 (`AuthService` 주석 참고).
-- **세션/토큰:** 현재 미구현. 로그인 성공 시 응답 JSON만 반환하며, 클라이언트 상태 관리는 프론트엔드에서 직접 처리합니다.
+- **회원 저장소:** Spring Data JPA + Oracle 23ai Free. 서버 재시작 후에도 데이터가 유지됩니다.
+- **비밀번호:** BCryptPasswordEncoder로 해시 저장. 회원가입, Mock 계정 시딩 모두 적용.
+- **세션/토큰:** 별도 JWT 없음. 로그인 성공 시 응답 JSON 반환, 클라이언트가 sessionStorage에 저장하여 이후 요청마다 `X-Username` 헤더로 전송.
 - **공지 작성 접근 제어:** `NoticeWritePage`, `SchoolNoticeWritePage`, `FacultyNoticeWritePage`는 마운트 시 `sessionStorage.getItem('memberType')`을 확인합니다. `professor` 또는 `admin`이 아니면 해당 공지 목록 페이지로 즉시 리다이렉트합니다.
 
 ### 회원 유형 (memberType)
@@ -491,22 +524,13 @@ return '/universities'
 
 > **localStorage 초기화:** 브라우저 콘솔에서 `localStorage.removeItem('deptState')` 실행
 
-### DB 연동 시 인증 전환 방법
-
-1. `User.java`의 JPA 어노테이션 주석 해제 (`@Entity`, `@Id` 등)
-2. `UserRepository`를 `JpaRepository<User, Long>` 상속으로 변경
-3. `UserRepositoryImpl.java` 삭제 (JPA가 자동 구현)
-4. `AuthService`의 BCrypt 주석 해제 및 평문 비교 코드 교체
-
 ---
 
 ## 12. DB 연동 방법 (팀원 작업 시)
 
 1. `docs/DB_SETUP_GUIDE.md` 참고하여 `application-secret.properties` 생성
-2. Oracle DB 접속 정보 입력 (팀 채널에서 공유)
-3. `pom.xml`에서 JPA/Oracle 의존성 주석 해제 (`spring-boot-starter-data-jpa`, `ojdbc11`)
-4. 각 컨트롤러에서 `DummyDataHelper.*` 호출을 Service 호출로 교체
-5. 앱 재시작
+2. Oracle 23ai Free 로컬 설치 + `dept_user` 계정 생성 (가이드 참고)
+3. Spring Boot 실행 — `ddl-auto=update`로 테이블 자동 생성, DataInitializer + ProfessorAccountInitializer가 시드 데이터 자동 삽입
 
 **주의:** `application-secret.properties`는 `.gitignore`에 등록되어 있어 Git에 절대 올라가지 않습니다.
 
@@ -704,3 +728,142 @@ private Long resolveDeptId(String username, Long deptIdParam) {
 - `docs/superpowers/specs/2026-05-22-school-admin-v2-design.md` — 학교 관리자 v2 (status 시스템, 가입 승인, 활동 로그)
 - `docs/superpowers/specs/2026-05-22-dept-faculty-admin-design.md` — Dept/Faculty 관리자 대시보드 설계
 - `docs/superpowers/plans/2026-05-22-dept-faculty-admin.md` — Dept/Faculty 구현 계획
+
+---
+
+## 15. 교수/학생 시간표 시스템 (2026-05-24 추가)
+
+### 15.1 아키텍처 개요
+
+교수가 수업 시간표를 등록·수정·삭제하면 수강신청한 학생의 시간표에 **즉시 자동 반영**됩니다. 별도 캐시·알림 없이 DB 조인으로 구현되어 있습니다.
+
+```
+[교수 CRUD]
+  POST/PUT/DELETE /api/professor/class-schedules
+        ↓
+  CLASS_SCHEDULES 테이블 변경
+
+[학생 조회]
+  GET /api/student/class-schedules?semester=2025-1
+        ↓
+  ENROLLMENTS (studentUsername, semester) → courseIds
+        ↓
+  CLASS_SCHEDULES WHERE courseId IN (...) AND semester = ?
+        ↓  ← 교수가 수정한 내용이 이 쿼리에서 즉시 반영됨
+  ClassScheduleDto[] (courseName, professorName enriched)
+```
+
+### 15.2 데이터 모델
+
+**CLASS_SCHEDULES** — 교수 수업 시간표
+
+| 컬럼 | 타입 | 설명 |
+|------|------|------|
+| id | BIGINT | PK |
+| course_id | BIGINT | CURRICULUM_ITEMS.id FK |
+| professor_id | BIGINT | PROFESSORS.id FK |
+| dept_id | BIGINT | DEPTS.id FK |
+| day_of_week | VARCHAR(5) | 월\|화\|수\|목\|금 |
+| start_time | VARCHAR(10) | "09:00" 형식 |
+| end_time | VARCHAR(10) | "10:30" 형식 |
+| room | VARCHAR(100) | 강의실 |
+| semester | VARCHAR(20) | "2025-1" 형식 |
+| memo | VARCHAR(300) | 메모 (선택) |
+| created_at | TIMESTAMP | 생성 시각 |
+| updated_at | TIMESTAMP | 수정 시각 |
+
+**ENROLLMENTS** — 학생 수강신청
+
+| 컬럼 | 타입 | 설명 |
+|------|------|------|
+| id | BIGINT | PK |
+| student_username | VARCHAR(100) | APP_USERS.username |
+| course_id | BIGINT | CURRICULUM_ITEMS.id FK |
+| dept_id | BIGINT | DEPTS.id FK |
+| semester | VARCHAR(20) | "2025-1" 형식 |
+| enrolled_at | TIMESTAMP | 수강신청 시각 |
+| UNIQUE | (student_username, course_id, semester) | 중복 수강신청 방지 |
+
+**PROF_COURSE_ASSIGNMENTS** — 교수-강좌 배정 (교수 시간표 등록 권한 검증용)
+
+| 컬럼 | 타입 | 설명 |
+|------|------|------|
+| id | BIGINT | PK |
+| professor_id | BIGINT | PROFESSORS.id FK |
+| course_id | BIGINT | CURRICULUM_ITEMS.id FK |
+| dept_id | BIGINT | DEPTS.id FK |
+| UNIQUE | (professor_id, course_id) | 중복 배정 방지 |
+
+### 15.3 교수 계정 연결 구조
+
+교수 로그인 계정(APP_USERS)과 교수 엔티티(PROFESSORS)는 별개입니다.
+
+```
+APP_USERS (prof_kim, memberType=professor)
+  └── professor_entity_id ──▶ PROFESSORS (김민준, deptId=컴퓨터공학과)
+```
+
+`ProfessorScheduleService.resolveProf(username)` 메서드가 이 연결을 검증합니다:
+1. username으로 User 조회 → memberType이 "professor"인지 확인
+2. `professorEntityId`로 Professor 엔티티 조회
+3. 해당 Professor가 강좌를 배정받았는지 `PROF_COURSE_ASSIGNMENTS`에서 확인
+
+### 15.4 API 요청/응답 형식
+
+**POST `/api/professor/class-schedules`** 요청 Body:
+
+```json
+{
+  "courseId": 1,
+  "dayOfWeek": "월",
+  "startTime": "09:00",
+  "endTime": "10:30",
+  "room": "공학관 101호",
+  "semester": "2025-1",
+  "memo": "선택 메모"
+}
+```
+
+**GET `/api/student/class-schedules?semester=2025-1`** 응답:
+
+```json
+[
+  {
+    "id": 1,
+    "courseId": 10,
+    "courseName": "컴퓨터공학과 개론",
+    "professorId": 3,
+    "professorName": "김민준",
+    "deptId": 5,
+    "dayOfWeek": "월",
+    "startTime": "09:00",
+    "endTime": "10:30",
+    "room": "공학관 101호",
+    "semester": "2025-1",
+    "memo": null,
+    "updatedAt": "2025-01-01T09:00:00"
+  }
+]
+```
+
+### 15.5 Mock 계정 및 시드 데이터
+
+`ProfessorAccountInitializer` (@Order 5)가 앱 최초 실행 시 아래 데이터를 자동 생성합니다.
+
+**교수 계정** (`memberType=professor`, password: `prof1234`):
+
+| username | 이름 | 학과 | 강좌 | 수업 시간 |
+|----------|------|------|------|----------|
+| prof_kim | 김민준 | 컴퓨터공학과 | 컴퓨터공학과 개론 | 월·수 09:00–10:30 공학관 101호 |
+| prof_lee | 이서준 | 컴퓨터공학과 | 전공기초 실습 | 화·목 13:00–15:00 실습실 201호 |
+| prof_park | 박지호 | 컴퓨터공학과 | 심화 이론 | 월·수 14:00–15:30 공학관 202호 |
+| prof_choi | 최예준 | 전기전자공학과 | 전기전자공학과 개론 | 화·목 09:00–10:30 전자관 101호 |
+| prof_jung | 정시우 | 정보통신공학과 | 정보통신공학과 개론 | 수·금 11:00–12:30 정보관 301호 |
+
+**학생 계정** (`memberType=student`, password: `stu1234`):
+
+| username | 이름 | 학과 | 학년 | 수강신청 강좌 |
+|----------|------|------|------|--------------|
+| stu_kim1 | 김학생 | 컴퓨터공학과 | 1 | 컴퓨터공학과 개론, 전공기초 실습 |
+| stu_lee2 | 이학생 | 컴퓨터공학과 | 2 | 심화 이론 |
+| stu_park1 | 박학생 | 전기전자공학과 | 1 | 전기전자공학과 개론 |

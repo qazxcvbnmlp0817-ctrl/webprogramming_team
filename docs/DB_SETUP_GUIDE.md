@@ -272,12 +272,63 @@ Stop-Service OracleServiceFREE
 ```
 ✅ application-secret.properties 구조 (팀원 로컬 생성 필요)
 ✅ pom.xml JPA/Oracle 의존성 활성화
-✅ Entity 10개 (ddl-auto=update로 자동 테이블 생성)
+✅ Entity 15개 (ddl-auto=update로 자동 테이블 생성)
+   — User, Notice, Post, Schedule, University, CollegeSchool,
+     FacultyGroup, Department, Professor, CurriculumItem,
+     PageVisit, AdminLog, ClassSchedule, Enrollment, ProfessorCourseAssignment
 ✅ Repository / Service / Controller 구현 완료
-✅ DataInitializer — 최초 실행 시 대학·학과 시드 데이터 자동 삽입
-✅ BCrypt 암호화 활성화
+✅ DataInitializer (@Order 4) — 최초 실행 시 대학·학과 시드 데이터 자동 삽입
+                               재실행 시 교수명 마이그레이션 (fixProfessorNamesIfNeeded)
+✅ ProfessorAccountInitializer (@Order 5) — 교수/학생 Mock 계정 + 수강신청 + 수업 시간표 자동 시딩
+✅ BCrypt 암호화 활성화 (회원가입 + Mock 계정 모두 적용)
 ✅ 더미 데이터 폴백 (DB에 글이 없으면 더미 표시)
+✅ 교수 시간표 CRUD API (/api/professor/class-schedules)
+✅ 학생 수강신청 + 시간표 조회 API (/api/student/*)
 ```
+
+### 자동 생성 테이블 목록
+
+| 테이블 | 엔티티 | 설명 |
+|--------|--------|------|
+| APP_USERS | User | 회원 (status, adminRole, professorEntityId) |
+| UNIVERSITIES | University | 대학교 |
+| COLLEGE_SCHOOLS | CollegeSchool | 단과대학 |
+| FACULTY_GROUPS | FacultyGroup | 학부 |
+| DEPTS | Department | 학과 |
+| PROFESSORS | Professor | 교수 |
+| CURRICULUM_ITEMS | CurriculumItem | 교육과정 |
+| NOTICES | Notice | 공지사항 |
+| POSTS | Post | 게시글 |
+| SCHEDULES | Schedule | 학과/학부/단과대 일정 |
+| PAGE_VISITS | PageVisit | 방문자 추적 |
+| ADMIN_LOGS | AdminLog | 관리자 액션 로그 |
+| CLASS_SCHEDULES | ClassSchedule | 교수 수업 시간표 |
+| ENROLLMENTS | Enrollment | 학생 수강신청 |
+| PROF_COURSE_ASSIGNMENTS | ProfessorCourseAssignment | 교수-강좌 배정 |
+
+### Mock 계정 (ProfessorAccountInitializer 자동 시딩)
+
+서버 최초 실행 시 목포대학교 데이터 기반으로 아래 계정이 자동 생성됩니다.
+
+**교수 계정** (password: `prof1234`, memberType: `professor`)
+
+| username | 이름 | 학과 | 담당 강좌 | 수업 시간 |
+|----------|------|------|----------|----------|
+| prof_kim | 김민준 | 컴퓨터공학과 | 컴퓨터공학과 개론 | 월·수 09:00–10:30 공학관 101호 |
+| prof_lee | 이서준 | 컴퓨터공학과 | 전공기초 실습 | 화·목 13:00–15:00 실습실 201호 |
+| prof_park | 박지호 | 컴퓨터공학과 | 심화 이론 | 월·수 14:00–15:30 공학관 202호 |
+| prof_choi | 최예준 | 전기전자공학과 | 전기전자공학과 개론 | 화·목 09:00–10:30 전자관 101호 |
+| prof_jung | 정시우 | 정보통신공학과 | 정보통신공학과 개론 | 수·금 11:00–12:30 정보관 301호 |
+
+**학생 계정** (password: `stu1234`, memberType: `student`)
+
+| username | 이름 | 학과 | 학년 | 수강신청 강좌 |
+|----------|------|------|------|--------------|
+| stu_kim1 | 김학생 | 컴퓨터공학과 | 1 | 컴퓨터공학과 개론, 전공기초 실습 |
+| stu_lee2 | 이학생 | 컴퓨터공학과 | 2 | 심화 이론 |
+| stu_park1 | 박학생 | 전기전자공학과 | 1 | 전기전자공학과 개론 |
+
+> 학기: `2025-1` 고정 (ProfessorAccountInitializer.SEMESTER)
 
 ---
 
