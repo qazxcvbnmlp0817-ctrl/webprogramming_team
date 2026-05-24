@@ -52,7 +52,9 @@ public class SpaController {
         "/signup",
         "/mypage",
         "/find-id",
-        "/find-password"
+        "/find-password",
+        // 개인 캘린더 (localStorage 기반)
+        "/calendar"
     })
     public String forward() {
         return "forward:/index.html";
