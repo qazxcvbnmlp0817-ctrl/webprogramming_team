@@ -88,7 +88,7 @@ export default function DeptAdminPage() {
       fetchDeptCourses(deptId),
       fetchDeptAssignments(deptId),
     ]).then(([p, c, a]) => { setProfessors(p); setCourses(c); setAssignments(a) })
-  }, [tab])
+  }, [tab, deptId])
 
   const handleDeletePost = async (postId: number) => {
     if (!window.confirm('게시글을 삭제하시겠습니까?')) return

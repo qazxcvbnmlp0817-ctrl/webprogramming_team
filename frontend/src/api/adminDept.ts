@@ -191,8 +191,10 @@ export async function createDeptAssignment(
     headers: headers(),
     body: JSON.stringify({ professorId, courseId }),
   })
-  handle403(res)
-  if (!res.ok) throw new Error(await res.text())
+  if (!res.ok) {
+    handle403(res)
+    throw new Error(await res.text())
+  }
   return res.json()
 }
 
