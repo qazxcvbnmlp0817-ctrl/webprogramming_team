@@ -140,3 +140,66 @@ export async function fetchDeptMonthlyStats(deptId?: number): Promise<MonthlySta
   handle403(res)
   return res.json()
 }
+
+export interface ProfessorItem {
+  id: number
+  name: string
+  specialty: string | null
+  email: string | null
+}
+
+export interface CourseItem {
+  id: number
+  name: string
+  year: string | null
+  credits: number
+  required: boolean
+}
+
+export interface AssignmentItem {
+  id: number
+  professorId: number
+  courseId: number
+  deptId: number
+  professorName: string
+  courseName: string
+}
+
+export async function fetchDeptProfessors(deptId?: number): Promise<ProfessorItem[]> {
+  const res = await fetch('/api/admin/dept/professors' + qs(deptParam(deptId)), { headers: headers() })
+  handle403(res)
+  return res.json()
+}
+
+export async function fetchDeptCourses(deptId?: number): Promise<CourseItem[]> {
+  const res = await fetch('/api/admin/dept/courses' + qs(deptParam(deptId)), { headers: headers() })
+  handle403(res)
+  return res.json()
+}
+
+export async function fetchDeptAssignments(deptId?: number): Promise<AssignmentItem[]> {
+  const res = await fetch('/api/admin/dept/assignments' + qs(deptParam(deptId)), { headers: headers() })
+  handle403(res)
+  return res.json()
+}
+
+export async function createDeptAssignment(
+  professorId: number, courseId: number, deptId?: number
+): Promise<AssignmentItem> {
+  const res = await fetch('/api/admin/dept/assignments' + qs(deptParam(deptId)), {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify({ professorId, courseId }),
+  })
+  handle403(res)
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
+export async function deleteDeptAssignment(assignmentId: number, deptId?: number): Promise<void> {
+  const res = await fetch(
+    `/api/admin/dept/assignments/${assignmentId}` + qs(deptParam(deptId)),
+    { method: 'DELETE', headers: headers() }
+  )
+  handle403(res)
+}
