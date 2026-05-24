@@ -161,4 +161,52 @@ public class DeptAdminController {
             @RequestParam(required = false) Long deptId) {
         return ResponseEntity.ok(adminService.getDeptMonthlyStats(resolveDeptId(username, deptId)));
     }
+
+    @GetMapping("/professors")
+    public ResponseEntity<List<Map<String, Object>>> getProfessors(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @RequestParam(required = false) Long deptId) {
+        Long id = resolveDeptId(username, deptId);
+        return ResponseEntity.ok(adminService.getProfessorsByDept(id));
+    }
+
+    @GetMapping("/courses")
+    public ResponseEntity<List<Map<String, Object>>> getCourses(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @RequestParam(required = false) Long deptId) {
+        Long id = resolveDeptId(username, deptId);
+        return ResponseEntity.ok(adminService.getCoursesByDept(id));
+    }
+
+    @GetMapping("/assignments")
+    public ResponseEntity<List<Map<String, Object>>> getAssignments(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @RequestParam(required = false) Long deptId) {
+        Long id = resolveDeptId(username, deptId);
+        return ResponseEntity.ok(adminService.getAssignmentsByDept(id));
+    }
+
+    @PostMapping("/assignments")
+    public ResponseEntity<Map<String, Object>> createAssignment(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @RequestParam(required = false) Long deptId,
+            @RequestBody Map<String, Long> body) {
+        Long id = resolveDeptId(username, deptId);
+        Long professorId = body.get("professorId");
+        Long courseId    = body.get("courseId");
+        if (professorId == null || courseId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "professorId, courseId 필수");
+        }
+        return ResponseEntity.ok(adminService.createAssignment(professorId, courseId, id));
+    }
+
+    @DeleteMapping("/assignments/{assignmentId}")
+    public ResponseEntity<Void> deleteAssignment(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @PathVariable Long assignmentId,
+            @RequestParam(required = false) Long deptId) {
+        Long id = resolveDeptId(username, deptId);
+        adminService.deleteAssignment(assignmentId, List.of(id));
+        return ResponseEntity.noContent().build();
+    }
 }
