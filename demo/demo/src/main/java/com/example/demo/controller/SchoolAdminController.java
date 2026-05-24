@@ -148,4 +148,58 @@ public class SchoolAdminController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "School Admin은 DEPT_ADMIN만 부여 가능");
         return ResponseEntity.ok(adminService.updateUserRole(id, role, resolveActor(username), resolvedUnivId));
     }
+
+    @GetMapping("/professors")
+    public ResponseEntity<List<Map<String, Object>>> getProfessors(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @RequestParam(required = false) Long univId) {
+        Long id = resolveUnivId(username, univId);
+        return ResponseEntity.ok(adminService.getProfessorsByUniv(id));
+    }
+
+    @GetMapping("/courses")
+    public ResponseEntity<List<Map<String, Object>>> getCourses(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @RequestParam(required = false) Long univId) {
+        Long id = resolveUnivId(username, univId);
+        return ResponseEntity.ok(adminService.getCoursesByUniv(id));
+    }
+
+    @GetMapping("/assignments")
+    public ResponseEntity<List<Map<String, Object>>> getAssignments(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @RequestParam(required = false) Long univId) {
+        Long id = resolveUnivId(username, univId);
+        return ResponseEntity.ok(adminService.getAssignmentsByUniv(id));
+    }
+
+    @PostMapping("/assignments")
+    public ResponseEntity<Map<String, Object>> createAssignment(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @RequestParam(required = false) Long univId,
+            @RequestBody Map<String, Long> body) {
+        Long id          = resolveUnivId(username, univId);
+        Long professorId = body.get("professorId");
+        Long courseId    = body.get("courseId");
+        Long deptId      = body.get("deptId");
+        if (professorId == null || courseId == null || deptId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "professorId, courseId, deptId 필수");
+        }
+        List<Long> allowed = adminService.getDeptIdsForUnivPublic(id);
+        if (!allowed.contains(deptId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "해당 학과는 본 학교 소속이 아닙니다");
+        }
+        return ResponseEntity.ok(adminService.createAssignment(professorId, courseId, deptId));
+    }
+
+    @DeleteMapping("/assignments/{assignmentId}")
+    public ResponseEntity<Void> deleteAssignment(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @PathVariable Long assignmentId,
+            @RequestParam(required = false) Long univId) {
+        Long id = resolveUnivId(username, univId);
+        List<Long> deptIds = adminService.getDeptIdsForUnivPublic(id);
+        adminService.deleteAssignment(assignmentId, deptIds);
+        return ResponseEntity.noContent().build();
+    }
 }
