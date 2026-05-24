@@ -14,7 +14,9 @@ import com.example.demo.repository.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.lang.management.ManagementFactory;
 import java.time.LocalDate;
@@ -552,8 +554,7 @@ public class AdminService {
 
     public List<Map<String, Object>> getProfessorsByUniv(Long univId) {
         List<Long> deptIds = getDeptIdsForUniv(univId);
-        return professorRepository.findAll().stream()
-            .filter(p -> deptIds.contains(p.getDeptId()))
+        return professorRepository.findByDeptIdIn(deptIds).stream()
             .map(p -> {
                 Map<String, Object> m = new HashMap<>();
                 m.put("id", p.getId());
@@ -579,8 +580,7 @@ public class AdminService {
 
     public List<Map<String, Object>> getCoursesByUniv(Long univId) {
         List<Long> deptIds = getDeptIdsForUniv(univId);
-        return curriculumItemRepository.findAll().stream()
-            .filter(c -> deptIds.contains(c.getDeptId()))
+        return curriculumItemRepository.findByDeptIdIn(deptIds).stream()
             .map(c -> {
                 Map<String, Object> m = new HashMap<>();
                 m.put("id", c.getId());
@@ -594,34 +594,27 @@ public class AdminService {
     }
 
     public List<Map<String, Object>> getAssignmentsByDept(Long deptId) {
-        return assignmentRepository.findByDeptId(deptId).stream()
-            .map(a -> buildAssignmentDto(a)).toList();
+        return buildAssignmentDtos(assignmentRepository.findByDeptId(deptId));
     }
 
     public List<Map<String, Object>> getAssignmentsByUniv(Long univId) {
         List<Long> deptIds = getDeptIdsForUniv(univId);
-        return assignmentRepository.findByDeptIdIn(deptIds).stream()
-            .map(a -> buildAssignmentDto(a)).toList();
+        return buildAssignmentDtos(assignmentRepository.findByDeptIdIn(deptIds));
     }
 
     public Map<String, Object> createAssignment(Long professorId, Long courseId, Long deptId) {
         if (assignmentRepository.existsByProfessorIdAndCourseId(professorId, courseId)) {
-            throw new org.springframework.web.server.ResponseStatusException(
-                org.springframework.http.HttpStatus.CONFLICT, "이미 배정된 강의입니다");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 배정된 강의입니다");
         }
         Professor prof = professorRepository.findById(professorId)
-            .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
-                org.springframework.http.HttpStatus.NOT_FOUND, "교수 없음"));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "교수 없음"));
         if (!prof.getDeptId().equals(deptId)) {
-            throw new org.springframework.web.server.ResponseStatusException(
-                org.springframework.http.HttpStatus.FORBIDDEN, "해당 범위의 교수가 아닙니다");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "해당 범위의 교수가 아닙니다");
         }
         CurriculumItem course = curriculumItemRepository.findById(courseId)
-            .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
-                org.springframework.http.HttpStatus.NOT_FOUND, "강의 없음"));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "강의 없음"));
         if (!course.getDeptId().equals(deptId)) {
-            throw new org.springframework.web.server.ResponseStatusException(
-                org.springframework.http.HttpStatus.FORBIDDEN, "해당 범위의 강의가 아닙니다");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "해당 범위의 강의가 아닙니다");
         }
         ProfessorCourseAssignment a = new ProfessorCourseAssignment();
         a.setProfessorId(professorId);
@@ -633,11 +626,9 @@ public class AdminService {
 
     public void deleteAssignment(Long assignmentId, List<Long> allowedDeptIds) {
         ProfessorCourseAssignment a = assignmentRepository.findById(assignmentId)
-            .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
-                org.springframework.http.HttpStatus.NOT_FOUND, "배정 없음"));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "배정 없음"));
         if (!allowedDeptIds.contains(a.getDeptId())) {
-            throw new org.springframework.web.server.ResponseStatusException(
-                org.springframework.http.HttpStatus.FORBIDDEN, "삭제 권한 없음");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "삭제 권한 없음");
         }
         assignmentRepository.deleteById(assignmentId);
     }
@@ -663,6 +654,26 @@ public class AdminService {
         professorRepository.findById(a.getProfessorId()).ifPresent(p -> m.put("professorName", p.getName()));
         curriculumItemRepository.findById(a.getCourseId()).ifPresent(c -> m.put("courseName", c.getName()));
         return m;
+    }
+
+    private List<Map<String, Object>> buildAssignmentDtos(List<ProfessorCourseAssignment> assignments) {
+        if (assignments.isEmpty()) return List.of();
+        List<Long> profIds   = assignments.stream().map(ProfessorCourseAssignment::getProfessorId).distinct().toList();
+        List<Long> courseIds = assignments.stream().map(ProfessorCourseAssignment::getCourseId).distinct().toList();
+        Map<Long, String> profNames   = professorRepository.findAllById(profIds).stream()
+            .collect(Collectors.toMap(Professor::getId, Professor::getName));
+        Map<Long, String> courseNames = curriculumItemRepository.findAllById(courseIds).stream()
+            .collect(Collectors.toMap(CurriculumItem::getId, CurriculumItem::getName));
+        return assignments.stream().map(a -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", a.getId());
+            m.put("professorId", a.getProfessorId());
+            m.put("courseId", a.getCourseId());
+            m.put("deptId", a.getDeptId());
+            m.put("professorName", profNames.getOrDefault(a.getProfessorId(), ""));
+            m.put("courseName", courseNames.getOrDefault(a.getCourseId(), ""));
+            return m;
+        }).toList();
     }
 
     // ── Private helpers ──────────────────────────────────────────────────────
