@@ -246,8 +246,69 @@ public class SchoolCrudService {
         }
     }
 
-    // stubs — full implementation added in Task 5
-    private void deleteCollegeCascade(Long collegeId) { throw new UnsupportedOperationException("TODO Task 5"); }
-    private void deleteFacultyCascade(Long facultyId) { throw new UnsupportedOperationException("TODO Task 5"); }
-    private void deleteDeptCascade(Long deptId) { throw new UnsupportedOperationException("TODO Task 5"); }
+    // ── DELETE (CASCADE) ──────────────────────────────────────────────────────
+
+    @Transactional
+    public void deleteSchool(Long univId) {
+        universityRepo.findById(univId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "학교를 찾을 수 없습니다"));
+
+        for (CollegeSchool college : collegeSchoolRepo.findByUniversityId(univId)) {
+            deleteCollegeCascade(college.getId());
+        }
+
+        // universityId null화 (계정 삭제 아님, 소속만 해제)
+        String univIdStr = String.valueOf(univId);
+        for (User user : userRepo.findByUniversityId(univIdStr)) {
+            user.setUniversityId(null);
+            userRepo.save(user);
+        }
+
+        universityRepo.deleteById(univId);
+    }
+
+    private void deleteCollegeCascade(Long collegeId) {
+        for (FacultyGroup faculty : facultyGroupRepo.findBySchoolId(collegeId)) {
+            deleteFacultyCascade(faculty.getId());
+        }
+        // "univ" 스코프 콘텐츠 삭제 (scopeType="univ", scopeId=CollegeSchool.id)
+        noticeRepo.findByScopeTypeAndScopeIdOrderByCreatedDateDesc("univ", collegeId)
+                .forEach(n -> noticeRepo.deleteById(n.getId()));
+        postRepo.findByScopeTypeAndScopeIdOrderByCreatedDateDesc("univ", collegeId)
+                .forEach(p -> postRepo.deleteById(p.getId()));
+        scheduleRepo.findByScopeTypeAndScopeIdOrderByEventDateAsc("univ", collegeId)
+                .forEach(s -> scheduleRepo.deleteById(s.getId()));
+        collegeSchoolRepo.deleteById(collegeId);
+    }
+
+    private void deleteFacultyCascade(Long facultyId) {
+        for (Department dept : deptRepo.findByFacultyId(facultyId)) {
+            deleteDeptCascade(dept.getId());
+        }
+        // "faculty" 스코프 콘텐츠 삭제
+        noticeRepo.findByScopeTypeAndScopeIdOrderByCreatedDateDesc("faculty", facultyId)
+                .forEach(n -> noticeRepo.deleteById(n.getId()));
+        postRepo.findByScopeTypeAndScopeIdOrderByCreatedDateDesc("faculty", facultyId)
+                .forEach(p -> postRepo.deleteById(p.getId()));
+        scheduleRepo.findByScopeTypeAndScopeIdOrderByEventDateAsc("faculty", facultyId)
+                .forEach(s -> scheduleRepo.deleteById(s.getId()));
+        facultyGroupRepo.deleteById(facultyId);
+    }
+
+    private void deleteDeptCascade(Long deptId) {
+        // 삭제 순서: ClassSchedule → Enrollment → Assignment → CurriculumItem → Professor
+        classScheduleRepo.findByDeptId(deptId).forEach(cs -> classScheduleRepo.deleteById(cs.getId()));
+        enrollmentRepo.findByDeptId(deptId).forEach(e -> enrollmentRepo.deleteById(e.getId()));
+        assignmentRepo.findByDeptId(deptId).forEach(a -> assignmentRepo.deleteById(a.getId()));
+        curriculumItemRepo.findByDeptId(deptId).forEach(ci -> curriculumItemRepo.deleteById(ci.getId()));
+        professorRepo.findByDeptId(deptId).forEach(pr -> professorRepo.deleteById(pr.getId()));
+        // "dept" 스코프 콘텐츠 삭제
+        noticeRepo.findByScopeTypeAndScopeIdOrderByCreatedDateDesc("dept", deptId)
+                .forEach(n -> noticeRepo.deleteById(n.getId()));
+        postRepo.findByScopeTypeAndScopeIdOrderByCreatedDateDesc("dept", deptId)
+                .forEach(p -> postRepo.deleteById(p.getId()));
+        scheduleRepo.findByScopeTypeAndScopeIdOrderByEventDateAsc("dept", deptId)
+                .forEach(s -> scheduleRepo.deleteById(s.getId()));
+        deptRepo.deleteById(deptId);
+    }
 }
