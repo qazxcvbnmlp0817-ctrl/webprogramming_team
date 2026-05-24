@@ -3,6 +3,7 @@ package com.example.demo.util;
 import com.example.demo.entity.*;
 import com.example.demo.repository.*;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,6 +11,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
+@Order(4)
 public class DataInitializer implements CommandLineRunner {
 
     private final UniversityRepository universityRepo;

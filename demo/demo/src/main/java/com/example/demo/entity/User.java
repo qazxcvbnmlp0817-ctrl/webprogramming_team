@@ -37,6 +37,8 @@ public class User {
 
     private String adminRole; // SUPER_ADMIN | SCHOOL_ADMIN | DEPT_ADMIN | null
 
+    private Long professorEntityId; // 교수 계정 전용: PROFESSORS 테이블 FK
+
     private java.time.LocalDateTime createdDate;
 
     public Long getId() { return id; }
@@ -65,6 +67,8 @@ public class User {
     public void setStatus(String status) { this.status = status; }
     public String getAdminRole() { return adminRole; }
     public void setAdminRole(String adminRole) { this.adminRole = adminRole; }
+    public Long getProfessorEntityId() { return professorEntityId; }
+    public void setProfessorEntityId(Long professorEntityId) { this.professorEntityId = professorEntityId; }
     public java.time.LocalDateTime getCreatedDate() { return createdDate; }
     public void setCreatedDate(java.time.LocalDateTime createdDate) { this.createdDate = createdDate; }
 }

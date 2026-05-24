@@ -39,4 +39,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
     long countByUniversityIdAndCreatedDateBetween(String universityId,
                                                    LocalDateTime start,
                                                    LocalDateTime end);
+
+    // Professor account: find login account linked to a Professor entity
+    Optional<User> findByProfessorEntityId(Long professorEntityId);
+
+    // Professor accounts by university
+    List<User> findByMemberTypeAndUniversityId(String memberType, String universityId);
 }
