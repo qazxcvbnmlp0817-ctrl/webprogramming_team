@@ -201,10 +201,10 @@ function ScheduleFormModal({ initial, defaultDate, onSave, onClose }: {
   const [title, setTitle]     = useState(initial?.title ?? '')
   const [date, setDate]       = useState(initial?.date ?? defaultDate ?? todayStr())
   const [startTime, setStart] = useState(initial?.startTime ?? '14:00')
-  const [endTime, setEnd]     = useState(initial?.endTime ?? '')
+  const [endTime] = useState(initial?.endTime ?? '')
   const [allDay, setAllDay]   = useState(initial?.allDay ?? false)
   const [cat, setCat]         = useState<LocalSchedule['category']>(initial?.category ?? 'meeting')
-  const [status, setStatus]   = useState<LocalSchedule['status']>(initial?.status ?? 'scheduled')
+  const [status] = useState<LocalSchedule['status']>(initial?.status ?? 'scheduled')
   const [content, setContent] = useState(initial?.content ?? '')
 
   const handleSave = () => {
