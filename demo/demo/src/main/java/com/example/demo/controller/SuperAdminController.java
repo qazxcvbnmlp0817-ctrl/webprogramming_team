@@ -1,9 +1,11 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.SchoolTreeDto;
 import com.example.demo.entity.User;
 import com.example.demo.repository.UniversityRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.service.AdminService;
+import com.example.demo.service.SchoolCrudService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,13 +22,16 @@ public class SuperAdminController {
     private final AdminService adminService;
     private final UserRepository userRepository;
     private final UniversityRepository universityRepository;
+    private final SchoolCrudService schoolCrudService;
 
     public SuperAdminController(AdminService adminService,
                                  UserRepository userRepository,
-                                 UniversityRepository universityRepository) {
+                                 UniversityRepository universityRepository,
+                                 SchoolCrudService schoolCrudService) {
         this.adminService = adminService;
         this.userRepository = userRepository;
         this.universityRepository = universityRepository;
+        this.schoolCrudService = schoolCrudService;
     }
 
     private void verifySuper(String username) {
@@ -124,5 +129,43 @@ public class SuperAdminController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "approve 필드 필요 (boolean)");
         String role = body.get("role") == null ? null : body.get("role").toString();
         return ResponseEntity.ok(adminService.approveAdmin(id, approve, role, username));
+    }
+
+    // ── School CRUD ──────────────────────────────────────────────────────────
+
+    @GetMapping("/schools/{id}/tree")
+    public ResponseEntity<SchoolTreeDto> getSchoolTree(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @PathVariable Long id) {
+        verifySuper(username);
+        return ResponseEntity.ok(schoolCrudService.getTree(id));
+    }
+
+    @PostMapping("/schools")
+    public ResponseEntity<Map<String, Object>> createSchool(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @RequestBody SchoolTreeDto req) {
+        verifySuper(username);
+        Long id = schoolCrudService.createSchool(req);
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("id", id));
+    }
+
+    @PutMapping("/schools/{id}")
+    public ResponseEntity<Void> updateSchool(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @PathVariable Long id,
+            @RequestBody SchoolTreeDto req) {
+        verifySuper(username);
+        schoolCrudService.updateSchool(id, req);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/schools/{id}")
+    public ResponseEntity<Void> deleteSchool(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @PathVariable Long id) {
+        verifySuper(username);
+        schoolCrudService.deleteSchool(id);
+        return ResponseEntity.noContent().build();
     }
 }
