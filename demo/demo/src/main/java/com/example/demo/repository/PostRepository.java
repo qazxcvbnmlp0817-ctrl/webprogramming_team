@@ -24,4 +24,12 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT p.id FROM Post p WHERE p.scopeType = :scopeType AND p.scopeId = :scopeId")
     List<Long> findIdsByScopeTypeAndScopeId(@Param("scopeType") String scopeType,
                                              @Param("scopeId") Long scopeId);
+
+    @Query(value = "SELECT COUNT(*) FROM POSTS p " +
+                   "JOIN DEPTS d ON p.scope_type = 'dept' AND p.scope_id = d.id " +
+                   "JOIN FACULTY_GROUPS fg ON d.faculty_id = fg.id " +
+                   "JOIN COLLEGE_SCHOOLS cs ON fg.school_id = cs.id " +
+                   "WHERE cs.university_id = :univId AND p.created_date > :since",
+           nativeQuery = true)
+    long countByUniversityId(@Param("univId") Long univId, @Param("since") LocalDateTime since);
 }

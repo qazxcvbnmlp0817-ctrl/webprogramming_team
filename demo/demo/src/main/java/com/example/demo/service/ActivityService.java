@@ -53,7 +53,7 @@ public class ActivityService {
             case "univ": {
                 List<University> all = universityRepository.findAll();
                 result = all.stream()
-                        .map(u -> buildDto(u.getId(), "univ", u.getName(), sinceDate, sinceTime))
+                        .map(u -> buildDtoForUniv(u.getId(), u.getName(), sinceDate, sinceTime))
                         .collect(Collectors.toList());
                 break;
             }
@@ -81,15 +81,15 @@ public class ActivityService {
         long maxC = result.stream().mapToLong(ActivityDto::getNewComments).max().orElse(1);
 
         result.forEach(d -> {
-            double score = 50.0 * d.getWeeklyVisitors() / maxV
-                         + 30.0 * d.getNewPosts()       / maxP
-                         + 20.0 * d.getNewComments()    / maxC;
+            double score = 20.0 * d.getWeeklyVisitors() / maxV
+                         + 35.0 * d.getNewPosts()       / maxP
+                         + 45.0 * d.getNewComments()    / maxC;
             d.setActivityScore(Math.round(score * 10) / 10.0);
         });
 
         result.sort(Comparator.comparingDouble(ActivityDto::getActivityScore).reversed()
-                              .thenComparingLong(ActivityDto::getNewPosts).reversed()
-                              .thenComparingLong(ActivityDto::getNewComments).reversed());
+                              .thenComparing(Comparator.comparingLong(ActivityDto::getNewPosts).reversed())
+                              .thenComparing(Comparator.comparingLong(ActivityDto::getNewComments).reversed()));
 
         return result;
     }
@@ -103,17 +103,19 @@ public class ActivityService {
                 .countByScopeTypeAndScopeIdAndCreatedDateBetween(scopeType, scopeId,
                         sinceTime, LocalDateTime.now());
 
-        // Post comments (board)
-        List<Long> postIds = postRepository.findIdsByScopeTypeAndScopeId(scopeType, scopeId);
-        long postComments = postIds.isEmpty() ? 0
-                : commentRepository.countByPostIdInAndCreatedDateAfter(postIds, sinceDate);
-
-        // Notice comments
-        List<Long> noticeIds = noticeRepository.findIdsByScopeTypeAndScopeId(scopeType, scopeId);
-        long noticeComments = noticeIds.isEmpty() ? 0
-                : noticeCommentRepository.countByNoticeIdInAndCreatedDateAfter(noticeIds, sinceDate);
+        long postComments   = commentRepository.countByScopeAndSince(scopeType, scopeId, sinceDate);
+        long noticeComments = noticeCommentRepository.countByScopeAndSince(scopeType, scopeId, sinceDate);
 
         return new ActivityDto(scopeId, scopeType, name,
                 visitors, newPosts, postComments + noticeComments);
+    }
+
+    private ActivityDto buildDtoForUniv(Long univId, String name,
+                                         LocalDate sinceDate, LocalDateTime sinceTime) {
+        long visitors    = pageVisitRepository.countByUniversityId(univId, sinceTime);
+        long newPosts    = postRepository.countByUniversityId(univId, sinceTime);
+        long newComments = commentRepository.countByUniversityId(univId, sinceDate)
+                         + noticeCommentRepository.countByUniversityId(univId, sinceDate);
+        return new ActivityDto(univId, "univ", name, visitors, newPosts, newComments);
     }
 }
