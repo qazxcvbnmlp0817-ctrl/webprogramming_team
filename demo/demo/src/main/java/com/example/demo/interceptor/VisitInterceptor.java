@@ -30,7 +30,8 @@ public class VisitInterceptor implements HandlerInterceptor {
             if (uri.equals("/api/posts") || uri.equals("/api/notices")) {
                 String raw = request.getParameter("deptId");
                 if (raw != null) { scopeType = "dept"; scopeId = Long.parseLong(raw); }
-            } else if (uri.equals("/api/univ/posts") || uri.equals("/api/univ/notices")) {
+            } else if (uri.equals("/api/univ/posts") || uri.equals("/api/univ/notices")
+                    || uri.equals("/api/school/posts") || uri.equals("/api/school/notices")) {
                 String raw = request.getParameter("univId");
                 if (raw != null) { scopeType = "univ"; scopeId = Long.parseLong(raw); }
             } else if (uri.equals("/api/faculty/posts") || uri.equals("/api/faculty/notices")) {

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import type { UniversityDto } from '../types/university'
 import { fetchUniversities } from '../api/universities'
+import { fetchActivityRanking, type ActivityData } from '../api/activity'
 import { useDept } from '../context/DeptContext'
 import AdminBanner from '../components/common/AdminBanner'
 import UniversityCard, { activityScore } from '../components/common/UniversityCard'
@@ -9,15 +10,19 @@ import UniversityCard, { activityScore } from '../components/common/UniversityCa
 type SortMode = 'active' | 'alpha'
 
 export default function UniversityListPage() {
-  const [universities, setUniversities] = useState<UniversityDto[]>([])
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [sortMode, setSortMode] = useState<SortMode>('active')
-  const { setUniversityInfo } = useDept()
-  const navigate = useNavigate()
+  const [universities, setUniversities]   = useState<UniversityDto[]>([])
+  const [activityMap, setActivityMap]     = useState<Map<number, ActivityData>>(new Map())
+  const [menuOpen, setMenuOpen]           = useState(false)
+  const [searchQuery, setSearchQuery]     = useState('')
+  const [sortMode, setSortMode]           = useState<SortMode>('active')
+  const { setUniversityInfo }             = useDept()
+  const navigate                          = useNavigate()
 
   useEffect(() => {
     fetchUniversities().then(setUniversities)
+    fetchActivityRanking('univ').then(list =>
+      setActivityMap(new Map(list.map(a => [a.scopeId, a])))
+    )
   }, [])
 
   const filtered = useMemo(() => {
@@ -27,16 +32,19 @@ export default function UniversityListPage() {
       : [...universities]
 
     if (sortMode === 'active') {
-      list.sort((a, b) => activityScore(b) - activityScore(a))
+      list.sort((a, b) =>
+        activityScore(b, activityMap.get(b.id)) -
+        activityScore(a, activityMap.get(a.id))
+      )
     } else {
       list.sort((a, b) => a.name.localeCompare(b.name, 'ko'))
     }
     return list
-  }, [universities, searchQuery, sortMode])
+  }, [universities, activityMap, searchQuery, sortMode])
 
   const maxScore = useMemo(
-    () => Math.max(...universities.map(activityScore), 1),
-    [universities]
+    () => Math.max(...universities.map(u => activityScore(u, activityMap.get(u.id))), 1),
+    [universities, activityMap]
   )
   const maxDepts = useMemo(
     () => Math.max(...universities.map(u => u.totalDeptCount), 1),
@@ -45,6 +53,18 @@ export default function UniversityListPage() {
   const maxSchools = useMemo(
     () => Math.max(...universities.map(u => u.schools.length), 1),
     [universities]
+  )
+  const maxVisitors = useMemo(
+    () => Math.max(...[...activityMap.values()].map(a => a.weeklyVisitors), 1),
+    [activityMap]
+  )
+  const maxPosts = useMemo(
+    () => Math.max(...[...activityMap.values()].map(a => a.newPosts), 1),
+    [activityMap]
+  )
+  const maxComments = useMemo(
+    () => Math.max(...[...activityMap.values()].map(a => a.newComments), 1),
+    [activityMap]
   )
 
   const handleSelect = (univ: UniversityDto) => {
@@ -138,9 +158,13 @@ export default function UniversityListPage() {
               <UniversityCard
                 key={univ.id}
                 univ={univ}
+                activityData={activityMap.get(univ.id)}
                 maxScore={maxScore}
                 maxDepts={maxDepts}
                 maxSchools={maxSchools}
+                maxVisitors={maxVisitors}
+                maxPosts={maxPosts}
+                maxComments={maxComments}
                 onSelect={() => handleSelect(univ)}
               />
             ))}
