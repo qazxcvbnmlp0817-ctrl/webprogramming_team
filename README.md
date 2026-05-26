@@ -32,6 +32,7 @@ webprogramming_team-main/
 │       │   ├── posts.ts
 │       │   ├── schedules.ts
 │       │   ├── universities.ts
+│       │   ├── classSchedules.ts    # 학생 수업 시간표 조회 (ClassScheduleDto + fetchStudentClassSchedules)
 │       │   └── adminSuper.ts        # SUPER_ADMIN API (학교 목록·트리·CRUD 포함)
 │       ├── components/
 │       │   ├── Navbar.tsx
@@ -66,6 +67,7 @@ webprogramming_team-main/
 │           ├── LoginPage.tsx               # 로그인
 │           ├── SignupPage.tsx              # 회원가입 (6단계)
 │           ├── MyPage.tsx                  # 마이페이지
+│           ├── CalendarPage.tsx            # 개인 캘린더 (/calendar, 로그인 전용 — 학생은 수업 시간표 자동 동기화)
 │           ├── FindIdPage.tsx              # 아이디 찾기
 │           ├── FindPasswordPage.tsx        # 비밀번호 찾기
 │           └── admin/
@@ -194,8 +196,9 @@ SCHEDULES (일정)         — scopeType: dept | faculty | univ
 | POST | `/api/auth/login` | 로그인 |
 | POST | `/api/auth/signup` | 회원가입 |
 | GET | `/api/auth/check-id?username=` | 아이디 중복 확인 |
-| POST | `/api/auth/find-id` | 아이디 찾기 |
-| POST | `/api/auth/find-password` | 비밀번호 찾기 (임시 비번 발급) |
+| POST | `/api/auth/find-id` | 아이디 찾기 (name, universityId, college, studentId) |
+| POST | `/api/auth/find-password` | 비밀번호 찾기 — 임시 비번 발급 (username, name, universityId, college, studentId) |
+| POST | `/api/auth/change-password` | 비밀번호 변경 (currentPassword, newPassword) |
 
 ### 대학 구조
 | Method | 경로 | 설명 |
@@ -347,6 +350,8 @@ cd demo/demo
 - **관리자 가입 흐름**: `memberType=admin`으로 가입 시 `status=PENDING_APPROVAL`, `adminRole=null`. SUPER_ADMIN이 SuperAdminPage에서 역할 선택 후 승인 시 ACTIVE + 역할 부여.
 - **교수-로그인 계정 연결**: `APP_USERS.PROFESSOR_ENTITY_ID` 컬럼으로 PROFESSORS 테이블 레코드와 연결. 교수 시간표 CRUD 시 해당 FK로 소유권 검증.
 - **수업 시간표 자동 동기화**: `CLASS_SCHEDULES`에 교수가 CRUD를 수행하면 학생 조회 시 즉시 반영. 별도 캐시/알림 없이 Enrollment → ClassSchedule DB 조인으로 구현.
+- **개인 캘린더 (`/calendar`)**: 로그인 사용자 전용 일정 관리 페이지. 학생 계정은 수강신청 기반 수업 시간표를 ±3개월 실제 날짜로 자동 확장하여 캘린더에 표시 (읽기 전용). Navbar의 "일정" 링크는 로그인 여부에 따라 `/calendar`(로그인) 또는 학과·학부·학교 일정 페이지(비로그인)로 동적 라우팅됨.
+- **authStorage.ts**: `sessionStorage` 우선, 없으면 `localStorage`(`auth_` prefix) 폴백으로 로그인 상태를 읽는 이중 저장소 패턴. Navbar의 `isLoggedIn` 계산에 사용.
 - **학교 CRUD (SUPER_ADMIN)**: SuperAdminPage "학교 관리" 탭에서 University→CollegeSchool→FacultyGroup→Department 전체 계층을 생성·수정·삭제. 수정 시 Merge 전략(요청에 없는 기존 id → cascade 삭제), 삭제 시 모든 하위 데이터(교수, 수강신청, 수업 시간표, 공지 등) cascade 삭제 + 소속 사용자 universityId null화. 단일 `@Transactional` all-or-nothing.
 - **수강신청 중복 방지**: `ENROLLMENTS(student_username, course_id, semester)` 복합 유니크 제약.
 - **공개 범위**: 게시글 작성 시 `all`(전체) / `student`(학생만) / `professor`(교수만) 선택 가능

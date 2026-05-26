@@ -149,10 +149,14 @@ webprogramming_team-main/
 │       │   ├── posts.ts                ← /api/posts
 │       │   ├── schedules.ts            ← /api/schedules
 │       │   ├── school.ts               ← /api/school/*
-│       │   └── auth.ts                 ← /api/auth/* (로그인·회원가입·아이디·비밀번호 찾기)
+│       │   ├── classSchedules.ts       ← /api/student/class-schedules (ClassScheduleDto + fetchStudentClassSchedules)
+│       │   └── auth.ts                 ← /api/auth/* (로그인·회원가입·아이디·비밀번호 찾기·변경)
 │       │
 │       ├── utils/                      ← 공유 순수 유틸리티 함수
-│       │   └── scheduleUtils.ts        ← groupByMonth() — 3개 일정 페이지 공유
+│       │   ├── scheduleUtils.ts        ← groupByMonth() — 3개 일정 페이지 공유
+│       │   ├── authStorage.ts          ← 로그인 상태 이중 저장소 (sessionStorage 우선 → localStorage auth_ 폴백)
+│       │   ├── localSchedule.ts        ← 개인 일정 localStorage 저장/로드
+│       │   └── scheduleItem.ts         ← ScheduleItem 타입 + 공유 헬퍼
 │       │
 │       ├── data/                       ← 프론트엔드 더미/정적 데이터
 │       │   └── footerData.ts           ← 푸터 표시 정보 (대학명·주소·연락처·저작권)
@@ -189,16 +193,19 @@ webprogramming_team-main/
 │       │   ├── WritePostPage.tsx       ← /dept/board/write (글쓰기)
 │       │   ├── SchedulePage.tsx        ← /dept/schedule
 │       │   ├── DepartmentPage.tsx      ← /dept/department
+│       │   ├── CalendarPage.tsx        ← /calendar (개인 캘린더, 로그인 전용 — 학생은 수업 시간표 자동 동기화)
 │       │   ├── LoginPage.tsx           ← /login
 │       │   ├── SignupPage.tsx          ← /signup
 │       │   ├── MyPage.tsx              ← /mypage
-│       │   ├── FindIdPage.tsx          ← /find-id
-│       │   └── FindPasswordPage.tsx    ← /find-password
+│       │   ├── FindIdPage.tsx          ← /find-id (이름·소속대학·단과대·학번으로 찾기)
+│       │   └── FindPasswordPage.tsx    ← /find-password (이름·소속대학·단과대·학번·아이디로 임시 비번 발급)
 │       │
 │       └── components/                 ← 재사용 컴포넌트
-│           ├── Navbar.tsx              ← 상단 네비게이션 바
+│           ├── Navbar.tsx              ← 상단 네비게이션 바 (인증 상태에 따라 "일정" 링크 동적 라우팅)
 │           ├── Navbar.test.tsx
 │           ├── Footer.tsx              ← 하단 고정 푸터 (/universities 제외)
+│           ├── schedule/
+│           │   └── ScheduleCalendarView.tsx ← 재사용 캘린더 UI (CalendarPage·SchedulePage·FacultySchedulePage·SchoolSchedulePage 공유)
 │           ├── FeaturedCard.tsx
 │           ├── FilterTabs.tsx
 │           ├── FilterTabs.test.tsx
@@ -305,6 +312,7 @@ webprogramming_team-main/
 | `/dept/board/write` | WritePostPage | 학과 게시글 작성 |
 | `/dept/schedule` | SchedulePage | 학과 일정 |
 | `/dept/department` | DepartmentPage | 학과정보 |
+| `/calendar` | CalendarPage | 개인 캘린더 (로그인 전용 — 학생은 수업 시간표 자동 동기화) |
 | `/login` | LoginPage | 로그인 |
 | `/signup` | SignupPage | 회원가입 |
 | `/mypage` | MyPage | 마이페이지 |
@@ -352,8 +360,9 @@ webprogramming_team-main/
 | POST | `/api/auth/login` | Body: `{username, password, memberType}` | 로그인 |
 | POST | `/api/auth/signup` | Body: 회원 정보 | 회원가입 |
 | GET | `/api/auth/check-id` | `username` | 아이디 중복 확인 |
-| POST | `/api/auth/find-id` | Body: `{name, phone}` | 아이디 찾기 |
-| POST | `/api/auth/find-password` | Body: `{username, name, phone}` | 비밀번호 찾기 (임시 비밀번호 반환) |
+| POST | `/api/auth/find-id` | Body: `{name, universityId, college, studentId}` | 아이디 찾기 |
+| POST | `/api/auth/find-password` | Body: `{username, name, universityId, college, studentId}` | 비밀번호 찾기 (임시 비밀번호 반환) |
+| POST | `/api/auth/change-password` | Body: `{currentPassword, newPassword}`, Header: `X-Username` | 비밀번호 변경 |
 | GET | `/api/professor/class-schedules` | Header: `X-Username` | 교수 수업 시간표 전체 조회 |
 | GET | `/api/professor/class-schedules?semester=` | Header: `X-Username` | 학기별 수업 시간표 조회 |
 | POST | `/api/professor/class-schedules` | Header: `X-Username`, Body: 시간표 정보 | 수업 시간표 등록 |
@@ -446,6 +455,25 @@ UniversityDto
 
 > 학부 경로 감지: `pathname.match(/^\/school\/faculty\/(\d+)/)` 로 facultyId를 추출하여 링크를 동적 생성합니다.
 
+### 인증 기반 "일정" 링크 동적 라우팅
+
+로그인 여부에 따라 "일정" 메뉴의 목적지가 달라집니다.
+
+```ts
+const navLinks = rawLinks.map(link =>
+  link.label === '일정'
+    ? { ...link, to: isLoggedIn ? '/calendar' : link.to }
+    : link
+)
+```
+
+| 로그인 상태 | "일정" 링크 목적지 |
+|------------|-------------------|
+| 로그인 됨  | `/calendar` (개인 캘린더) |
+| 비로그인   | 모드별 원래 경로 (`/dept/schedule`, `/school/schedule`, `/school/faculty/:id/schedule`) |
+
+`isLoggedIn`은 `sessionStorage.getItem('isLoggedIn') === 'true'` OR `localStorage.getItem('auth_isLoggedIn') === 'true'` 로 확인합니다 (`authStorage.ts` 이중 저장소 패턴).
+
 ---
 
 ## 11. 레이아웃 구조 — Sticky Footer
@@ -498,6 +526,8 @@ const FOOTER_HIDDEN_PATHS = ['/universities']
 - **비밀번호:** BCryptPasswordEncoder로 해시 저장. 회원가입, Mock 계정 시딩 모두 적용.
 - **세션/토큰:** 별도 JWT 없음. 로그인 성공 시 응답 JSON 반환, 클라이언트가 sessionStorage에 저장하여 이후 요청마다 `X-Username` 헤더로 전송.
 - **공지 작성 접근 제어:** `NoticeWritePage`, `SchoolNoticeWritePage`, `FacultyNoticeWritePage`는 마운트 시 `sessionStorage.getItem('memberType')`을 확인합니다. `professor` 또는 `admin`이 아니면 해당 공지 목록 페이지로 즉시 리다이렉트합니다.
+- **아이디/비밀번호 찾기 필드:** 전화번호 대신 소속 정보(소속 대학 ID, 단과대 이름, 학번)를 사용합니다. `FindIdPage`: `{name, universityId, college, studentId}`, `FindPasswordPage`: 여기에 `username` 추가.
+- **비밀번호 변경:** 로그인 후 `MyPage`에서 현재 비밀번호 확인 후 변경. `POST /api/auth/change-password` (`X-Username` 헤더 + `{currentPassword, newPassword}` body).
 
 ### 회원 유형 (memberType)
 
@@ -550,7 +580,7 @@ return '/universities'
 | `DeptContext.tsx` | 선택된 대학/학과 전역 상태, localStorage 동기화 |
 | `useDeptFetch.ts` | fetcher 함수 + id를 받아 데이터 로딩 처리하는 범용 훅 |
 | `useInitialRedirect.ts` | 앱 시작 리다이렉트 결정 훅. 로그인 연동 시 `[AUTH_HOOK]` 주석 위치에 주입 |
-| `Navbar.tsx` | URL 기반 학교/학부/학과 3모드 자동 전환 네비게이션 바 |
+| `Navbar.tsx` | URL 기반 학교/학부/학과 3모드 자동 전환 네비게이션 바. 로그인 시 "일정" 링크 → `/calendar`, 비로그인 시 원래 경로 |
 | `UniversityListPage.tsx` | 대학교 카드 목록, 선택 시 학과 선택 페이지로 이동 |
 | `UniversityShowPage.tsx` | 대학교 홈 (단과대 목록, 바로가기) |
 | `SchoolDepartmentsPage.tsx` | 단과대·학부·학과 3단 계층 그리드. 학부명 클릭 시 `/school/faculty/:id`, 학과 클릭 시 `/dept/home`으로 이동 |
@@ -565,12 +595,16 @@ return '/universities'
 | `SchoolNoticeWritePage.tsx` | 학교 공지 작성 폼. 교수·관리자 전용 |
 | `SchoolWritePostPage.tsx` | 학교 게시글 작성 폼. 학년 태그(1~4학년 다중선택), 공개범위(전체/해당학년) 포함 |
 | `MiniCalendar.tsx` | 월별 미니 캘린더. `ScheduleDto[]`를 받아 일정 점(dot)으로 표시, hover 시 팝오버로 일정 목록 표시 |
+| `CalendarPage.tsx` | 개인 캘린더 (`/calendar`). 로그인 사용자 전용. 학생 계정은 수강신청 기반 수업 시간표를 ±3개월 날짜로 확장(readonly)하여 표시 |
 | `LoginPage.tsx` | 로그인 폼, `auth.ts`의 `loginApi` 호출 |
 | `SignupPage.tsx` | 회원가입 폼 (학생·교수·관리자 선택), `signupApi` 호출 |
-| `MyPage.tsx` | 마이페이지 (로그인 사용자 정보 표시) |
-| `FindIdPage.tsx` | 이름·전화번호로 아이디 찾기 |
-| `FindPasswordPage.tsx` | 아이디·이름·전화번호로 임시 비밀번호 발급 |
-| `auth.ts` | `/api/auth/*` 호출 함수 (login, signup, checkId, findId, findPassword) |
+| `MyPage.tsx` | 마이페이지 (로그인 사용자 정보 표시, 비밀번호 변경 포함) |
+| `FindIdPage.tsx` | 이름·소속 대학 ID·단과대·학번으로 아이디 찾기 |
+| `FindPasswordPage.tsx` | 아이디·이름·소속 대학 ID·단과대·학번으로 임시 비밀번호 발급 |
+| `auth.ts` | `/api/auth/*` 호출 함수 (login, signup, checkId, findId, findPassword, changePassword) |
+| `authStorage.ts` | 로그인 상태 이중 저장소 패턴. `sessionStorage` 우선 → `localStorage`(`auth_` prefix) 폴백. `isLoggedIn()` 공유 함수 제공 |
+| `classSchedules.ts` | `ClassScheduleDto` 타입 + `fetchStudentClassSchedules(username, semester)` — `/api/student/class-schedules` 호출 |
+| `schedule/ScheduleCalendarView.tsx` | 재사용 캘린더 UI 컴포넌트. `schedules`, `categoryMeta`, `canWrite`, `onSave`, `onDelete` props 받음. CalendarPage·SchedulePage·FacultySchedulePage·SchoolSchedulePage가 공유 |
 | `SpaController.java` | `/api/**` 외 모든 경로를 `index.html`로 포워딩 (SPA 새로고침 지원) |
 | `MainController.java` | `GET /api/main` (학과 메인), `GET /api/faculty/main` (학부 메인) — 공지5·게시글5·일정 전체·오늘날짜 반환 |
 | `AuthController.java` | `POST/GET /api/auth/*` — 로그인·회원가입·아이디/비밀번호 찾기 |
