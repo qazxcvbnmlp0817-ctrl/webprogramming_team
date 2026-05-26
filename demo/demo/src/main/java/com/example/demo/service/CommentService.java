@@ -23,6 +23,11 @@ public class CommentService {
         this.postRepository    = postRepository;
     }
 
+    public List<CommentDto> getCommentsByUsername(String username) {
+        return commentRepository.findByAuthorUsernameOrderByCreatedDateDesc(username)
+                .stream().map(this::toDto).collect(Collectors.toList());
+    }
+
     public List<CommentDto> getByPostId(Long postId) {
         return commentRepository.findByPostIdOrderByCreatedDateAsc(postId)
                 .stream().map(this::toDto).collect(Collectors.toList());

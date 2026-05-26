@@ -45,4 +45,21 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // Professor accounts by university
     List<User> findByMemberTypeAndUniversityId(String memberType, String universityId);
+
+    // Find ID: lookup by name alone (admin)
+    Optional<User> findByName(String name);
+
+    // Find ID / Find PW: lookup by name + studentId
+    Optional<User> findByNameAndStudentId(String name, String studentId);
+
+    // Find ID / Find PW: lookup by name + studentId + college + universityId
+    Optional<User> findByNameAndStudentIdAndCollegeAndUniversityId(
+            String name, String studentId, String college, String universityId);
+
+    // Find PW: lookup by username + name + studentId + college + universityId
+    Optional<User> findByUsernameAndNameAndStudentIdAndCollegeAndUniversityId(
+            String username, String name, String studentId, String college, String universityId);
+
+    // Find PW: admin lookup by username + name
+    Optional<User> findByUsernameAndName(String username, String name);
 }

@@ -16,4 +16,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     // Monthly stats: post count in a date range
     long countByScopeTypeAndScopeIdAndCreatedDateBetween(String scopeType, Long scopeId,
                                                           LocalDateTime start, LocalDateTime end);
+
+    List<Post> findByAuthorUsernameOrderByCreatedDateDesc(String authorUsername);
 }

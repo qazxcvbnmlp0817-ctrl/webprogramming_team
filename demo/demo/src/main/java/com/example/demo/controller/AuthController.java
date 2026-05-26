@@ -50,4 +50,28 @@ public class AuthController {
     public ResponseEntity<Map<String, Object>> findPassword(@RequestBody FindPasswordRequestDto request) {
         return ResponseEntity.ok(authService.findPassword(request));
     }
+
+    @PostMapping("/change-name")
+    public ResponseEntity<Map<String, Object>> changeName(@RequestBody Map<String, String> request) {
+        return ResponseEntity.ok(authService.changeName(request.get("username"), request.get("newName")));
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<Map<String, Object>> changePassword(@RequestBody Map<String, String> request) {
+        return ResponseEntity.ok(authService.changePassword(request.get("username"), request.get("newPassword")));
+    }
+
+    @GetMapping("/notification-settings")
+    public ResponseEntity<Map<String, Object>> getNotificationSettings(@RequestParam String username) {
+        return ResponseEntity.ok(authService.getNotificationSettings(username));
+    }
+
+    @PostMapping("/notification-settings")
+    public ResponseEntity<Map<String, Object>> saveNotificationSettings(@RequestBody Map<String, Object> request) {
+        String username    = (String)  request.get("username");
+        Boolean notiNotice  = (Boolean) request.get("notiNotice");
+        Boolean notiComment = (Boolean) request.get("notiComment");
+        Boolean notiDday    = (Boolean) request.get("notiDday");
+        return ResponseEntity.ok(authService.saveNotificationSettings(username, notiNotice, notiComment, notiDday));
+    }
 }

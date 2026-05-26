@@ -25,6 +25,16 @@ public class BoardController {
 
     // ── 목록 조회 ────────────────────────────────────────────────────────────
 
+    @GetMapping("/api/my/posts")
+    public ResponseEntity<List<PostDto>> getMyPosts(@RequestParam String username) {
+        return ResponseEntity.ok(postService.getPostsByUsername(username));
+    }
+
+    @GetMapping("/api/my/comments")
+    public ResponseEntity<List<CommentDto>> getMyComments(@RequestParam String username) {
+        return ResponseEntity.ok(commentService.getCommentsByUsername(username));
+    }
+
     @GetMapping("/api/posts")
     public Map<String, Object> apiPosts(@RequestParam(required = false) Long deptId) {
         List<PostDto> posts = postService.getPostsByDept(deptId != null ? deptId : 1L);

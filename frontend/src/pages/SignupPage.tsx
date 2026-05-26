@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 
 type MemberType = 'student' | 'staff' | 'admin'
 type StaffRole = 'professor' | 'employee' | 'assistant' | ''
 
-const STEP_LABELS = ['이용약관 동의', '대학교 선택', '회원 유형 선택', '본인 인증', '정보 입력', '가입 완료']
+const STEP_LABELS = ['대학교 선택', '회원 유형 선택', '정보 입력', '가입 완료']
 
 const COLLEGES: Record<string, string[]> = {
   mokpo: ['공과대학', '인문사회과학대학', '자연과학대학', '경영대학'],
@@ -26,37 +26,12 @@ const EMPLOYEE_OFFICES = [
   '국제협력처', '행정실', '사무국', '지역인재부총장', '직속위원회(사업단, 기관)',
 ]
 
-const fmt = (s: number) =>
-  `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
-
 export default function SignupPage() {
   const navigate = useNavigate()
   const [step, setStep] = useState(1)
-
-  // STEP 1: 이용약관
-  const [allChecked, setAllChecked] = useState(false)
-  const [privacy, setPrivacy] = useState(false)
-  const [terms, setTerms] = useState(false)
-  const [thirdParty, setThirdParty] = useState(false)
-  const [marketing, setMarketing] = useState(false)
-
-  // STEP 2: 대학교
   const [selectedUniv, setSelectedUniv] = useState('')
-
-  // STEP 3: 회원 유형
   const [memberType, setMemberType] = useState<MemberType | ''>('')
   const [staffRole, setStaffRole] = useState<StaffRole>('')
-
-  // STEP 4: 본인 인증
-  const [authMethod, setAuthMethod] = useState<'phone' | 'email'>('phone')
-  const [authName, setAuthName] = useState('')
-  const [phone, setPhone] = useState('')
-  const [authCode, setAuthCode] = useState('')
-  const [timerActive, setTimerActive] = useState(false)
-  const [timeLeft, setTimeLeft] = useState(180)
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
-  // STEP 5: 정보 입력
   const [userId, setUserId] = useState('')
   const [idChecked, setIdChecked] = useState(false)
   const [pw, setPw] = useState('')
@@ -75,19 +50,10 @@ export default function SignupPage() {
   const isEmployee = memberType === 'staff' && staffRole === 'employee'
 
   useEffect(() => {
-    if (timerActive && timeLeft > 0) {
-      timerRef.current = setInterval(() => setTimeLeft(t => t - 1), 1000)
-    } else if (timeLeft === 0) {
-      setTimerActive(false)
-    }
-    return () => { if (timerRef.current) clearInterval(timerRef.current) }
-  }, [timerActive, timeLeft])
-
-  useEffect(() => {
     setEmployeeId(''); setEmployeeOffice('')
     setStudentId(''); setCollege(''); setDepartment('')
     if (memberType !== 'student') { setGrade(''); setEnrollmentStatus('') }
-    if (memberType !== 'staff') { setStaffRole('') }
+    if (memberType !== 'staff')   { setStaffRole('') }
   }, [memberType])
 
   useEffect(() => {
@@ -99,33 +65,13 @@ export default function SignupPage() {
     if (enrollmentStatus === 'graduated') setGrade('')
   }, [enrollmentStatus])
 
-  const handleAllCheck = (v: boolean) => {
-    setAllChecked(v); setPrivacy(v); setTerms(v); setThirdParty(v); setMarketing(v)
+  const step2Valid = () => {
+    if (!memberType) return false
+    if (memberType === 'staff' && !staffRole) return false
+    return true
   }
 
-  const handleOne = (key: 'privacy' | 'terms' | 'thirdParty' | 'marketing', v: boolean) => {
-    const n = { privacy, terms, thirdParty, marketing, [key]: v }
-    setPrivacy(n.privacy); setTerms(n.terms); setThirdParty(n.thirdParty); setMarketing(n.marketing)
-    setAllChecked(n.privacy && n.terms && n.thirdParty && n.marketing)
-  }
-
-  const sendCode = () => {
-    if (timerRef.current) clearInterval(timerRef.current)
-    setTimeLeft(180)
-    setTimerActive(true)
-  }
-
-  const checkDuplicate = async () => {
-    if (!userId) { alert('아이디를 입력해주세요.'); return }
-    try {
-      const res = await fetch(`/api/auth/check-id?username=${userId}`)
-      const result = await res.json()
-      if (result.available) { alert('✅ 사용 가능한 아이디입니다.'); setIdChecked(true) }
-      else { alert('❌ 이미 사용 중인 아이디입니다.'); setIdChecked(false) }
-    } catch { alert('중복 확인 중 오류가 발생했습니다.') }
-  }
-
-  const step5Valid = () => {
+  const step3Valid = () => {
     if (!userId || !idChecked) return false
     if (!pw || pw !== pwConfirm) return false
     if (!inputName) return false
@@ -140,12 +86,20 @@ export default function SignupPage() {
   }
 
   const canNext = () => {
-    if (step === 1) return privacy && terms && thirdParty
-    if (step === 2) return selectedUniv !== ''
-    if (step === 3) return memberType !== '' && (memberType !== 'staff' || staffRole !== '')
-    if (step === 4) return authName !== '' && phone !== '' && authCode !== ''
-    if (step === 5) return step5Valid()
+    if (step === 1) return selectedUniv !== ''
+    if (step === 2) return step2Valid()
+    if (step === 3) return step3Valid()
     return true
+  }
+
+  const checkDuplicate = async () => {
+    if (!userId) { alert('아이디를 입력해주세요.'); return }
+    try {
+      const res = await fetch(`/api/auth/check-id?username=${userId}`)
+      const result = await res.json()
+      if (result.available) { alert('✅ 사용 가능한 아이디입니다.'); setIdChecked(true) }
+      else { alert('❌ 이미 사용 중인 아이디입니다.'); setIdChecked(false) }
+    } catch { alert('중복 확인 중 오류가 발생했습니다.') }
   }
 
   const handleSignup = async () => {
@@ -161,7 +115,6 @@ export default function SignupPage() {
         studentId:    isEmployee ? employeeId : (isAdmin ? null : studentId),
         grade:        memberType === 'student' && enrollmentStatus !== 'graduated' ? parseInt(grade) : null,
         enrollmentStatus: memberType === 'student' ? enrollmentStatus : null,
-        phone,
       }
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
@@ -169,14 +122,14 @@ export default function SignupPage() {
         body: JSON.stringify(payload),
       })
       const result = await res.json()
-      if (result.success) setStep(6)
+      if (result.success) setStep(4)
       else setSubmitError(result.message || '회원가입에 실패했습니다.')
     } catch { setSubmitError('서버 연결에 실패했습니다.') }
   }
 
   const handleNext = () => {
     if (!canNext()) return
-    if (step === 5) handleSignup()
+    if (step === 3) handleSignup()
     else setStep(s => s + 1)
   }
 
@@ -204,36 +157,10 @@ export default function SignupPage() {
 
           <div className="border-2 border-black bg-white p-8">
 
-            {/* STEP 1: 이용약관 동의 */}
+            {/* STEP 1: 대학교 선택 */}
             {step === 1 && (
               <div className="flex flex-col gap-4">
-                <h2 className="text-lg font-bold">01. 이용약관 동의</h2>
-                <p className="text-sm text-gray-500 -mt-2">서비스 이용을 위해 아래 약관에 동의해주세요.</p>
-                <div className="border border-gray-200 divide-y divide-gray-200">
-                  <label className="flex items-center gap-3 px-4 py-3 cursor-pointer bg-gray-50">
-                    <input type="checkbox" checked={allChecked} onChange={e => handleAllCheck(e.target.checked)} className="accent-black w-4 h-4" />
-                    <span className="text-sm font-bold">전체 동의</span>
-                  </label>
-                  {[
-                    { key: 'privacy'    as const, label: '[필수] 개인정보 수집 및 이용 동의', val: privacy },
-                    { key: 'terms'      as const, label: '[필수] 서비스 이용약관 동의',       val: terms },
-                    { key: 'thirdParty' as const, label: '[필수] 제3자 제공 동의',             val: thirdParty },
-                    { key: 'marketing'  as const, label: '[선택] 마케팅 수신 동의',            val: marketing },
-                  ].map(({ key, label, val }) => (
-                    <label key={key} className="flex items-center gap-3 px-4 py-3 cursor-pointer">
-                      <input type="checkbox" checked={val} onChange={e => handleOne(key, e.target.checked)} className="accent-black w-4 h-4" />
-                      <span className="text-sm flex-1">{label}</span>
-                      <button type="button" className="text-xs border border-gray-300 px-2 py-0.5 text-gray-500">보기</button>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* STEP 2: 대학교 선택 */}
-            {step === 2 && (
-              <div className="flex flex-col gap-4">
-                <h2 className="text-lg font-bold">02. 대학교 선택</h2>
+                <h2 className="text-lg font-bold">01. 대학교 선택</h2>
                 <p className="text-sm text-gray-500 -mt-2">소속 대학교를 선택해주세요.</p>
                 <div className="grid grid-cols-2 gap-4">
                   {[{ id: 'mokpo', name: '국립목포대학교' }, { id: 'suncheon', name: '국립순천대학교' }].map(u => (
@@ -252,10 +179,10 @@ export default function SignupPage() {
               </div>
             )}
 
-            {/* STEP 3: 회원 유형 선택 */}
-            {step === 3 && (
+            {/* STEP 2: 회원 유형 선택 */}
+            {step === 2 && (
               <div className="flex flex-col gap-4">
-                <h2 className="text-lg font-bold">03. 회원 유형 선택</h2>
+                <h2 className="text-lg font-bold">02. 회원 유형 선택</h2>
                 <p className="text-sm text-gray-500 -mt-2">회원 유형을 선택해주세요.</p>
                 <div className="grid grid-cols-3 gap-4">
                   {[
@@ -291,61 +218,13 @@ export default function SignupPage() {
               </div>
             )}
 
-            {/* STEP 4: 본인 인증 */}
-            {step === 4 && (
+            {/* STEP 3: 정보 입력 */}
+            {step === 3 && (
               <div className="flex flex-col gap-4">
-                <h2 className="text-lg font-bold">04. 본인 인증</h2>
-                <p className="text-sm text-gray-500 -mt-2">본인 인증 방법을 선택해주세요.</p>
-                <div className="flex border-2 border-black">
-                  {(['phone', 'email'] as const).map(m => (
-                    <button key={m} type="button" onClick={() => setAuthMethod(m)}
-                      className={`flex-1 py-2 text-sm font-bold transition-all
-                        ${authMethod === m ? 'bg-black text-white' : 'bg-white text-black hover:bg-gray-50'}`}>
-                      {m === 'phone' ? '휴대폰 인증' : '이메일 인증'}
-                    </button>
-                  ))}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">이름</label>
-                  <input type="text" placeholder="이름 입력" value={authName} onChange={e => setAuthName(e.target.value)}
-                    className="w-full border-2 border-black px-3 py-2 text-sm outline-none focus:bg-gray-50" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    {authMethod === 'phone' ? '휴대폰 번호' : '이메일'}
-                  </label>
-                  <div className="flex gap-2">
-                    <input type="text"
-                      placeholder={authMethod === 'phone' ? '- 제외하고 입력' : '이메일 입력'}
-                      value={phone} onChange={e => setPhone(e.target.value)}
-                      className="flex-1 border-2 border-black px-3 py-2 text-sm outline-none focus:bg-gray-50" />
-                    <button type="button" onClick={sendCode}
-                      className="border-2 border-black px-3 py-2 text-sm font-bold hover:bg-gray-50 whitespace-nowrap">
-                      인증번호 발송
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">인증번호</label>
-                  <div className="relative">
-                    <input type="text" placeholder="인증번호 입력" value={authCode} onChange={e => setAuthCode(e.target.value)}
-                      className="w-full border-2 border-black px-3 py-2 pr-20 text-sm outline-none focus:bg-gray-50" />
-                    {timerActive && (
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-bold text-red-600">
-                        {fmt(timeLeft)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* STEP 5: 정보 입력 */}
-            {step === 5 && (
-              <div className="flex flex-col gap-4">
-                <h2 className="text-lg font-bold">05. 정보 입력</h2>
+                <h2 className="text-lg font-bold">03. 정보 입력</h2>
                 <p className="text-sm text-gray-500 -mt-2">회원 정보를 입력해주세요.</p>
 
+                {/* 공통: 아이디 */}
                 <div>
                   <label className="block text-sm font-medium mb-1">아이디</label>
                   <div className="flex gap-2">
@@ -358,6 +237,7 @@ export default function SignupPage() {
                   {idChecked && <p className="text-xs text-green-600 mt-1">✅ 사용 가능한 아이디입니다.</p>}
                 </div>
 
+                {/* 공통: 비밀번호 */}
                 <div>
                   <label className="block text-sm font-medium mb-1">비밀번호</label>
                   <input type="password" placeholder="비밀번호 입력" value={pw} onChange={e => setPw(e.target.value)}
@@ -370,13 +250,14 @@ export default function SignupPage() {
                   {pw && pwConfirm && pw !== pwConfirm && <p className="text-xs text-red-600 mt-1">비밀번호가 일치하지 않습니다.</p>}
                 </div>
 
+                {/* 공통: 이름 */}
                 <div>
                   <label className="block text-sm font-medium mb-1">이름</label>
                   <input type="text" placeholder="이름 입력" value={inputName} onChange={e => setInputName(e.target.value)}
                     className="w-full border-2 border-black px-3 py-2 text-sm outline-none focus:bg-gray-50" />
                 </div>
 
-                {/* 직원 전용 */}
+                {/* 직원 전용: 교번 + 소속 부서 */}
                 {isEmployee && (
                   <>
                     <div>
@@ -395,7 +276,7 @@ export default function SignupPage() {
                   </>
                 )}
 
-                {/* 학생 / 교수 / 조교 */}
+                {/* 학생 / 교수 / 조교: 학번교번 + 단과대 + 학과 */}
                 {!isAdmin && !isEmployee && (
                   <>
                     <div>
@@ -422,7 +303,7 @@ export default function SignupPage() {
                   </>
                 )}
 
-                {/* 학생 전용 */}
+                {/* 학생 전용: 재학 상태 + 학년 */}
                 {memberType === 'student' && (
                   <div className="border-t border-gray-200 pt-4 flex flex-col gap-3">
                     <p className="text-sm font-medium text-gray-700">학생 정보 <span className="text-red-500">*</span></p>
@@ -458,8 +339,8 @@ export default function SignupPage() {
               </div>
             )}
 
-            {/* STEP 6: 완료 */}
-            {step === 6 && (
+            {/* STEP 4: 완료 */}
+            {step === 4 && (
               <div className="flex flex-col items-center gap-4 py-10 text-center">
                 <div className="w-16 h-16 rounded-full border-2 border-black flex items-center justify-center">
                   <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -475,15 +356,15 @@ export default function SignupPage() {
               </div>
             )}
 
-            {step < 6 && (
-              <div className={`flex gap-3 mt-8 pt-6 border-t border-gray-200 ${step === 1 ? 'justify-center' : 'justify-end'}`}>
+            {step < 4 && (
+              <div className="flex gap-3 mt-8 pt-6 border-t border-gray-200 justify-end">
                 {step > 1 && (
                   <button onClick={() => setStep(s => s - 1)}
                     className="border-2 border-black px-6 py-2 text-sm font-bold hover:bg-gray-50 transition">이전</button>
                 )}
                 <button onClick={handleNext} disabled={!canNext()}
                   className="bg-black text-white px-6 py-2 text-sm font-bold hover:opacity-80 transition disabled:opacity-40 disabled:cursor-not-allowed">
-                  {step === 5 ? '가입 완료' : '다음'}
+                  {step === 3 ? '가입 완료' : '다음'}
                 </button>
               </div>
             )}
@@ -493,7 +374,6 @@ export default function SignupPage() {
             <p className="font-medium text-gray-700 mb-2">💡 안내사항</p>
             <ul className="list-disc list-inside space-y-1">
               <li>회원 유형에 따라 이용 가능한 서비스가 다를 수 있습니다.</li>
-              <li>본인 인증이 완료되어야 회원가입이 진행됩니다.</li>
               <li>입력하신 정보는 회원 관리 및 서비스 제공 목적으로만 사용됩니다.</li>
             </ul>
           </div>

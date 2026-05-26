@@ -75,6 +75,9 @@ public class AuthService {
         response.put("grade", user.getGrade());
         response.put("adminRole", user.getAdminRole());
         response.put("universityId", user.getUniversityId());
+        response.put("department", user.getDepartment());
+        response.put("college", user.getCollege());
+        response.put("enrollmentStatus", user.getEnrollmentStatus());
 
         // DEPT_ADMIN: include resolved deptId so the client banner can deep-link
         // straight to /admin/dept/{id}.
@@ -109,6 +112,7 @@ public class AuthService {
         user.setStudentId(request.getStudentId());
         user.setPhone(request.getPhone());
         user.setGrade(request.getGrade());
+        user.setEnrollmentStatus(request.getEnrollmentStatus());
         user.setStatus(request.getMemberType().equals("admin") ? "PENDING_APPROVAL" : "ACTIVE");
         user.setCreatedDate(java.time.LocalDateTime.now());
 
@@ -129,8 +133,19 @@ public class AuthService {
 
     public Map<String, Object> findId(FindIdRequestDto request) {
         Map<String, Object> response = new HashMap<>();
-        Optional<User> userOpt = userRepository.findByNameAndPhone(
-                request.getName(), request.getPhone());
+
+        Optional<User> userOpt;
+        if (request.getUniversityId() == null && request.getStudentId() == null) {
+            // 관리자: 이름만으로 조회
+            userOpt = userRepository.findByName(request.getName());
+        } else if (request.getUniversityId() != null && request.getCollege() != null && request.getStudentId() != null) {
+            // 학생/교수/조교/직원: 이름 + 학번/교번 + 단과대 + 대학
+            userOpt = userRepository.findByNameAndStudentIdAndCollegeAndUniversityId(
+                    request.getName(), request.getStudentId(),
+                    request.getCollege(), request.getUniversityId());
+        } else {
+            userOpt = Optional.empty();
+        }
 
         if (userOpt.isEmpty()) {
             response.put("success", false);
@@ -149,9 +164,90 @@ public class AuthService {
         return response;
     }
 
+    public Map<String, Object> changeName(String username, String newName) {
+        Map<String, Object> response = new HashMap<>();
+        Optional<User> userOpt = userRepository.findByUsername(username);
+        if (userOpt.isEmpty()) {
+            response.put("success", false);
+            response.put("message", "사용자를 찾을 수 없습니다.");
+            return response;
+        }
+        User user = userOpt.get();
+        user.setName(newName);
+        userRepository.save(user);
+        response.put("success", true);
+        response.put("message", "이름이 변경되었습니다.");
+        return response;
+    }
+
+    public Map<String, Object> changePassword(String username, String newPassword) {
+        Map<String, Object> response = new HashMap<>();
+        Optional<User> userOpt = userRepository.findByUsername(username);
+        if (userOpt.isEmpty()) {
+            response.put("success", false);
+            response.put("message", "사용자를 찾을 수 없습니다.");
+            return response;
+        }
+        User user = userOpt.get();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        response.put("success", true);
+        response.put("message", "비밀번호가 변경되었습니다.");
+        return response;
+    }
+
+    public Map<String, Object> getNotificationSettings(String username) {
+        Map<String, Object> response = new HashMap<>();
+        Optional<User> userOpt = userRepository.findByUsername(username);
+        if (userOpt.isEmpty()) {
+            response.put("success", false);
+            response.put("message", "사용자를 찾을 수 없습니다.");
+            return response;
+        }
+        User user = userOpt.get();
+        response.put("success", true);
+        response.put("notiNotice",  user.getNotiNotice()  != null ? user.getNotiNotice()  : true);
+        response.put("notiComment", user.getNotiComment() != null ? user.getNotiComment() : true);
+        response.put("notiDday",    user.getNotiDday()    != null ? user.getNotiDday()    : true);
+        return response;
+    }
+
+    public Map<String, Object> saveNotificationSettings(String username,
+                                                         Boolean notiNotice,
+                                                         Boolean notiComment,
+                                                         Boolean notiDday) {
+        Map<String, Object> response = new HashMap<>();
+        Optional<User> userOpt = userRepository.findByUsername(username);
+        if (userOpt.isEmpty()) {
+            response.put("success", false);
+            response.put("message", "사용자를 찾을 수 없습니다.");
+            return response;
+        }
+        User user = userOpt.get();
+        user.setNotiNotice(notiNotice);
+        user.setNotiComment(notiComment);
+        user.setNotiDday(notiDday);
+        userRepository.save(user);
+        response.put("success", true);
+        response.put("message", "알림 설정이 저장되었습니다.");
+        return response;
+    }
+
     public Map<String, Object> findPassword(FindPasswordRequestDto request) {
         Map<String, Object> response = new HashMap<>();
-        Optional<User> userOpt = userRepository.findByUsername(request.getUsername());
+
+        Optional<User> userOpt;
+        if (request.getUniversityId() == null && request.getStudentId() == null) {
+            // 관리자: 아이디 + 이름만으로 조회
+            userOpt = userRepository.findByUsernameAndName(request.getUsername(), request.getName());
+        } else if (request.getUniversityId() != null && request.getCollege() != null && request.getStudentId() != null) {
+            // 학생/교수/조교/직원: 아이디 + 이름 + 학번/교번 + 단과대 + 대학
+            userOpt = userRepository.findByUsernameAndNameAndStudentIdAndCollegeAndUniversityId(
+                    request.getUsername(), request.getName(),
+                    request.getStudentId(), request.getCollege(), request.getUniversityId());
+        } else {
+            userOpt = Optional.empty();
+        }
 
         if (userOpt.isEmpty()) {
             response.put("success", false);
@@ -159,20 +255,8 @@ public class AuthService {
             return response;
         }
 
-        User user = userOpt.get();
-        if (!user.getName().equals(request.getName()) ||
-            !user.getPhone().equals(request.getPhone())) {
-            response.put("success", false);
-            response.put("message", "입력하신 정보가 일치하지 않습니다.");
-            return response;
-        }
-
-        String tempPassword = "temp1234!";
-        user.setPassword(passwordEncoder.encode(tempPassword));
-        userRepository.save(user);
-
         response.put("success", true);
-        response.put("message", "임시 비밀번호: " + tempPassword);
+        response.put("message", "본인 확인이 완료되었습니다.");
         return response;
     }
 }

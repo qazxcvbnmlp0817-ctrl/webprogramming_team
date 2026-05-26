@@ -16,28 +16,12 @@ function uid(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2)
 }
 
-function defaultData(): LocalSchedule[] {
-  const y = new Date().getFullYear()
-  const m = String(new Date().getMonth() + 1).padStart(2, '0')
-  return [
-    { id: uid(), title: '팀 프로젝트 회의', date: `${y}-${m}-05`, startTime: '14:00', endTime: '15:30', category: 'meeting', status: 'scheduled', content: '- 역할 분담\n- DB 설계\n- UI 시안 공유', allDay: false },
-    { id: uid(), title: 'DB 과제 마감', date: `${y}-${m}-08`, startTime: '23:59', endTime: '', category: 'task', status: 'scheduled', content: 'DB 설계 과제 제출 마감', allDay: false },
-    { id: uid(), title: '중간고사', date: `${y}-${m}-13`, startTime: '09:00', endTime: '11:00', category: 'exam', status: 'scheduled', content: '자료구조 중간고사', allDay: false },
-    { id: uid(), title: '발표 준비', date: `${y}-${m}-15`, startTime: '13:00', endTime: '15:00', category: 'meeting', status: 'done', content: '팀 프로젝트 발표 준비', allDay: false },
-    { id: uid(), title: '팀 프로젝트', date: `${y}-${m}-19`, startTime: '14:00', endTime: '16:00', category: 'meeting', status: 'scheduled', content: '팀 프로젝트 진행 미팅', allDay: false },
-    { id: uid(), title: 'UI 과제 마감', date: `${y}-${m}-28`, startTime: '23:59', endTime: '', category: 'task', status: 'scheduled', content: 'UI 설계 과제 제출', allDay: false },
-  ]
-}
-
 export function loadSchedules(): LocalSchedule[] {
   try {
     const raw = localStorage.getItem(KEY)
-    if (!raw) {
-      const init = defaultData()
-      localStorage.setItem(KEY, JSON.stringify(init))
-      return init
-    }
-    return JSON.parse(raw)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed : []
   } catch { return [] }
 }
 

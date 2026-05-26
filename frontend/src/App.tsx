@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { DeptProvider, useDept } from './context/DeptContext'
+import { restoreSessionFromLocalStorage, getAuthItem } from './utils/authStorage'
+
+restoreSessionFromLocalStorage()
 import IntroAnimation from './components/common/IntroAnimation'
 import Footer from './components/Footer'
 import UniversityListPage from './pages/UniversityListPage'
@@ -54,26 +57,25 @@ function ProtectedDept({ children }: { children: ReactNode }) {
 }
 
 function ProtectedAdmin({ children }: { children: ReactNode }) {
-  const role = sessionStorage.getItem('adminRole')
+  const role = getAuthItem('adminRole')
   if (!role) return <Navigate to="/universities" replace />
   return <>{children}</>
 }
 
 function ProtectedSuperAdmin({ children }: { children: ReactNode }) {
-  const role = sessionStorage.getItem('adminRole')
+  const role = getAuthItem('adminRole')
   if (role !== 'SUPER_ADMIN') return <Navigate to="/universities" replace />
   return <>{children}</>
 }
 
 function ProtectedSchoolAdmin({ children }: { children: ReactNode }) {
-  const role = sessionStorage.getItem('adminRole')
+  const role = getAuthItem('adminRole')
   if (role !== 'SUPER_ADMIN' && role !== 'SCHOOL_ADMIN') return <Navigate to="/universities" replace />
   return <>{children}</>
 }
 
 function ProtectedFacultyAdmin({ children }: { children: ReactNode }) {
-  // DEPT_ADMIN is below faculty scope and intentionally blocked here.
-  const role = sessionStorage.getItem('adminRole')
+  const role = getAuthItem('adminRole')
   if (role !== 'SUPER_ADMIN' && role !== 'SCHOOL_ADMIN') return <Navigate to="/universities" replace />
   return <>{children}</>
 }

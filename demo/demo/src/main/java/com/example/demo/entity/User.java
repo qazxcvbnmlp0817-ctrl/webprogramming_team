@@ -39,6 +39,15 @@ public class User {
 
     private Long professorEntityId; // 교수 계정 전용: PROFESSORS 테이블 FK
 
+    private String enrollmentStatus; // freshman, enrolled, graduated
+
+    @Column(nullable = true)
+    private Boolean notiNotice  = true;
+    @Column(nullable = true)
+    private Boolean notiComment = true;
+    @Column(nullable = true)
+    private Boolean notiDday    = true;
+
     private java.time.LocalDateTime createdDate;
 
     public Long getId() { return id; }
@@ -69,6 +78,14 @@ public class User {
     public void setAdminRole(String adminRole) { this.adminRole = adminRole; }
     public Long getProfessorEntityId() { return professorEntityId; }
     public void setProfessorEntityId(Long professorEntityId) { this.professorEntityId = professorEntityId; }
+    public String getEnrollmentStatus() { return enrollmentStatus; }
+    public void setEnrollmentStatus(String enrollmentStatus) { this.enrollmentStatus = enrollmentStatus; }
+    public Boolean getNotiNotice()  { return notiNotice; }
+    public void setNotiNotice(Boolean notiNotice)   { this.notiNotice  = notiNotice; }
+    public Boolean getNotiComment() { return notiComment; }
+    public void setNotiComment(Boolean notiComment) { this.notiComment = notiComment; }
+    public Boolean getNotiDday()    { return notiDday; }
+    public void setNotiDday(Boolean notiDday)       { this.notiDday    = notiDday; }
     public java.time.LocalDateTime getCreatedDate() { return createdDate; }
     public void setCreatedDate(java.time.LocalDateTime createdDate) { this.createdDate = createdDate; }
 }

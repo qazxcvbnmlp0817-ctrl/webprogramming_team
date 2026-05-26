@@ -50,6 +50,7 @@ function HoverTooltip({ ev, pos, meta }: {
       <div className="flex items-center gap-2 mb-2.5">
         <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: meta.color }} />
         <span className="text-sm font-bold text-gray-900 truncate">{ev.title}</span>
+        {ev.readonly && <span className="text-[10px] text-purple-500 font-medium flex-shrink-0">수업</span>}
       </div>
       <div className="space-y-1.5">
         <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -267,7 +268,8 @@ function DetailModal({ ev, meta, canWrite, onClose, onEdit, onDelete }: {
           <button onClick={onClose} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition">
             ← 목록으로
           </button>
-          {canWrite && (
+          {/* readonly 이벤트(수업 시간표)는 수정/삭제 불가 */}
+          {canWrite && !ev.readonly && (
             <div className="flex gap-2">
               <button onClick={() => { onEdit(ev); onClose() }}
                 className="px-4 py-1.5 border border-gray-300 rounded text-xs font-semibold text-gray-700 hover:bg-gray-50 transition">
@@ -278,6 +280,9 @@ function DetailModal({ ev, meta, canWrite, onClose, onEdit, onDelete }: {
                 삭제
               </button>
             </div>
+          )}
+          {ev.readonly && (
+            <span className="text-xs text-purple-600 font-semibold bg-purple-50 px-2 py-1 rounded">수업 시간표</span>
           )}
         </div>
         <div className="px-6 pt-6 pb-2">
@@ -353,7 +358,15 @@ function FormModal({ initial, defaultDate, categoryMeta, onSave, onClose }: {
   onSave: (data: Omit<ScheduleItem, 'id'> & { id?: string }) => void
   onClose: () => void
 }) {
-  const catKeys = Object.keys(categoryMeta)
+  // Exclude readonly categories (e.g. 'course') from the add/edit form
+  const writableCatKeys = Object.keys(categoryMeta).filter(k => {
+    const meta = categoryMeta[k] as CategoryMeta & { readonly?: boolean }
+    return !meta.readonly
+  })
+  // Also exclude 'course' by convention (synced from professor, not user-created)
+  const editableCatKeys = writableCatKeys.filter(k => k !== 'course')
+  const catKeys = editableCatKeys.length > 0 ? editableCatKeys : writableCatKeys
+
   const [title, setTitle]     = useState(initial?.title ?? '')
   const [date, setDate]       = useState(initial?.date ?? defaultDate ?? todayStr())
   const [startTime, setStart] = useState(initial?.startTime ?? '14:00')
@@ -435,14 +448,68 @@ function FormModal({ initial, defaultDate, categoryMeta, onSave, onClose }: {
   )
 }
 
+// ── WeekDayView ───────────────────────────────────────────────────────────────
+
+function WeekDayView({ viewMode, selDate, evMap, today, onEventClick, categoryMeta }: {
+  viewMode: '주간' | '일간'
+  selDate: string
+  evMap: Map<string, ScheduleItem[]>
+  today: string
+  onEventClick: (ev: ScheduleItem) => void
+  categoryMeta: Record<string, CategoryMeta>
+}) {
+  const selD = new Date(selDate)
+  const count = viewMode === '주간' ? 7 : 1
+  const weekDays = Array.from({ length: count }, (_, i) => {
+    const d = new Date(selD)
+    if (viewMode === '주간') d.setDate(selD.getDate() - selD.getDay() + i)
+    const ds = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    return { d, ds, evs: evMap.get(ds) ?? [] }
+  })
+  return (
+    <div className="border border-gray-200 rounded-lg overflow-hidden mb-4">
+      <div className="grid border-b border-gray-200" style={{ gridTemplateColumns: `repeat(${count}, 1fr)` }}>
+        {weekDays.map(({ d, ds }) => {
+          const dow = d.getDay()
+          const isToday = ds === today
+          return (
+            <div key={ds} className={`text-center py-2 text-xs font-semibold border-r border-gray-100 last:border-r-0 ${isToday ? 'bg-blue-50' : ''}`}>
+              <span className={dow === 0 ? 'text-red-500' : dow === 6 ? 'text-blue-500' : 'text-gray-600'}>{DAYS[dow]}</span>
+              <div className={`mx-auto mt-0.5 w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold
+                ${isToday ? 'bg-blue-600 text-white' : 'text-gray-700'}`}>{d.getDate()}</div>
+            </div>
+          )
+        })}
+      </div>
+      <div className="grid min-h-[200px]" style={{ gridTemplateColumns: `repeat(${count}, 1fr)` }}>
+        {weekDays.map(({ ds, evs }) => (
+          <div key={ds} className="border-r border-gray-100 last:border-r-0 p-1.5 flex flex-col gap-1">
+            {evs.length === 0
+              ? <p className="text-[11px] text-gray-300 text-center mt-4">없음</p>
+              : evs.map(ev => {
+                const m = categoryMeta[ev.category] ?? fallbackMeta(ev.category)
+                return (
+                  <div key={ev.id} onClick={() => onEventClick(ev)}
+                    className="text-[11px] px-1.5 py-1 rounded cursor-pointer hover:opacity-80 truncate font-medium"
+                    style={{ background: m.color + '22', color: m.color }}>
+                    {!ev.allDay && ev.startTime} {ev.title}
+                  </div>
+                )
+              })
+            }
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ── ScheduleCalendarView (public export) ──────────────────────────────────────
 
 export interface ScheduleCalendarViewProps {
   schedules: ScheduleItem[]
   categoryMeta: Record<string, CategoryMeta>
   loading?: boolean
-  // When canWrite=true and onSave/onDelete are provided, write UI (add/edit/delete) is shown.
-  // Wire these to localStorage ops (CalendarPage) or future API endpoints (schedule pages).
   canWrite?: boolean
   onSave?: (data: Omit<ScheduleItem, 'id'> & { id?: string }) => void
   onDelete?: (id: string) => void
@@ -462,6 +529,9 @@ export default function ScheduleCalendarView({
   const [miniY, setMiniY] = useState(now.getFullYear())
   const [miniM, setMiniM] = useState(now.getMonth() + 1)
   const [selDate, setSelDate] = useState(todayStr())
+  const [viewMode, setViewMode] = useState<'월간' | '주간' | '일간'>('월간')
+  const [viewDropdown, setViewDropdown] = useState(false)
+  const [search, setSearch] = useState('')
 
   const catKeys = useMemo(() => Object.keys(categoryMeta), [categoryMeta])
   const [catFilter, setCatFilter] = useState<Record<string, boolean>>(() => {
@@ -476,9 +546,16 @@ export default function ScheduleCalendarView({
   const [tooltip, setTooltip]     = useState<{ ev: ScheduleItem; pos: { x: number; y: number } } | null>(null)
 
   const filtered = useMemo(() => {
-    if (catFilter['전체']) return schedules
-    return schedules.filter(s => catFilter[s.category])
-  }, [schedules, catFilter])
+    let list = catFilter['전체'] ? schedules : schedules.filter(s => catFilter[s.category])
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      list = list.filter(s =>
+        s.title.toLowerCase().includes(q) ||
+        (s.content ?? '').toLowerCase().includes(q)
+      )
+    }
+    return list
+  }, [schedules, catFilter, search])
 
   const evMap = useMemo(() => {
     const map = new Map<string, ScheduleItem[]>()
@@ -553,6 +630,24 @@ export default function ScheduleCalendarView({
             const [y, m] = ds.split('-').map(Number)
             setMainY(y); setMainM(m)
           }} />
+
+        {/* 검색 */}
+        <div>
+          <p className="text-xs font-bold text-gray-500 mb-2">🔍 일정 검색</p>
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="제목, 내용 검색"
+            className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs outline-none focus:border-blue-400"
+          />
+          {search && (
+            <button onClick={() => setSearch('')} className="mt-1 text-[10px] text-gray-400 hover:text-gray-600">
+              ✕ 초기화
+            </button>
+          )}
+        </div>
+
+        {/* 카테고리 필터 */}
         <div>
           <p className="text-xs font-bold text-gray-500 mb-2">카테고리</p>
           <div className="flex flex-col gap-2">
@@ -580,56 +675,108 @@ export default function ScheduleCalendarView({
 
       {/* ── Main calendar ── */}
       <main className="flex-1 p-5 min-w-0">
+        {/* Toolbar */}
         <div className="flex items-center gap-2 mb-4">
           <button onClick={prevMain}
             className="w-7 h-7 border border-gray-300 rounded flex items-center justify-center text-gray-500 hover:bg-gray-50 text-sm">‹</button>
           <button onClick={nextMain}
             className="w-7 h-7 border border-gray-300 rounded flex items-center justify-center text-gray-500 hover:bg-gray-50 text-sm">›</button>
-          <h2 className="flex-1 text-center text-lg font-bold">{mainY}년 {mainM}월</h2>
+          <h2 className="flex-1 text-center text-sm sm:text-lg font-bold whitespace-nowrap">{mainY}년 {mainM}월</h2>
+          {writeEnabled && (
+            <button onClick={() => setFormModal({ date: today })}
+              className="lg:hidden px-3 py-1.5 bg-gray-800 text-white text-xs font-semibold rounded hover:bg-gray-700 transition whitespace-nowrap">
+              + 추가
+            </button>
+          )}
           <button onClick={goToday}
             className="px-3 py-1.5 border border-gray-300 rounded text-xs text-gray-600 hover:bg-gray-50">오늘</button>
-          <div className="flex items-center border border-gray-300 rounded text-xs overflow-hidden">
-            <span className="px-3 py-1.5 text-gray-600">월간 보기</span>
-            <span className="px-2 py-1.5 border-l border-gray-300 text-gray-400">▾</span>
+          {/* View mode dropdown — functional */}
+          <div className="relative">
+            <button
+              onClick={() => setViewDropdown(v => !v)}
+              className="flex items-center border border-gray-300 rounded text-xs overflow-hidden bg-white hover:bg-gray-50 transition">
+              <span className="px-3 py-1.5 text-gray-600">{viewMode} 보기</span>
+              <span className="px-2 py-1.5 border-l border-gray-300 text-gray-400">▾</span>
+            </button>
+            {viewDropdown && (
+              <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded shadow-lg z-50 min-w-[100px]">
+                {(['월간', '주간', '일간'] as const).map(v => (
+                  <button key={v} onClick={() => { setViewMode(v); setViewDropdown(false) }}
+                    className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition ${viewMode === v ? 'font-semibold text-blue-600' : ''}`}>
+                    {v} 보기
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="border border-gray-200 rounded-lg overflow-hidden mb-4">
-          <div className="grid grid-cols-7 border-b border-gray-200">
-            {DAYS.map((d, i) => (
-              <div key={d}
-                className={`text-center py-2.5 text-xs font-semibold
-                  ${i === 0 ? 'text-red-500' : i === 6 ? 'text-blue-500' : 'text-gray-500'}`}>{d}</div>
-            ))}
-          </div>
-          <div className="grid grid-cols-7">
-            {Array.from({ length: totalCells }).map((_, i) => {
-              let day: number, ds: string, isOther = false
-              if (i < firstDow) {
-                day = prevDim - firstDow + i + 1
-                ds = toDS(mainM === 1 ? mainY - 1 : mainY, mainM === 1 ? 12 : mainM - 1, day)
-                isOther = true
-              } else if (i >= firstDow + dim) {
-                day = i - firstDow - dim + 1
-                ds = toDS(mainM === 12 ? mainY + 1 : mainY, mainM === 12 ? 1 : mainM + 1, day)
-                isOther = true
-              } else {
-                day = i - firstDow + 1
-                ds = toDS(mainY, mainM, day)
-              }
-              return (
-                <CalCell key={i} day={day} ds={ds} isOther={isOther} isToday={ds === today} dow={i % 7}
-                  events={evMap.get(ds) ?? []}
-                  categoryMeta={categoryMeta}
-                  onCellClick={(ds, rect) => setDayPanel({ ds, rect })}
-                  onEventClick={ev => setDetailEv(ev)}
-                  onHover={(ev, pos) => setTooltip({ ev, pos })}
-                  onLeave={() => setTooltip(null)} />
-              )
-            })}
-          </div>
+        {/* 모바일 전용 검색바 (사이드바 숨김 구간) */}
+        <div className="lg:hidden mb-3 flex items-center gap-2">
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="일정 검색"
+            className="flex-1 border border-gray-200 rounded px-2.5 py-1.5 text-xs outline-none focus:border-blue-400"
+          />
+          {search && (
+            <button onClick={() => setSearch('')}
+              className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1.5 border border-gray-200 rounded">✕</button>
+          )}
         </div>
 
+        {/* 월간 뷰 */}
+        {viewMode === '월간' && (
+          <div className="border border-gray-200 rounded-lg overflow-hidden mb-4">
+            <div className="grid grid-cols-7 border-b border-gray-200">
+              {DAYS.map((d, i) => (
+                <div key={d}
+                  className={`text-center py-2.5 text-xs font-semibold
+                    ${i === 0 ? 'text-red-500' : i === 6 ? 'text-blue-500' : 'text-gray-500'}`}>{d}</div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7">
+              {Array.from({ length: totalCells }).map((_, i) => {
+                let day: number, ds: string, isOther = false
+                if (i < firstDow) {
+                  day = prevDim - firstDow + i + 1
+                  ds = toDS(mainM === 1 ? mainY - 1 : mainY, mainM === 1 ? 12 : mainM - 1, day)
+                  isOther = true
+                } else if (i >= firstDow + dim) {
+                  day = i - firstDow - dim + 1
+                  ds = toDS(mainM === 12 ? mainY + 1 : mainY, mainM === 12 ? 1 : mainM + 1, day)
+                  isOther = true
+                } else {
+                  day = i - firstDow + 1
+                  ds = toDS(mainY, mainM, day)
+                }
+                return (
+                  <CalCell key={i} day={day} ds={ds} isOther={isOther} isToday={ds === today} dow={i % 7}
+                    events={evMap.get(ds) ?? []}
+                    categoryMeta={categoryMeta}
+                    onCellClick={(ds, rect) => setDayPanel({ ds, rect })}
+                    onEventClick={ev => setDetailEv(ev)}
+                    onHover={(ev, pos) => setTooltip({ ev, pos })}
+                    onLeave={() => setTooltip(null)} />
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* 주간 / 일간 뷰 */}
+        {viewMode !== '월간' && (
+          <WeekDayView
+            viewMode={viewMode}
+            selDate={selDate}
+            evMap={evMap}
+            today={today}
+            onEventClick={ev => setDetailEv(ev)}
+            categoryMeta={categoryMeta}
+          />
+        )}
+
+        {/* 오늘의 일정 */}
         <div className="border border-gray-200 rounded-lg p-4">
           <p className="text-sm font-semibold text-gray-600 mb-3">
             오늘의 일정 ({now.getMonth() + 1}/{now.getDate()} {DAYS[now.getDay()]})
@@ -653,6 +800,7 @@ export default function ScheduleCalendarView({
                       className="flex items-center gap-3 py-1.5 px-2 rounded hover:bg-gray-50 cursor-pointer transition-colors">
                       <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: evMeta.color }} />
                       <span className="flex-1 text-sm text-gray-800">{ev.title}</span>
+                      {ev.readonly && <span className="text-[10px] text-purple-500">수업</span>}
                       <span className="text-xs text-gray-400">{timeInfo}</span>
                     </div>
                   )

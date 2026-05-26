@@ -40,6 +40,11 @@ public class PostService {
         this.attachmentRepository = attachmentRepository;
     }
 
+    public List<PostDto> getPostsByUsername(String username) {
+        return postRepository.findByAuthorUsernameOrderByCreatedDateDesc(username)
+                .stream().map(this::toDto).collect(Collectors.toList());
+    }
+
     public List<PostDto> getPostsByDept(Long deptId) {
         List<Post> posts = postRepository
                 .findByScopeTypeAndScopeIdOrderByCreatedDateDesc("dept", deptId);

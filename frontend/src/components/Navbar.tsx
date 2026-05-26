@@ -51,11 +51,17 @@ export default function Navbar() {
 
   const isSchool = !isFaculty && (pathname.startsWith('/school') || /^\/universities\/\d+/.test(pathname))
 
-  const navLinks = isFaculty
+  const rawLinks = isFaculty
     ? buildFacultyNav(facultyId)
     : isSchool
       ? SCHOOL_NAV
       : DEPT_NAV
+
+  const navLinks = rawLinks.map(link =>
+    link.label === '일정'
+      ? { ...link, to: isLoggedIn ? '/calendar' : link.to }
+      : link
+  )
 
   const homeLink = isFaculty
     ? `/school/faculty/${facultyId}`

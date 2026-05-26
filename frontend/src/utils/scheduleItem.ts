@@ -12,6 +12,7 @@ export interface ScheduleItem {
   allDay?: boolean
   content?: string
   dday?: number      // server-computed, API-only
+  readonly?: boolean // true for course-synced events (edit/delete disabled)
 }
 
 export interface CategoryMeta {
@@ -34,4 +35,5 @@ export const PERSONAL_CATEGORY_META: Record<string, CategoryMeta> = {
   exam:    { label: '시험',  color: '#F59E0B' },
   personal:{ label: '개인',  color: '#6BCB77' },
   other:   { label: '기타',  color: '#BDBDBD' },
+  course:  { label: '수업',  color: '#8B5CF6' }, // synced from professor — readonly
 }

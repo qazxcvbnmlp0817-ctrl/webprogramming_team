@@ -11,6 +11,7 @@ public class SignupRequestDto {
     private String studentId;
     private String phone;
     private Integer grade;
+    private String enrollmentStatus;
 
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
@@ -32,4 +33,6 @@ public class SignupRequestDto {
     public void setPhone(String phone) { this.phone = phone; }
     public Integer getGrade() { return grade; }
     public void setGrade(Integer grade) { this.grade = grade; }
+    public String getEnrollmentStatus() { return enrollmentStatus; }
+    public void setEnrollmentStatus(String enrollmentStatus) { this.enrollmentStatus = enrollmentStatus; }
 }
