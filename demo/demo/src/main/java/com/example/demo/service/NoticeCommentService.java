@@ -31,12 +31,22 @@ public class NoticeCommentService {
 
     @Transactional
     public NoticeCommentDto add(Long noticeId, NoticeCommentWriteRequestDto req) {
+        // 1단계 초과 방지
+        if (req.getParentId() != null) {
+            NoticeComment parent = commentRepository.findById(req.getParentId())
+                    .orElseThrow(() -> new RuntimeException("Parent comment not found"));
+            if (parent.getParentId() != null) {
+                throw new RuntimeException("대댓글에는 답글을 달 수 없습니다.");
+            }
+        }
+
         NoticeComment c = new NoticeComment();
         c.setNoticeId(noticeId);
         c.setAuthor(req.getAuthor());
         c.setAuthorUsername(req.getAuthorUsername());
         c.setContent(req.getContent());
         c.setCreatedDate(LocalDate.now());
+        c.setParentId(req.getParentId());
         NoticeComment saved = commentRepository.save(c);
 
         noticeRepository.findById(noticeId).ifPresent(notice -> {
@@ -67,7 +77,13 @@ public class NoticeCommentService {
         boolean isAdmin = "admin".equals(memberType);
         if (!isAdmin && !c.getAuthorUsername().equals(username))
             throw new RuntimeException("No permission");
+
+        // 원댓글 삭제 시 대댓글도 함께 삭제
+        if (c.getParentId() == null) {
+            commentRepository.deleteAll(commentRepository.findByParentId(commentId));
+        }
         commentRepository.deleteById(commentId);
+
         noticeRepository.findById(noticeId).ifPresent(notice -> {
             notice.setCommentCount((int) commentRepository.countByNoticeId(noticeId));
             noticeRepository.save(notice);
@@ -77,6 +93,6 @@ public class NoticeCommentService {
     private NoticeCommentDto toDto(NoticeComment c) {
         return new NoticeCommentDto(c.getId(), c.getNoticeId(), c.getAuthor(),
                                     c.getAuthorUsername(), c.getContent(),
-                                    c.getCreatedDate().toString());
+                                    c.getCreatedDate().toString(), c.getParentId());
     }
 }

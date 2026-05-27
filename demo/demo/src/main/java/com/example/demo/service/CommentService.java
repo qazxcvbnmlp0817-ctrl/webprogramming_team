@@ -35,12 +35,22 @@ public class CommentService {
 
     @Transactional
     public CommentDto add(Long postId, CommentWriteRequestDto req) {
+        // 1단계 초과 방지: parentId가 있으면 그 댓글도 대댓글이면 안 됨
+        if (req.getParentId() != null) {
+            Comment parent = commentRepository.findById(req.getParentId())
+                    .orElseThrow(() -> new RuntimeException("Parent comment not found"));
+            if (parent.getParentId() != null) {
+                throw new RuntimeException("대댓글에는 답글을 달 수 없습니다.");
+            }
+        }
+
         Comment c = new Comment();
         c.setPostId(postId);
         c.setAuthor(req.getAuthor());
         c.setAuthorUsername(req.getAuthorUsername());
         c.setContent(req.getContent());
         c.setCreatedDate(LocalDate.now());
+        c.setParentId(req.getParentId());
         Comment saved = commentRepository.save(c);
 
         postRepository.findById(postId).ifPresent(post -> {
@@ -73,7 +83,13 @@ public class CommentService {
         boolean isAdmin = "admin".equals(memberType);
         if (!isAdmin && stored != null && !stored.equals(username))
             throw new RuntimeException("No permission");
+
+        // 원댓글 삭제 시 대댓글도 함께 삭제
+        if (c.getParentId() == null) {
+            commentRepository.deleteAll(commentRepository.findByParentId(commentId));
+        }
         commentRepository.deleteById(commentId);
+
         postRepository.findById(postId).ifPresent(post -> {
             post.setCommentCount((int) commentRepository.countByPostId(postId));
             postRepository.save(post);
@@ -83,6 +99,6 @@ public class CommentService {
     private CommentDto toDto(Comment c) {
         return new CommentDto(c.getId(), c.getPostId(), c.getAuthor(),
                               c.getAuthorUsername(), c.getContent(),
-                              c.getCreatedDate().toString());
+                              c.getCreatedDate().toString(), c.getParentId());
     }
 }
