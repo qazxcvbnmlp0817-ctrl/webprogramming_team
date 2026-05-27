@@ -8,9 +8,9 @@ interface Props {
 }
 
 const ROLE_OPTIONS = [
-  { value: '', label: '없음', desc: '관리자 역할 없음' },
-  { value: 'DEPT_ADMIN', label: 'DEPT_ADMIN', desc: '단과대 / 학과 관리자' },
-  { value: 'SCHOOL_ADMIN', label: 'SCHOOL_ADMIN', desc: '학교 관리자' },
+  { key: 'none', value: '', label: '없음', desc: '관리자 역할 없음' },
+  { key: 'DEPT_ADMIN', value: 'DEPT_ADMIN', label: 'DEPT_ADMIN', desc: '단과대 / 학과 관리자' },
+  { key: 'SCHOOL_ADMIN', value: 'SCHOOL_ADMIN', label: 'SCHOOL_ADMIN', desc: '학교 관리자' },
 ]
 
 export default function RoleManageModal({ user, onClose, onSave }: Props) {
@@ -38,13 +38,13 @@ export default function RoleManageModal({ user, onClose, onSave }: Props) {
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
       role="dialog"
       aria-modal="true"
-      aria-label="역할 관리"
+      aria-labelledby="role-modal-title"
     >
       <div className="bg-white w-full max-w-md border-2 border-black p-6">
         {/* 헤더 */}
         <div className="flex items-start justify-between mb-5">
           <div>
-            <h2 className="text-lg font-bold">역할 관리</h2>
+            <h2 id="role-modal-title" className="text-lg font-bold">역할 관리</h2>
             <p className="text-sm text-gray-500 mt-0.5">
               {user.name}
               <span className="ml-1 text-gray-400">({user.username})</span>
@@ -81,7 +81,7 @@ export default function RoleManageModal({ user, onClose, onSave }: Props) {
               const disabled = opt.value === '' && isAdminType
               return (
                 <label
-                  key={opt.value}
+                  key={opt.key}
                   className={`flex items-center gap-3 border px-3 py-2 ${
                     disabled
                       ? 'opacity-40 cursor-not-allowed border-gray-200'
@@ -93,7 +93,7 @@ export default function RoleManageModal({ user, onClose, onSave }: Props) {
                     name="role"
                     value={opt.value}
                     checked={selected === opt.value}
-                    onChange={() => !disabled && setSelected(opt.value)}
+                    onChange={() => setSelected(opt.value)}
                     disabled={disabled}
                     className="accent-black"
                   />
