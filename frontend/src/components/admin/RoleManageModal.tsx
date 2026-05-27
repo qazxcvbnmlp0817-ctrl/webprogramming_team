@@ -9,8 +9,8 @@ interface Props {
 
 const ROLE_OPTIONS = [
   { value: '', label: '없음', desc: '관리자 역할 없음' },
-  { value: 'DEPT_ADMIN', label: 'DEPT_ADMIN', desc: '학과 / 단과대 관리자' },
-  { value: 'SCHOOL_ADMIN', label: 'SCHOOL_ADMIN', desc: '학교 전체 관리자' },
+  { value: 'DEPT_ADMIN', label: 'DEPT_ADMIN', desc: '단과대 / 학과 관리자' },
+  { value: 'SCHOOL_ADMIN', label: 'SCHOOL_ADMIN', desc: '학교 관리자' },
 ]
 
 export default function RoleManageModal({ user, onClose, onSave }: Props) {
@@ -47,8 +47,11 @@ export default function RoleManageModal({ user, onClose, onSave }: Props) {
             <p className="text-sm text-gray-500 mt-0.5">
               {user.name}
               <span className="ml-1 text-gray-400">({user.username})</span>
-              <span className="ml-2 border border-gray-300 px-1.5 py-0.5 text-xs">
-                {user.memberType}
+              <span className="ml-2 text-xs">
+                유형:{' '}
+                <span className="border border-gray-300 px-1.5 py-0.5">
+                  {user.memberType}
+                </span>
               </span>
             </p>
           </div>
