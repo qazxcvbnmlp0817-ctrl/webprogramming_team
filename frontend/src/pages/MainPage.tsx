@@ -27,6 +27,10 @@ export default function MainPage() {
   )
 
   useEffect(() => {
+    setNoticeFilter(localStorage.getItem(FILTER_KEY) ?? '전체')
+  }, [FILTER_KEY])
+
+  useEffect(() => {
     if (!selectedDeptId) return
     fetchMainData(selectedDeptId)
       .then(data => {
