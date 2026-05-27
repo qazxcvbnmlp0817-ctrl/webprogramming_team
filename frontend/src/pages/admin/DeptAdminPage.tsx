@@ -231,6 +231,14 @@ export default function DeptAdminPage() {
         </div>
       </div>
 
+      {!isPrivileged && sessionStorage.getItem('department') && (
+        <div className="max-w-7xl mx-auto px-4 pt-4">
+          <div className="border border-blue-200 bg-blue-50 px-4 py-2 text-sm text-blue-700">
+            ℹ {sessionStorage.getItem('department')} 범위의 데이터만 표시됩니다.
+          </div>
+        </div>
+      )}
+
       {tab === '학과 페이지' ? (
         <DepartmentPage embedded />
       ) : (

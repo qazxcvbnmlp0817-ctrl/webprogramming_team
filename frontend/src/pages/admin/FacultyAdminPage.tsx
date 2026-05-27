@@ -177,6 +177,14 @@ export default function FacultyAdminPage() {
         </div>
       </div>
 
+      {!isSuper && sessionStorage.getItem('college') && (
+        <div className="max-w-7xl mx-auto px-4 pt-4">
+          <div className="border border-blue-200 bg-blue-50 px-4 py-2 text-sm text-blue-700">
+            ℹ {sessionStorage.getItem('college')} 범위의 데이터만 표시됩니다.
+          </div>
+        </div>
+      )}
+
       {tab === '학부 페이지' ? (
         <FacultyPage embedded facultyIdOverride={facultyId} />
       ) : (
