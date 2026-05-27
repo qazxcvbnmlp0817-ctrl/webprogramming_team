@@ -458,7 +458,7 @@ export default function SchoolAdminPage() {
                   <tr className="border-b-2 border-black text-xs uppercase tracking-wide text-gray-500">
                     <th className="text-left pb-3 pr-4">이름</th>
                     <th className="text-left pb-3 pr-4">아이디</th>
-                    <th className="text-left pb-3 pr-4">역할</th>
+                    <th className="text-left pb-3 pr-4">유형 / 역할</th>
                     <th className="text-left pb-3 pr-4">상태</th>
                     <th className="text-left pb-3">역할 관리</th>
                   </tr>
@@ -469,6 +469,9 @@ export default function SchoolAdminPage() {
                       <td className="py-3 pr-4 font-medium">{u.name}</td>
                       <td className="py-3 pr-4 text-gray-500">{u.username}</td>
                       <td className="py-3 pr-4">
+                        <span className="border border-blue-300 px-2 py-0.5 text-xs text-blue-600 mr-1">
+                          {u.memberType}
+                        </span>
                         <span className="border border-gray-300 px-2 py-0.5 text-xs font-mono">
                           {u.adminRole ?? '없음'}
                         </span>

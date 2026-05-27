@@ -99,4 +99,12 @@ describe('SchoolAdminPage — 역할 관리', () => {
     fireEvent.change(selects[0], { target: { value: 'DEPT_ADMIN' } })
     expect(await screen.findByText('역할 변경에 실패했습니다. 다시 시도해 주세요.')).toBeInTheDocument()
   })
+
+  it('"관리자 계정" 탭에 memberType 뱃지가 adminRole과 함께 표시된다', async () => {
+    renderPage()
+    fireEvent.click(await screen.findByText('관리자 계정'))
+    // fetchSchoolUsers mock: 이조교(assistant, DEPT_ADMIN) 반환
+    expect(await screen.findByText('assistant')).toBeInTheDocument()
+    expect(screen.getByText('DEPT_ADMIN')).toBeInTheDocument()
+  })
 })
