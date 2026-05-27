@@ -51,10 +51,11 @@ export default function SchoolAdminPage() {
   const [professors, setProfessors]   = useState<ProfessorItem[]>([])
   const [courses, setCourses]         = useState<CourseItem[]>([])
   const [assignments, setAssignments] = useState<AssignmentItem[]>([])
-  const [selProfId, setSelProfId]     = useState<number | ''>('')
-  const [selCourseId, setSelCourseId] = useState<number | ''>('')
-  const [selDeptId, setSelDeptId]     = useState<number | ''>('')
-  const [assignError, setAssignError] = useState<string | null>(null)
+  const [selProfId, setSelProfId]         = useState<number | ''>('')
+  const [selCourseId, setSelCourseId]     = useState<number | ''>('')
+  const [selDeptId, setSelDeptId]         = useState<number | ''>('')
+  const [assignError, setAssignError]     = useState<string | null>(null)
+  const [roleChangeError, setRoleChangeError] = useState<string | null>(null)
 
   useEffect(() => {
     Promise.all([
@@ -110,13 +111,18 @@ export default function SchoolAdminPage() {
   }
 
   const handleInlineRoleChange = async (userId: number, newRole: string) => {
-    await updateSchoolUserRole(userId, newRole, univId)
-    const [au, all] = await Promise.all([
-      fetchSchoolUsers(univId),
-      fetchSchoolAllUsers(univId),
-    ])
-    setAdminUsers(au)
-    setAllUsers(all)
+    setRoleChangeError(null)
+    try {
+      await updateSchoolUserRole(userId, newRole, univId)
+      const [au, all] = await Promise.all([
+        fetchSchoolUsers(univId),
+        fetchSchoolAllUsers(univId),
+      ])
+      setAdminUsers(au)
+      setAllUsers(all)
+    } catch {
+      setRoleChangeError('역할 변경에 실패했습니다. 다시 시도해 주세요.')
+    }
   }
 
   const filteredUsers = allUsers.filter(u => {
@@ -339,6 +345,9 @@ export default function SchoolAdminPage() {
                 {['전체', '학생', '교수', '정지됨'].map(f => <option key={f}>{f}</option>)}
               </select>
             </div>
+            {roleChangeError && (
+              <p className="text-sm text-red-500 mb-3">{roleChangeError}</p>
+            )}
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>

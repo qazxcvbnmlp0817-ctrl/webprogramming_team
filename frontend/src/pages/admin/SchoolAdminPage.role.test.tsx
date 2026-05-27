@@ -90,4 +90,13 @@ describe('SchoolAdminPage — 역할 관리', () => {
       expect(mockUpdateRole).toHaveBeenCalledWith(2, '', undefined)
     })
   })
+
+  it('역할 변경 실패 시 에러 메시지가 표시된다', async () => {
+    mockUpdateRole.mockRejectedValueOnce(new Error('서버 오류'))
+    renderPage()
+    fireEvent.click(await screen.findByText('전체 사용자'))
+    const selects = await screen.findAllByRole('combobox', { name: /관리자 역할/ })
+    fireEvent.change(selects[0], { target: { value: 'DEPT_ADMIN' } })
+    expect(await screen.findByText('역할 변경에 실패했습니다. 다시 시도해 주세요.')).toBeInTheDocument()
+  })
 })
