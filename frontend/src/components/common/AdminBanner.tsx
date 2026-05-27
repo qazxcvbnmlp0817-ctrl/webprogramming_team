@@ -22,20 +22,29 @@ const ROLE_LABELS: Record<NonNullable<AdminRole>, string> = {
   DEPT_ADMIN:   '학과 관리자',
 }
 
-// URL은 클릭 시점에 sessionStorage를 읽어 계산 (렌더 시점 이후 값 변경 대응)
-function resolveSelectionUrl(role: NonNullable<AdminRole>, target: 'school' | 'faculty' | 'dept'): string {
-  const univId    = getAuthItem('universityId')
-  const facultyId = getAuthItem('facultyId')
-  const deptId    = getAuthItem('deptId')
 
-  if (role === 'SUPER_ADMIN')   return '/admin/super'
+/**
+ * 배너 표시 여부:
+ * - SUPER_ADMIN: 항상 표시
+ * - SCHOOL_ADMIN: school scope → 본인 대학교 페이지일 때만 표시
+ *                 dept scope   → 항상 표시
+ *                 selection    → 숨김
+ * - DEPT_ADMIN:   dept scope   → 본인 학과 페이지일 때만 표시
+ *                 selection    → 숨김
+ */
+function isBannerVisible(role: NonNullable<AdminRole>, scope: AdminBannerScope, targetId?: number): boolean {
+  if (role === 'SUPER_ADMIN') return true
+  if (scope === 'selection')  return false
+
   if (role === 'SCHOOL_ADMIN') {
-    if (target === 'faculty' && facultyId) return `/admin/faculty/${facultyId}`
-    return univId ? `/admin/school/${univId}` : '/admin/super'
+    if (scope === 'dept') return true
+    const myUnivId = getAuthItem('universityId')
+    return myUnivId != null && targetId === Number(myUnivId)
   }
-  // DEPT_ADMIN
-  if (deptId) return `/admin/dept/${deptId}`
-  return univId ? `/admin/school/${univId}` : '/universities'
+
+  // DEPT_ADMIN — dept scope only
+  const myDeptId = getAuthItem('deptId')
+  return myDeptId != null && targetId === Number(myDeptId)
 }
 
 export default function AdminBanner({ scope, targetId }: AdminBannerProps) {
@@ -43,62 +52,27 @@ export default function AdminBanner({ scope, targetId }: AdminBannerProps) {
   const navigate = useNavigate()
 
   if (!role || !ALLOWED[scope].includes(role)) return null
+  if (!isBannerVisible(role, scope, targetId)) return null
 
   // school / dept scope: single button
   if (scope !== 'selection') {
-    const url = scope === 'school'
-      ? `/admin/school/${targetId ?? ''}`
-      : `/admin/dept/${targetId ?? ''}`
+    const url = scope === 'school' ? `/admin/school/${targetId ?? ''}` : `/admin/dept/${targetId ?? ''}`
     return (
       <section className="max-w-6xl mx-auto px-4 py-3">
         <div className="border border-gray-300 bg-gray-50 px-5 py-3 flex items-center justify-between gap-4">
           <BannerLeft role={role} />
-          <button
-            onClick={() => navigate(url)}
-            className="shrink-0 border-2 border-black px-4 py-1.5 text-sm font-bold hover:bg-black hover:text-white transition"
-          >
-            관리자 페이지 <i className="fas fa-arrow-right ml-1" />
-          </button>
+          <BannerButton label="관리자 페이지" onClick={() => navigate(url)} />
         </div>
       </section>
     )
   }
 
-  // selection scope: role-based buttons
+  // selection scope: SUPER_ADMIN only reaches here
   return (
     <section className="max-w-6xl mx-auto px-4 py-3">
       <div className="border border-gray-300 bg-gray-50 px-5 py-3 flex items-center justify-between gap-4 flex-wrap">
         <BannerLeft role={role} />
-        <div className="flex items-center gap-2 flex-wrap">
-
-          {role === 'SUPER_ADMIN' && (
-            <BannerButton label="최고 관리자 페이지" onClick={() => navigate('/admin/super')} />
-          )}
-
-          {role === 'SCHOOL_ADMIN' && (
-            <>
-              <BannerButton
-                label="학과 관리 페이지"
-                onClick={() => navigate(resolveSelectionUrl('SCHOOL_ADMIN', 'school'))}
-              />
-              {/* 학부&학과 관리 버튼은 facultyId가 sessionStorage에 존재할 때만 표시 */}
-              {getAuthItem('facultyId') && (
-                <BannerButton
-                  label="학부&학과 관리 페이지"
-                  onClick={() => navigate(resolveSelectionUrl('SCHOOL_ADMIN', 'faculty'))}
-                />
-              )}
-            </>
-          )}
-
-          {role === 'DEPT_ADMIN' && (
-            <BannerButton
-              label="학과 관리 페이지"
-              onClick={() => navigate(resolveSelectionUrl('DEPT_ADMIN', 'dept'))}
-            />
-          )}
-
-        </div>
+        <BannerButton label="최고 관리자 페이지" onClick={() => navigate('/admin/super')} />
       </div>
     </section>
   )
