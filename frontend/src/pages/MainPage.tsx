@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useDept } from '../context/DeptContext'
 import { fetchMainData } from '../api/universities'
 import Navbar from '../components/Navbar'
@@ -9,12 +9,22 @@ import type { PostDto } from '../types/post'
 import type { ScheduleDto } from '../types/schedule'
 import AdminBanner from '../components/common/AdminBanner'
 
+const NOTICE_TABS = ['전체', '학사', '장학', '행사', '취업']
+
 export default function MainPage() {
   const { selectedDeptId, selectedDeptName } = useDept()
-  const [notices, setNotices]     = useState<NoticeDto[]>([])
-  const [posts, setPosts]         = useState<PostDto[]>([])
-  const [schedules, setSchedules] = useState<ScheduleDto[]>([])
-  const [today, setToday]         = useState('')
+  const navigate = useNavigate()
+
+  const username   = sessionStorage.getItem('username') ?? 'guest'
+  const FILTER_KEY = `mainNoticeFilter_${username}`
+
+  const [notices,      setNotices]      = useState<NoticeDto[]>([])
+  const [posts,        setPosts]        = useState<PostDto[]>([])
+  const [schedules,    setSchedules]    = useState<ScheduleDto[]>([])
+  const [today,        setToday]        = useState('')
+  const [noticeFilter, setNoticeFilter] = useState<string>(
+    () => localStorage.getItem(FILTER_KEY) ?? '전체'
+  )
 
   useEffect(() => {
     if (!selectedDeptId) return
@@ -27,6 +37,15 @@ export default function MainPage() {
       })
       .catch(() => {})
   }, [selectedDeptId])
+
+  const handleFilterChange = (tab: string) => {
+    setNoticeFilter(tab)
+    localStorage.setItem(FILTER_KEY, tab)
+  }
+
+  const filteredNotices = notices
+    .filter(n => noticeFilter === '전체' || n.category === noticeFilter)
+    .slice(0, 5)
 
   return (
     <div className="bg-white text-black font-sans">
@@ -57,12 +76,12 @@ export default function MainPage() {
       <main className="max-w-6xl mx-auto px-4 py-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
 
-          {/* 캘린더 — 모바일: 1번째 / 데스크탑: 상단 왼쪽 */}
+          {/* 캘린더 */}
           <div className="h-full">
             <MiniCalendar schedules={schedules} />
           </div>
 
-          {/* 다가오는 일정 — 모바일: 2번째 / 데스크탑: 상단 오른쪽 (캘린더와 동일 높이) */}
+          {/* 다가오는 일정 */}
           <div className="border-2 border-black flex flex-col">
             <div className="bg-black text-white px-4 py-3 flex items-center justify-between">
               <span className="font-bold text-sm"><i className="fas fa-calendar-alt mr-2" />다가오는 일정</span>
@@ -87,27 +106,47 @@ export default function MainPage() {
             </ul>
           </div>
 
-          {/* 최신 공지사항 — 모바일: 3번째 / 데스크탑: 하단 왼쪽 */}
+          {/* 최신 공지사항 */}
           <div className="border-2 border-black flex flex-col">
             <div className="bg-black text-white px-4 py-3 flex items-center justify-between">
               <span className="font-bold text-sm"><i className="fas fa-bullhorn mr-2" />최신 공지사항</span>
               <Link to="/dept/notice" className="text-xs text-gray-300 hover:text-white transition">더보기 →</Link>
             </div>
+            <div className="flex flex-wrap gap-1 px-4 py-2 border-b border-gray-100">
+              {NOTICE_TABS.map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => handleFilterChange(tab)}
+                  aria-pressed={noticeFilter === tab}
+                  className={`px-2 py-0.5 text-xs border font-medium transition ${
+                    noticeFilter === tab
+                      ? 'bg-black text-white border-black'
+                      : 'border-gray-300 text-gray-500 hover:border-black hover:text-black'
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
             <ul className="flex-1 divide-y divide-gray-100">
-              {notices.length === 0 ? (
+              {filteredNotices.length === 0 ? (
                 <li className="px-4 py-8 text-center text-gray-400 text-sm">
                   <i className="fas fa-inbox block mb-2" />공지사항이 없습니다.
                 </li>
-              ) : notices.map(n => (
-                <li key={n.id} className="px-4 py-3 hover:bg-gray-50 transition flex items-start justify-between gap-2">
-                  <Link to="/dept/notice" className="text-sm font-medium hover:underline leading-snug flex-1 min-w-0 line-clamp-1">{n.title}</Link>
+              ) : filteredNotices.map(n => (
+                <li
+                  key={n.id}
+                  onClick={() => navigate(`/notice/${n.id}`)}
+                  className="px-4 py-3 hover:bg-gray-50 transition flex items-start justify-between gap-2 cursor-pointer"
+                >
+                  <span className="text-sm font-medium leading-snug flex-1 min-w-0 line-clamp-1">{n.title}</span>
                   <span className="text-xs text-gray-400 flex-shrink-0 whitespace-nowrap">{n.date}</span>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* 인기 게시글 — 모바일: 4번째 / 데스크탑: 하단 오른쪽 */}
+          {/* 인기 게시글 */}
           <div className="border-2 border-black flex flex-col">
             <div className="bg-black text-white px-4 py-3 flex items-center justify-between">
               <span className="font-bold text-sm"><i className="fas fa-fire mr-2" />인기 게시글</span>
@@ -119,8 +158,12 @@ export default function MainPage() {
                   <i className="fas fa-inbox block mb-2" />게시글이 없습니다.
                 </li>
               ) : posts.map(p => (
-                <li key={p.id} className="px-4 py-3 hover:bg-gray-50 transition flex items-start justify-between gap-2">
-                  <Link to="/dept/board" className="text-sm font-medium hover:underline leading-snug flex-1 min-w-0 line-clamp-1">{p.title}</Link>
+                <li
+                  key={p.id}
+                  onClick={() => navigate(`/post/${p.id}`)}
+                  className="px-4 py-3 hover:bg-gray-50 transition flex items-start justify-between gap-2 cursor-pointer"
+                >
+                  <span className="text-sm font-medium leading-snug flex-1 min-w-0 line-clamp-1">{p.title}</span>
                   <span className="text-xs text-gray-400 flex-shrink-0 whitespace-nowrap">
                     <i className="fas fa-heart text-red-400 mr-0.5" />{p.likes}
                   </span>
