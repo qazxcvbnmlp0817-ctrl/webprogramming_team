@@ -109,6 +109,16 @@ export default function SchoolAdminPage() {
     fetchAdminLogs(univId).then(setLogs)
   }
 
+  const handleInlineRoleChange = async (userId: number, newRole: string) => {
+    await updateSchoolUserRole(userId, newRole, univId)
+    const [au, all] = await Promise.all([
+      fetchSchoolUsers(univId),
+      fetchSchoolAllUsers(univId),
+    ])
+    setAdminUsers(au)
+    setAllUsers(all)
+  }
+
   const filteredUsers = allUsers.filter(u => {
     if (userFilter === '학생') return u.memberType === 'student'
     if (userFilter === '교수') return u.memberType === 'professor'
@@ -337,6 +347,7 @@ export default function SchoolAdminPage() {
                     <th className="text-left pb-3 pr-4">아이디</th>
                     <th className="text-left pb-3 pr-4">유형</th>
                     <th className="text-left pb-3 pr-4">상태</th>
+                    <th className="text-left pb-3 pr-4">관리자 역할</th>
                     <th className="text-left pb-3">관리</th>
                   </tr>
                 </thead>
@@ -349,6 +360,18 @@ export default function SchoolAdminPage() {
                         <span className="border border-gray-300 px-2 py-0.5 text-xs">{u.memberType}</span>
                       </td>
                       <td className="py-3 pr-4"><StatusBadge status={u.status} /></td>
+                      <td className="py-3 pr-4">
+                        <select
+                          aria-label="관리자 역할"
+                          value={u.adminRole ?? ''}
+                          onChange={(e) => handleInlineRoleChange(u.id, e.target.value)}
+                          className="border border-gray-300 text-xs px-2 py-1 focus:outline-none focus:border-black"
+                        >
+                          <option value="">없음</option>
+                          <option value="SCHOOL_ADMIN">SCHOOL_ADMIN</option>
+                          <option value="DEPT_ADMIN">DEPT_ADMIN</option>
+                        </select>
+                      </td>
                       <td className="py-3 flex gap-2">
                         {u.status === 'ACTIVE' && (
                           <button onClick={() => handleStatusChange(u.id, 'SUSPENDED')}
@@ -366,7 +389,7 @@ export default function SchoolAdminPage() {
                     </tr>
                   ))}
                   {filteredUsers.length === 0 && (
-                    <tr><td colSpan={5} className="py-8 text-center text-gray-400 text-sm">사용자가 없습니다.</td></tr>
+                    <tr><td colSpan={6} className="py-8 text-center text-gray-400 text-sm">사용자가 없습니다.</td></tr>
                   )}
                 </tbody>
               </table>
