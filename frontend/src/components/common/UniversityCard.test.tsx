@@ -51,7 +51,7 @@ test('버튼 클릭 시 onSelect가 호출된다', () => {
 
 test('프리뷰 패널의 현황 레이블이 존재한다', () => {
   renderCard()
-  expect(screen.getByText('📊 현황')).toBeInTheDocument()
+  expect(screen.getByText('📊 주간 현황 (최근 7일)')).toBeInTheDocument()
 })
 
 test('프리뷰 패널에 단과대학/학과 수/활동 점수 레이블이 모두 있다', () => {

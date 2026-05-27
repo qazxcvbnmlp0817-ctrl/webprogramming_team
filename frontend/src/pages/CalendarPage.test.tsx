@@ -21,7 +21,11 @@ const localStorageMock = (() => {
 })()
 Object.defineProperty(window, 'localStorage', { value: localStorageMock })
 
-beforeEach(() => localStorageMock.clear())
+beforeEach(() => {
+  localStorageMock.clear()
+  // Set up authentication
+  localStorageMock.setItem('auth_isLoggedIn', 'true')
+})
 
 function renderPage() {
   return render(<MemoryRouter><CalendarPage /></MemoryRouter>)
