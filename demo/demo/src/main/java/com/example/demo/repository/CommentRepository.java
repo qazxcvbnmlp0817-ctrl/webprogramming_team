@@ -10,6 +10,7 @@ import java.util.List;
 
 public interface CommentRepository extends JpaRepository<Comment, Long> {
     List<Comment> findByPostIdOrderByCreatedDateAsc(Long postId);
+    List<Comment> findByParentId(Long parentId);
     long countByPostId(Long postId);
     List<Comment> findByAuthorUsernameOrderByCreatedDateDesc(String authorUsername);
     long countByPostIdInAndCreatedDateAfter(List<Long> postIds, LocalDate since);

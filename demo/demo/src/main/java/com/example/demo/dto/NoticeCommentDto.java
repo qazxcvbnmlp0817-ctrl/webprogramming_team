@@ -7,11 +7,18 @@ public class NoticeCommentDto {
     private final String authorUsername;
     private final String content;
     private final String date;
+    private final Long parentId;
 
     public NoticeCommentDto(Long id, Long noticeId, String author, String authorUsername,
                             String content, String date) {
+        this(id, noticeId, author, authorUsername, content, date, null);
+    }
+
+    public NoticeCommentDto(Long id, Long noticeId, String author, String authorUsername,
+                            String content, String date, Long parentId) {
         this.id = id; this.noticeId = noticeId; this.author = author;
-        this.authorUsername = authorUsername; this.content = content; this.date = date;
+        this.authorUsername = authorUsername; this.content = content;
+        this.date = date; this.parentId = parentId;
     }
 
     public Long getId()               { return id; }
@@ -20,4 +27,5 @@ public class NoticeCommentDto {
     public String getAuthorUsername() { return authorUsername; }
     public String getContent()        { return content; }
     public String getDate()           { return date; }
+    public Long getParentId()         { return parentId; }
 }

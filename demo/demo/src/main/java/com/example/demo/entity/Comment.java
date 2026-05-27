@@ -29,6 +29,9 @@ public class Comment {
     @Column
     private LocalDate modifiedDate;
 
+    @Column
+    private Long parentId;   // null → 원댓글, not null → 대댓글
+
     public Long getId()                              { return id; }
     public void setId(Long id)                       { this.id = id; }
     public Long getPostId()                          { return postId; }
@@ -43,4 +46,6 @@ public class Comment {
     public void setAuthorUsername(String u)          { this.authorUsername = u; }
     public LocalDate getModifiedDate()               { return modifiedDate; }
     public void setModifiedDate(LocalDate d)         { this.modifiedDate = d; }
+    public Long getParentId()                        { return parentId; }
+    public void setParentId(Long parentId)           { this.parentId = parentId; }
 }

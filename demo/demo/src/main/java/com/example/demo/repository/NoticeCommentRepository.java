@@ -10,6 +10,7 @@ import java.util.List;
 
 public interface NoticeCommentRepository extends JpaRepository<NoticeComment, Long> {
     List<NoticeComment> findByNoticeIdOrderByCreatedDateAsc(Long noticeId);
+    List<NoticeComment> findByParentId(Long parentId);
     long countByNoticeId(Long noticeId);
     long countByNoticeIdInAndCreatedDateAfter(List<Long> noticeIds, LocalDate since);
 
