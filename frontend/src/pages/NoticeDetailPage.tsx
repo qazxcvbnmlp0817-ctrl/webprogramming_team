@@ -25,6 +25,7 @@ interface NoticeCommentDto {
   authorUsername: string
   content: string
   date: string
+  parentId: number | null
 }
 
 export default function NoticeDetailPage() {
@@ -38,6 +39,8 @@ export default function NoticeDetailPage() {
   const [commentText, setCommentText] = useState('')
   const [editingId, setEditingId]     = useState<number | null>(null)
   const [editText, setEditText]       = useState('')
+  const [replyingToId, setReplyingToId] = useState<number | null>(null)
+  const [replyText, setReplyText]       = useState('')
 
   const username   = sessionStorage.getItem('username') ?? ''
   const myName     = sessionStorage.getItem('name')     ?? ''
@@ -86,8 +89,9 @@ export default function NoticeDetailPage() {
       { method: 'DELETE' }
     )
     if (res.ok) {
-      setComments(prev => prev.filter(c => c.id !== commentId))
-      setNotice(prev => prev ? { ...prev, commentCount: (prev.commentCount ?? 1) - 1 } : prev)
+      const removed = comments.filter(c => c.id === commentId || c.parentId === commentId)
+      setComments(prev => prev.filter(c => c.id !== commentId && c.parentId !== commentId))
+      setNotice(prev => prev ? { ...prev, commentCount: (prev.commentCount ?? removed.length) - removed.length } : prev)
     }
   }
 
@@ -112,6 +116,23 @@ export default function NoticeDetailPage() {
       const updated: NoticeCommentDto = await res.json()
       setComments(prev => prev.map(c => c.id === commentId ? updated : c))
       cancelEdit()
+    }
+  }
+
+  async function handleReplySubmit(parentId: number) {
+    if (!replyText.trim()) return
+    if (!isLoggedIn) { alert('로그인이 필요합니다.'); return }
+    const res = await fetch(`/api/notices/${id}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ author: myName, authorUsername: username, content: replyText, parentId }),
+    })
+    if (res.ok) {
+      const newReply: NoticeCommentDto = await res.json()
+      setComments(prev => [...prev, newReply])
+      setReplyText('')
+      setReplyingToId(null)
+      setNotice(prev => prev ? { ...prev, commentCount: (prev.commentCount ?? 0) + 1 } : prev)
     }
   }
 
@@ -231,60 +252,87 @@ export default function NoticeDetailPage() {
             댓글 <span className="text-gray-500 font-normal">{comments.length}</span>
           </h2>
 
-          {comments.length === 0 && (
+          {comments.filter(c => c.parentId === null).length === 0 && (
             <p className="text-sm text-gray-400 mb-4">첫 댓글을 남겨보세요.</p>
           )}
 
           <ul className="flex flex-col gap-4 mb-6">
-            {comments.map(c => {
+            {comments.filter(c => c.parentId === null).map(c => {
               const isMyComment = c.authorUsername === username
+              const replies = comments.filter(r => r.parentId === c.id)
               return (
                 <li key={c.id} className="border-b border-gray-100 pb-3">
+                  {/* 원댓글 */}
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm font-medium">{c.author}</span>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-gray-400">{c.date}</span>
                       {isMyComment && editingId !== c.id && (
                         <>
-                          <button
-                            onClick={() => startEdit(c)}
-                            className="text-xs text-gray-400 hover:text-black"
-                          >수정</button>
-                          <button
-                            onClick={() => handleCommentDelete(c.id)}
-                            className="text-xs text-gray-400 hover:text-red-500"
-                          >삭제</button>
+                          <button onClick={() => startEdit(c)} className="text-xs text-gray-400 hover:text-black">수정</button>
+                          <button onClick={() => handleCommentDelete(c.id)} className="text-xs text-gray-400 hover:text-red-500">삭제</button>
                         </>
                       )}
                       {!isMyComment && memberType === 'admin' && (
-                        <button
-                          onClick={() => handleCommentDelete(c.id)}
-                          className="text-xs text-gray-400 hover:text-red-500"
-                        >삭제</button>
+                        <button onClick={() => handleCommentDelete(c.id)} className="text-xs text-gray-400 hover:text-red-500">삭제</button>
                       )}
                     </div>
                   </div>
                   {editingId === c.id ? (
                     <div>
-                      <textarea
-                        value={editText}
-                        onChange={e => setEditText(e.target.value)}
-                        rows={3}
-                        className="border border-black px-3 py-2 text-sm outline-none resize-none w-full"
-                      />
+                      <textarea value={editText} onChange={e => setEditText(e.target.value)} rows={3} className="border border-black px-3 py-2 text-sm outline-none resize-none w-full" />
                       <div className="flex gap-2 justify-end mt-1">
-                        <button
-                          onClick={cancelEdit}
-                          className="text-xs border border-gray-400 px-3 py-1 hover:bg-gray-100"
-                        >취소</button>
-                        <button
-                          onClick={() => handleCommentEdit(c.id)}
-                          className="text-xs bg-black text-white px-3 py-1 hover:bg-gray-800"
-                        >저장</button>
+                        <button onClick={cancelEdit} className="text-xs border border-gray-400 px-3 py-1 hover:bg-gray-100">취소</button>
+                        <button onClick={() => handleCommentEdit(c.id)} className="text-xs bg-black text-white px-3 py-1 hover:bg-gray-800">저장</button>
                       </div>
                     </div>
                   ) : (
                     <p className="text-sm text-gray-700 whitespace-pre-wrap">{c.content}</p>
+                  )}
+
+                  {/* 답글 달기 버튼 */}
+                  {isLoggedIn && editingId !== c.id && (
+                    <button
+                      onClick={() => { setReplyingToId(replyingToId === c.id ? null : c.id); setReplyText('') }}
+                      className="text-xs text-gray-400 hover:text-black mt-1 ml-1"
+                    >↩ 답글 달기</button>
+                  )}
+
+                  {/* 대댓글 목록 */}
+                  {replies.length > 0 && (
+                    <ul className="flex flex-col gap-2 mt-2">
+                      {replies.map(reply => {
+                        const isMyReply = reply.authorUsername === username
+                        return (
+                          <li key={reply.id} className="ml-6 pl-3 border-l-2 border-gray-200 pb-2">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-sm font-medium"><span className="text-gray-400 mr-1">↩</span>{reply.author}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-gray-400">{reply.date}</span>
+                                {isMyReply && (
+                                  <button onClick={() => handleCommentDelete(reply.id)} className="text-xs text-gray-400 hover:text-red-500">삭제</button>
+                                )}
+                                {!isMyReply && memberType === 'admin' && (
+                                  <button onClick={() => handleCommentDelete(reply.id)} className="text-xs text-gray-400 hover:text-red-500">삭제</button>
+                                )}
+                              </div>
+                            </div>
+                            <p className="text-sm text-gray-700 whitespace-pre-wrap">{reply.content}</p>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  )}
+
+                  {/* 답글 입력폼 */}
+                  {replyingToId === c.id && (
+                    <div className="ml-6 mt-2 flex flex-col gap-1">
+                      <textarea value={replyText} onChange={e => setReplyText(e.target.value)} placeholder="답글을 입력하세요..." rows={2} className="border border-gray-400 px-3 py-2 text-sm outline-none resize-none" />
+                      <div className="flex gap-2 justify-end">
+                        <button onClick={() => { setReplyingToId(null); setReplyText('') }} className="text-xs border border-gray-400 px-3 py-1 hover:bg-gray-100">취소</button>
+                        <button onClick={() => handleReplySubmit(c.id)} className="text-xs bg-black text-white px-3 py-1 hover:bg-gray-800">등록</button>
+                      </div>
+                    </div>
                   )}
                 </li>
               )
@@ -293,26 +341,15 @@ export default function NoticeDetailPage() {
 
           {isLoggedIn ? (
             <form onSubmit={handleCommentSubmit} className="flex flex-col gap-2">
-              <textarea
-                value={commentText}
-                onChange={e => setCommentText(e.target.value)}
-                placeholder="댓글을 입력하세요..."
-                rows={3}
-                className="border border-black px-3 py-2 text-sm outline-none resize-none"
-              />
+              <textarea value={commentText} onChange={e => setCommentText(e.target.value)} placeholder="댓글을 입력하세요..." rows={3} className="border border-black px-3 py-2 text-sm outline-none resize-none" />
               <div className="flex justify-end">
-                <button
-                  type="submit"
-                  className="px-5 py-2 text-sm bg-black text-white font-medium hover:bg-gray-800 transition"
-                >댓글 등록</button>
+                <button type="submit" className="px-5 py-2 text-sm bg-black text-white font-medium hover:bg-gray-800 transition">댓글 등록</button>
               </div>
             </form>
           ) : (
             <p className="text-sm text-gray-400 text-center py-4">
               댓글을 작성하려면{' '}
-              <button onClick={() => navigate('/login')} className="underline text-black">
-                로그인
-              </button>
+              <button onClick={() => navigate('/login')} className="underline text-black">로그인</button>
               하세요.
             </p>
           )}
