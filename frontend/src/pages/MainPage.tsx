@@ -49,7 +49,14 @@ export default function MainPage() {
 
   const filteredNotices = notices
     .filter(n => noticeFilter === '전체' || n.category === noticeFilter)
-    .slice(0, 5)
+    .slice(0, 8)
+
+  const popularPosts = [...posts]
+    .sort((a, b) => {
+      const score = (p: typeof a) => p.viewCount * 0.1 + p.likes * 0.6 + p.commentCount * 0.3
+      return score(b) - score(a)
+    })
+    .slice(0, 8)
 
   return (
     <div className="bg-white text-black font-sans">
@@ -157,11 +164,11 @@ export default function MainPage() {
               <Link to="/dept/board" className="text-xs text-gray-300 hover:text-white transition">더보기 →</Link>
             </div>
             <ul className="flex-1 divide-y divide-gray-100">
-              {posts.length === 0 ? (
+              {popularPosts.length === 0 ? (
                 <li className="px-4 py-8 text-center text-gray-400 text-sm">
                   <i className="fas fa-inbox block mb-2" />게시글이 없습니다.
                 </li>
-              ) : posts.map(p => (
+              ) : popularPosts.map(p => (
                 <li
                   key={p.id}
                   onClick={() => navigate(`/post/${p.id}`)}

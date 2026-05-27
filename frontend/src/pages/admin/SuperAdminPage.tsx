@@ -312,7 +312,7 @@ export default function SuperAdminPage() {
                     <td className="py-3 pr-4 text-gray-500">{u.username}</td>
                     <td className="py-3 pr-4">
                       <span className="border border-gray-300 px-2 py-0.5 text-xs font-mono">
-                        {u.adminRole ?? '없음'}
+                        {u.adminRole ?? 'SUPER_ADMIN'}
                       </span>
                     </td>
                     <td className="py-3 pr-4 text-gray-400 text-xs">{u.universityId ?? '-'}</td>
@@ -327,7 +327,7 @@ export default function SuperAdminPage() {
                         onChange={e => handleRoleChange(u.id, e.target.value)}
                         className="border border-gray-300 text-xs px-2 py-1 bg-white"
                       >
-                        <option value="">없음</option>
+                        <option value="">SUPER_ADMIN</option>
                         <option value="SCHOOL_ADMIN">SCHOOL_ADMIN</option>
                         <option value="DEPT_ADMIN">DEPT_ADMIN</option>
                       </select>

@@ -27,13 +27,14 @@ describe('RoleManageModal', () => {
     expect(screen.getAllByText('DEPT_ADMIN').length).toBeGreaterThan(0)
   })
 
-  it('admin 타입이면 없음 라디오가 disabled된다', () => {
-    const user = makeUser({ memberType: 'admin', adminRole: 'SCHOOL_ADMIN' })
+  it('adminRole이 null이면 SUPER_ADMIN이 기본 선택된다', () => {
+    const user = makeUser({ adminRole: null })
     render(<RoleManageModal user={user} onClose={vi.fn()} onSave={vi.fn()} />)
 
-    const radios = screen.getAllByRole('radio')
-    const noneRadio = radios.find(r => (r as HTMLInputElement).value === '')
-    expect(noneRadio).toBeDisabled()
+    const superAdminRadio = screen.getAllByRole('radio').find(
+      r => (r as HTMLInputElement).value === 'SUPER_ADMIN'
+    )!
+    expect(superAdminRadio).toBeChecked()
   })
 
   it('역할 변경 없으면 저장 버튼이 disabled된다', () => {

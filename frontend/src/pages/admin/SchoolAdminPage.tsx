@@ -10,7 +10,7 @@ import Navbar from '../../components/Navbar'
 import RoleManageModal from '../../components/admin/RoleManageModal'
 import {
   fetchSchoolStats, fetchSchoolVisitors, fetchSchoolPosts,
-  deleteSchoolPost, fetchSchoolUsers, updateSchoolUserRole,
+  deleteSchoolPost, updateSchoolUserRole,
   fetchSchoolAllUsers, fetchSchoolPendingUsers, updateUserStatus,
   fetchAdminLogs, fetchSchoolMonthlyStats,
   fetchSchoolProfessors, fetchSchoolCourses, fetchSchoolAssignments,
@@ -26,8 +26,8 @@ ChartJS.register(
   BarElement, ArcElement, Title, Tooltip, Legend, Filler
 )
 
-type Tab = '개요' | '게시글 관리' | '전체 사용자' | '가입 승인' | '관리자 계정' | '활동 로그' | '교수 배정'
-const TABS: Tab[] = ['개요', '게시글 관리', '전체 사용자', '가입 승인', '관리자 계정', '활동 로그', '교수 배정']
+type Tab = '개요' | '게시글 관리' | '전체 사용자' | '가입 승인' | '활동 로그' | '교수 배정'
+const TABS: Tab[] = ['개요', '게시글 관리', '전체 사용자', '가입 승인', '활동 로그', '교수 배정']
 
 export default function SchoolAdminPage() {
   const navigate = useNavigate()
@@ -43,7 +43,6 @@ export default function SchoolAdminPage() {
   const [posts, setPosts]           = useState<PostItem[]>([])
   const [allUsers, setAllUsers]     = useState<AdminUser[]>([])
   const [pending, setPending]       = useState<AdminUser[]>([])
-  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([])
   const [logs, setLogs]             = useState<AdminLog[]>([])
   const [page, setPage]             = useState(0)
   const [totalPages, setTotalPages] = useState(1)
@@ -65,11 +64,10 @@ export default function SchoolAdminPage() {
       fetchSchoolMonthlyStats(univId),
       fetchSchoolAllUsers(univId),
       fetchSchoolPendingUsers(univId),
-      fetchSchoolUsers(univId),
       fetchAdminLogs(univId),
-    ]).then(([s, v, m, au, pu, admins, lg]) => {
+    ]).then(([s, v, m, au, pu, lg]) => {
       setStats(s); setVisitors(v); setMonthly(m)
-      setAllUsers(au); setPending(pu); setAdminUsers(admins); setLogs(lg)
+      setAllUsers(au); setPending(pu); setLogs(lg)
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [])
@@ -104,21 +102,9 @@ export default function SchoolAdminPage() {
     fetchAdminLogs(univId).then(setLogs)
   }
 
-  const handleRoleChange = async (userId: number, currentRole: string | null) => {
-    const newRole = currentRole === 'DEPT_ADMIN' ? '' : 'DEPT_ADMIN'
-    await updateSchoolUserRole(userId, newRole, univId)
-    await fetchSchoolUsers(univId).then(setAdminUsers)
-    fetchAdminLogs(univId).then(setLogs)
-  }
-
   const handleSaveRole = async (userId: number, newRole: string) => {
     await updateSchoolUserRole(userId, newRole, univId)
-    const [au, all] = await Promise.all([
-      fetchSchoolUsers(univId),
-      fetchSchoolAllUsers(univId),
-    ])
-    setAdminUsers(au)
-    setAllUsers(all)
+    await fetchSchoolAllUsers(univId).then(setAllUsers)
     setRoleModalUser(null)
   }
 
@@ -365,7 +351,7 @@ export default function SchoolAdminPage() {
                       <td className="py-3 pr-4"><StatusBadge status={u.status} /></td>
                       <td className="py-3 pr-4">
                         <span className="border border-gray-300 px-2 py-0.5 text-xs font-mono mr-2">
-                          {u.adminRole ?? '없음'}
+                          {u.adminRole ?? 'SUPER_ADMIN'}
                         </span>
                         <button
                           onClick={() => setRoleModalUser(u)}
@@ -439,53 +425,6 @@ export default function SchoolAdminPage() {
                 </table>
               </div>
             )}
-          </div>
-        )}
-
-        {tab === '관리자 계정' && (
-          <div className="border-2 border-black p-6">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">학과 관리자 계정 관리</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b-2 border-black text-xs uppercase tracking-wide text-gray-500">
-                    <th className="text-left pb-3 pr-4">이름</th>
-                    <th className="text-left pb-3 pr-4">아이디</th>
-                    <th className="text-left pb-3 pr-4">유형 / 역할</th>
-                    <th className="text-left pb-3 pr-4">상태</th>
-                    <th className="text-left pb-3">역할 관리</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {adminUsers.map((u, i) => (
-                    <tr key={u.id} className={`border-b border-gray-100 ${i % 2 === 0 ? 'bg-gray-50/50' : ''}`}>
-                      <td className="py-3 pr-4 font-medium">{u.name}</td>
-                      <td className="py-3 pr-4 text-gray-500">{u.username}</td>
-                      <td className="py-3 pr-4">
-                        <span className="border border-blue-300 px-2 py-0.5 text-xs text-blue-600 mr-1">
-                          {u.memberType}
-                        </span>
-                        <span className="border border-gray-300 px-2 py-0.5 text-xs font-mono">
-                          {u.adminRole ?? '없음'}
-                        </span>
-                      </td>
-                      <td className="py-3 pr-4"><StatusBadge status={u.status} /></td>
-                      <td className="py-3">
-                        <button
-                          onClick={() => handleRoleChange(u.id, u.adminRole)}
-                          className="text-xs border border-gray-300 px-3 py-1 hover:border-black hover:bg-gray-50 transition"
-                        >
-                          {u.adminRole === 'DEPT_ADMIN' ? '역할 박탈' : 'DEPT_ADMIN 부여'}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                  {adminUsers.length === 0 && (
-                    <tr><td colSpan={5} className="py-8 text-center text-gray-400 text-sm">관리자 계정이 없습니다.</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
           </div>
         )}
 

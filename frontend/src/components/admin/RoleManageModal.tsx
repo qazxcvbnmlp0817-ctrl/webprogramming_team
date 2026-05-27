@@ -8,18 +8,17 @@ interface Props {
 }
 
 const ROLE_OPTIONS = [
-  { key: 'none', value: '', label: '없음', desc: '관리자 역할 없음' },
+  { key: 'SUPER_ADMIN', value: 'SUPER_ADMIN', label: 'SUPER_ADMIN', desc: '최고 관리자' },
   { key: 'DEPT_ADMIN', value: 'DEPT_ADMIN', label: 'DEPT_ADMIN', desc: '단과대 / 학과 관리자' },
   { key: 'SCHOOL_ADMIN', value: 'SCHOOL_ADMIN', label: 'SCHOOL_ADMIN', desc: '학교 관리자' },
 ]
 
 export default function RoleManageModal({ user, onClose, onSave }: Props) {
-  const [selected, setSelected] = useState(user.adminRole ?? '')
+  const [selected, setSelected] = useState(user.adminRole ?? 'SUPER_ADMIN')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const isAdminType = user.memberType === 'admin'
-  const unchanged = selected === (user.adminRole ?? '')
+  const unchanged = selected === (user.adminRole ?? 'SUPER_ADMIN')
 
   const handleSave = async () => {
     setSaving(true)
@@ -69,7 +68,7 @@ export default function RoleManageModal({ user, onClose, onSave }: Props) {
         <div className="mb-4">
           <p className="text-xs text-gray-500 uppercase tracking-wide mb-1.5">현재 역할</p>
           <span className="border border-gray-300 px-2 py-0.5 text-xs font-mono">
-            {user.adminRole ?? '없음'}
+            {user.adminRole ?? 'SUPER_ADMIN'}
           </span>
         </div>
 
@@ -77,33 +76,27 @@ export default function RoleManageModal({ user, onClose, onSave }: Props) {
         <div className="mb-4">
           <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">변경할 역할</p>
           <div className="flex flex-col gap-2">
-            {ROLE_OPTIONS.map(opt => {
-              const disabled = opt.value === '' && isAdminType
-              return (
-                <label
-                  key={opt.key}
-                  className={`flex items-center gap-3 border px-3 py-2 ${
-                    disabled
-                      ? 'opacity-40 cursor-not-allowed border-gray-200'
-                      : 'cursor-pointer border-gray-300 hover:border-black'
-                  } ${selected === opt.value ? 'border-black bg-gray-50' : ''}`}
-                >
-                  <input
-                    type="radio"
-                    name="role"
-                    value={opt.value}
-                    checked={selected === opt.value}
-                    onChange={() => setSelected(opt.value)}
-                    disabled={disabled}
-                    className="accent-black"
-                  />
-                  <span>
-                    <span className="text-sm font-medium">{opt.label || '없음'}</span>
-                    <span className="text-xs text-gray-400 ml-2">{opt.desc}</span>
-                  </span>
-                </label>
-              )
-            })}
+            {ROLE_OPTIONS.map(opt => (
+              <label
+                key={opt.key}
+                className={`flex items-center gap-3 border px-3 py-2 cursor-pointer border-gray-300 hover:border-black ${
+                  selected === opt.value ? 'border-black bg-gray-50' : ''
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="role"
+                  value={opt.value}
+                  checked={selected === opt.value}
+                  onChange={() => setSelected(opt.value)}
+                  className="accent-black"
+                />
+                <span>
+                  <span className="text-sm font-medium">{opt.label}</span>
+                  <span className="text-xs text-gray-400 ml-2">{opt.desc}</span>
+                </span>
+              </label>
+            ))}
           </div>
         </div>
 
