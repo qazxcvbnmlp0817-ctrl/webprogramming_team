@@ -32,4 +32,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                    "WHERE cs.university_id = :univId AND p.created_date > :since",
            nativeQuery = true)
     long countByUniversityId(@Param("univId") Long univId, @Param("since") LocalDateTime since);
+
+    // 좋아요 내림차순 정렬 (동점 시 최신순)
+    List<Post> findByScopeTypeAndScopeIdOrderByLikesDescCreatedDateDesc(
+        String scopeType, Long scopeId);
 }
