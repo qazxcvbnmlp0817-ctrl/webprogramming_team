@@ -119,8 +119,12 @@ export default function PostDetailPage() {
     }
   }
 
-  function startEdit(c: CommentDto) { setEditingId(c.id); setEditText(c.content) }
-  function cancelEdit()              { setEditingId(null); setEditText('') }
+  function startEdit(c: CommentDto) {
+    setEditingId(c.id)
+    setEditText(c.content)
+    setReplyingToId(null)  // 답글 입력폼이 열려 있으면 닫기
+  }
+  function cancelEdit() { setEditingId(null); setEditText('') }
 
   async function handleCommentEdit(commentId: number) {
     if (!editText.trim()) return
@@ -165,13 +169,11 @@ export default function PostDetailPage() {
   const rootComments  = comments.filter(c => c.parentId === null)
   const getReplies    = (parentId: number) => comments.filter(c => c.parentId === parentId)
 
-  function renderComment(c: CommentDto, isReply = false) {
+  // 댓글/답글 내용 렌더링 (li 래퍼 없이 내용만 반환)
+  function renderCommentContent(c: CommentDto, isReply = false) {
     const isMyComment = c.authorUsername ? c.authorUsername === username : c.author === myName
     return (
-      <li
-        key={c.id}
-        className={`border-b border-gray-100 pb-3 ${isReply ? 'ml-6 pl-3 border-l-2 border-gray-200' : ''}`}
-      >
+      <>
         <div className="flex items-center justify-between mb-1">
           <span className="text-sm font-medium">
             {isReply && <span className="text-gray-400 mr-1">↩</span>}
@@ -208,7 +210,7 @@ export default function PostDetailPage() {
         ) : (
           <p className="text-sm text-gray-700 whitespace-pre-wrap">{c.content}</p>
         )}
-      </li>
+      </>
     )
   }
 
@@ -298,8 +300,8 @@ export default function PostDetailPage() {
           <ul className="flex flex-col gap-4 mb-6">
             {rootComments.map(c => (
               <li key={c.id} className="border-b border-gray-100 pb-3">
-                {/* 원댓글 */}
-                <ul>{renderComment(c, false)}</ul>
+                {/* 원댓글 내용 */}
+                {renderCommentContent(c, false)}
 
                 {/* 답글 달기 버튼 */}
                 {isLoggedIn && editingId !== c.id && (
@@ -314,7 +316,11 @@ export default function PostDetailPage() {
                 {/* 대댓글 목록 */}
                 {getReplies(c.id).length > 0 && (
                   <ul className="flex flex-col gap-2 mt-2">
-                    {getReplies(c.id).map(reply => renderComment(reply, true))}
+                    {getReplies(c.id).map(reply => (
+                      <li key={reply.id} className="ml-6 pl-3 border-l-2 border-gray-200 pb-2">
+                        {renderCommentContent(reply, true)}
+                      </li>
+                    ))}
                   </ul>
                 )}
 

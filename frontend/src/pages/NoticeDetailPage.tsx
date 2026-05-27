@@ -91,13 +91,14 @@ export default function NoticeDetailPage() {
     if (res.ok) {
       const removed = comments.filter(c => c.id === commentId || c.parentId === commentId)
       setComments(prev => prev.filter(c => c.id !== commentId && c.parentId !== commentId))
-      setNotice(prev => prev ? { ...prev, commentCount: (prev.commentCount ?? removed.length) - removed.length } : prev)
+      setNotice(prev => prev ? { ...prev, commentCount: (prev.commentCount ?? 0) - removed.length } : prev)
     }
   }
 
   function startEdit(c: NoticeCommentDto) {
     setEditingId(c.id)
     setEditText(c.content)
+    setReplyingToId(null)  // 답글 입력폼이 열려 있으면 닫기
   }
 
   function cancelEdit() {

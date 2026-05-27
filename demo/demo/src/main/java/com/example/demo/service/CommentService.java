@@ -39,6 +39,9 @@ public class CommentService {
         if (req.getParentId() != null) {
             Comment parent = commentRepository.findById(req.getParentId())
                     .orElseThrow(() -> new RuntimeException("Parent comment not found"));
+            if (!parent.getPostId().equals(postId)) {
+                throw new RuntimeException("Parent comment does not belong to this post");
+            }
             if (parent.getParentId() != null) {
                 throw new RuntimeException("대댓글에는 답글을 달 수 없습니다.");
             }

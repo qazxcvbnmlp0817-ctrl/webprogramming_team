@@ -35,6 +35,9 @@ public class NoticeCommentService {
         if (req.getParentId() != null) {
             NoticeComment parent = commentRepository.findById(req.getParentId())
                     .orElseThrow(() -> new RuntimeException("Parent comment not found"));
+            if (!parent.getNoticeId().equals(noticeId)) {
+                throw new RuntimeException("Parent comment does not belong to this notice");
+            }
             if (parent.getParentId() != null) {
                 throw new RuntimeException("대댓글에는 답글을 달 수 없습니다.");
             }
@@ -75,7 +78,8 @@ public class NoticeCommentService {
         NoticeComment c = commentRepository.findById(commentId)
                 .orElseThrow(() -> new RuntimeException("Comment not found"));
         boolean isAdmin = "admin".equals(memberType);
-        if (!isAdmin && !c.getAuthorUsername().equals(username))
+        String stored = c.getAuthorUsername();
+        if (!isAdmin && (stored == null || !stored.equals(username)))
             throw new RuntimeException("No permission");
 
         // 원댓글 삭제 시 대댓글도 함께 삭제
