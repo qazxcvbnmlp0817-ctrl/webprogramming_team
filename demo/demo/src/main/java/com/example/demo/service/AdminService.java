@@ -265,7 +265,20 @@ public class AdminService {
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));
         String oldRole = user.getAdminRole();
         boolean grant = role != null && !role.isBlank();
-        user.setAdminRole(grant ? role : null);
+
+        if (grant) {
+            if (roleLevel(oldRole) > roleLevel(role)) {
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "이미 상위 역할(" + oldRole + ")을 보유하고 있습니다. 먼저 현재 역할을 박탈하세요.");
+            }
+            user.setAdminRole(role);
+        } else {
+            if ("admin".equals(user.getMemberType())) {
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "admin 계정은 최소 1개의 역할이 필요합니다.");
+            }
+            user.setAdminRole(null);
+        }
         userRepository.save(user);
         logAction(actor,
                   grant ? "ROLE_GRANT" : "ROLE_REVOKE",
@@ -273,6 +286,13 @@ public class AdminService {
                   grant ? "역할 부여: " + role : "역할 박탈 (이전: " + oldRole + ")",
                   univId);
         return Map.of("success", true);
+    }
+
+    private int roleLevel(String role) {
+        if ("SUPER_ADMIN".equals(role)) return 3;
+        if ("SCHOOL_ADMIN".equals(role)) return 2;
+        if ("DEPT_ADMIN".equals(role)) return 1;
+        return 0;
     }
 
     public Map<String, Object> updateUserStatus(Long userId, String newStatus,
