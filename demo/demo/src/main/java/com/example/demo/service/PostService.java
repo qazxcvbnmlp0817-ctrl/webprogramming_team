@@ -52,11 +52,35 @@ public class PostService {
         return posts.stream().map(this::toDto).collect(Collectors.toList());
     }
 
+    public List<PostDto> getTopPostsByLikesForDept(Long deptId, int limit) {
+        List<Post> posts = postRepository
+                .findByScopeTypeAndScopeIdOrderByLikesDescCreatedDateDesc("dept", deptId);
+        if (posts.isEmpty()) {
+            return DummyDataHelper.getPostsByDept(deptId).stream()
+                    .sorted((a, b) -> b.getLikes() - a.getLikes())
+                    .limit(limit)
+                    .collect(Collectors.toList());
+        }
+        return posts.stream().map(this::toDto).limit(limit).collect(Collectors.toList());
+    }
+
     public List<PostDto> getPostsByFaculty(Long facultyId) {
         List<Post> posts = postRepository
                 .findByScopeTypeAndScopeIdOrderByCreatedDateDesc("faculty", facultyId);
         if (posts.isEmpty()) return DummyDataHelper.getPostsByFaculty(facultyId);
         return posts.stream().map(this::toDto).collect(Collectors.toList());
+    }
+
+    public List<PostDto> getTopPostsByLikesForFaculty(Long facultyId, int limit) {
+        List<Post> posts = postRepository
+                .findByScopeTypeAndScopeIdOrderByLikesDescCreatedDateDesc("faculty", facultyId);
+        if (posts.isEmpty()) {
+            return DummyDataHelper.getPostsByFaculty(facultyId).stream()
+                    .sorted((a, b) -> b.getLikes() - a.getLikes())
+                    .limit(limit)
+                    .collect(Collectors.toList());
+        }
+        return posts.stream().map(this::toDto).limit(limit).collect(Collectors.toList());
     }
 
     public List<PostDto> getPostsByUniv(Long univId) {
