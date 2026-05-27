@@ -10,6 +10,7 @@ interface CommentDto {
   authorUsername: string | null
   content: string
   date: string
+  parentId: number | null
 }
 
 export default function PostDetailPage() {
@@ -25,9 +26,12 @@ export default function PostDetailPage() {
   const [commentText, setCommentText] = useState('')
   const [editingId, setEditingId]     = useState<number | null>(null)
   const [editText, setEditText]       = useState('')
+  const [replyingToId, setReplyingToId] = useState<number | null>(null)
+  const [replyText, setReplyText]     = useState('')
 
   const username   = sessionStorage.getItem('username') ?? ''
   const myName     = sessionStorage.getItem('name')     ?? ''
+  const memberType = sessionStorage.getItem('memberType') ?? ''
   const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true'
 
   useEffect(() => {
@@ -37,7 +41,7 @@ export default function PostDetailPage() {
         fetch(`/api/posts/${id}/comments`),
       ])
       if (!postRes.ok) { navigate(-1); return }
-      const postData: PostDto      = await postRes.json()
+      const postData: PostDto         = await postRes.json()
       const commentData: CommentDto[] = await commentRes.json()
       setPost(postData)
       setLikeCount(postData.likes)
@@ -75,7 +79,7 @@ export default function PostDetailPage() {
     const res = await fetch(`/api/posts/${id}/comments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ author: myName, authorUsername: username, content: commentText }),
+      body: JSON.stringify({ author: myName, authorUsername: username, content: commentText, parentId: null }),
     })
     if (res.ok) {
       const newComment: CommentDto = await res.json()
@@ -85,28 +89,38 @@ export default function PostDetailPage() {
     }
   }
 
+  async function handleReplySubmit(parentId: number) {
+    if (!replyText.trim()) return
+    if (!isLoggedIn) { alert('로그인이 필요합니다.'); return }
+    const res = await fetch(`/api/posts/${id}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ author: myName, authorUsername: username, content: replyText, parentId }),
+    })
+    if (res.ok) {
+      const newReply: CommentDto = await res.json()
+      setComments(prev => [...prev, newReply])
+      setReplyText('')
+      setReplyingToId(null)
+      setPost(prev => prev ? { ...prev, commentCount: prev.commentCount + 1 } : prev)
+    }
+  }
+
   async function handleCommentDelete(commentId: number) {
     if (!confirm('댓글을 삭제하시겠습니까?')) return
-    const memberType = sessionStorage.getItem('memberType') ?? ''
     const res = await fetch(
       `/api/posts/${id}/comments/${commentId}?username=${encodeURIComponent(username)}&memberType=${memberType}`,
       { method: 'DELETE' }
     )
     if (res.ok) {
-      setComments(prev => prev.filter(c => c.id !== commentId))
-      setPost(prev => prev ? { ...prev, commentCount: prev.commentCount - 1 } : prev)
+      const removed = comments.filter(c => c.id === commentId || c.parentId === commentId)
+      setComments(prev => prev.filter(c => c.id !== commentId && c.parentId !== commentId))
+      setPost(prev => prev ? { ...prev, commentCount: prev.commentCount - removed.length } : prev)
     }
   }
 
-  function startEdit(c: CommentDto) {
-    setEditingId(c.id)
-    setEditText(c.content)
-  }
-
-  function cancelEdit() {
-    setEditingId(null)
-    setEditText('')
-  }
+  function startEdit(c: CommentDto) { setEditingId(c.id); setEditText(c.content) }
+  function cancelEdit()              { setEditingId(null); setEditText('') }
 
   async function handleCommentEdit(commentId: number) {
     if (!editText.trim()) return
@@ -142,12 +156,61 @@ export default function PostDetailPage() {
 
   if (!post) return null
 
-  const memberType = sessionStorage.getItem('memberType') ?? ''
-  const isAuthor = username === post.authorUsername || myName === post.author
-  const canDelete  = isAuthor || memberType === 'admin'
+  const isAuthor  = username === post.authorUsername || myName === post.author
+  const canDelete = isAuthor || memberType === 'admin'
   const gradeLabel = post.visibility === 'grade'
     ? post.targetGrades.map(g => `${g}학년`).join('·')
     : null
+
+  const rootComments  = comments.filter(c => c.parentId === null)
+  const getReplies    = (parentId: number) => comments.filter(c => c.parentId === parentId)
+
+  function renderComment(c: CommentDto, isReply = false) {
+    const isMyComment = c.authorUsername ? c.authorUsername === username : c.author === myName
+    return (
+      <li
+        key={c.id}
+        className={`border-b border-gray-100 pb-3 ${isReply ? 'ml-6 pl-3 border-l-2 border-gray-200' : ''}`}
+      >
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-sm font-medium">
+            {isReply && <span className="text-gray-400 mr-1">↩</span>}
+            {c.author}
+          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-400">{c.date}</span>
+            {isMyComment && editingId !== c.id && (
+              <>
+                {!isReply && (
+                  <button onClick={() => startEdit(c)} className="text-xs text-gray-400 hover:text-black">수정</button>
+                )}
+                <button onClick={() => handleCommentDelete(c.id)} className="text-xs text-gray-400 hover:text-red-500">삭제</button>
+              </>
+            )}
+            {!isMyComment && memberType === 'admin' && (
+              <button onClick={() => handleCommentDelete(c.id)} className="text-xs text-gray-400 hover:text-red-500">삭제</button>
+            )}
+          </div>
+        </div>
+        {editingId === c.id ? (
+          <div>
+            <textarea
+              value={editText}
+              onChange={e => setEditText(e.target.value)}
+              rows={3}
+              className="border border-black px-3 py-2 text-sm outline-none resize-none w-full"
+            />
+            <div className="flex gap-2 justify-end mt-1">
+              <button onClick={cancelEdit} className="text-xs border border-gray-400 px-3 py-1 hover:bg-gray-100">취소</button>
+              <button onClick={() => handleCommentEdit(c.id)} className="text-xs bg-black text-white px-3 py-1 hover:bg-gray-800">저장</button>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-700 whitespace-pre-wrap">{c.content}</p>
+        )}
+      </li>
+    )
+  }
 
   return (
     <div className="bg-white text-black font-sans min-h-screen">
@@ -155,24 +218,15 @@ export default function PostDetailPage() {
       <div className="pt-14" />
 
       <main className="max-w-3xl mx-auto px-4 py-8">
-        {/* 뒤로가기 */}
-        <button
-          onClick={() => navigate(-1)}
-          className="text-sm text-gray-500 hover:text-black mb-6 flex items-center gap-1"
-        >
+        <button onClick={() => navigate(-1)} className="text-sm text-gray-500 hover:text-black mb-6 flex items-center gap-1">
           <i className="fas fa-arrow-left" /> 목록으로
         </button>
 
-        {/* 헤더 */}
         <div className="border-b border-black pb-4 mb-4">
           <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <span className="border border-black text-black px-1.5 py-0.5 text-xs font-medium">
-              {post.category}
-            </span>
+            <span className="border border-black text-black px-1.5 py-0.5 text-xs font-medium">{post.category}</span>
             {gradeLabel && (
-              <span className="border border-gray-400 text-gray-500 px-1.5 py-0.5 text-xs">
-                {gradeLabel}
-              </span>
+              <span className="border border-gray-400 text-gray-500 px-1.5 py-0.5 text-xs">{gradeLabel}</span>
             )}
           </div>
           <h1 className="text-2xl font-bold mb-3">{post.title}</h1>
@@ -185,38 +239,26 @@ export default function PostDetailPage() {
             {(isAuthor || canDelete) && (
               <div className="ml-auto flex gap-2">
                 {isAuthor && (
-                  <button
-                    onClick={() => navigate(`/post/${id}/edit`)}
-                    className="text-xs border border-black px-3 py-1 hover:bg-black hover:text-white transition"
-                  >수정</button>
+                  <button onClick={() => navigate(`/post/${id}/edit`)} className="text-xs border border-black px-3 py-1 hover:bg-black hover:text-white transition">수정</button>
                 )}
                 {canDelete && (
-                  <button
-                    onClick={handleDelete}
-                    className="text-xs border border-red-500 text-red-500 px-3 py-1 hover:bg-red-500 hover:text-white transition"
-                  >삭제</button>
+                  <button onClick={handleDelete} className="text-xs border border-red-500 text-red-500 px-3 py-1 hover:bg-red-500 hover:text-white transition">삭제</button>
                 )}
               </div>
             )}
           </div>
         </div>
 
-        {/* 본문 */}
-        <div className="min-h-40 text-sm leading-relaxed whitespace-pre-wrap mb-6">
-          {post.content ?? ''}
-        </div>
+        <div className="min-h-40 text-sm leading-relaxed whitespace-pre-wrap mb-6">{post.content ?? ''}</div>
 
-        {/* 첨부 이미지 */}
         {post.attachments && post.attachments.filter(a => a.isImage).length > 0 && (
           <div className="flex flex-wrap gap-2 mb-6">
             {post.attachments.filter(a => a.isImage).map(a => (
-              <img key={a.url} src={a.url} alt={a.originalName}
-                className="max-w-full max-h-96 border border-gray-200 object-contain" />
+              <img key={a.url} src={a.url} alt={a.originalName} className="max-w-full max-h-96 border border-gray-200 object-contain" />
             ))}
           </div>
         )}
 
-        {/* 첨부파일 목록 */}
         {post.attachments && post.attachments.filter(a => !a.isImage).length > 0 && (
           <div className="mb-6">
             <h3 className="text-sm font-medium mb-2">첨부파일</h3>
@@ -224,14 +266,9 @@ export default function PostDetailPage() {
               {post.attachments.filter(a => !a.isImage).map(a => (
                 <li key={a.url} className="flex items-center gap-2 border border-gray-200 px-3 py-2 text-sm">
                   <i className="fas fa-paperclip text-gray-400 flex-shrink-0" />
-                  <a href={a.url} download={a.originalName}
-                    className="flex-1 truncate text-blue-600 hover:underline">
-                    {a.originalName}
-                  </a>
+                  <a href={a.url} download={a.originalName} className="flex-1 truncate text-blue-600 hover:underline">{a.originalName}</a>
                   <span className="text-xs text-gray-400 flex-shrink-0">
-                    {a.fileSize < 1024 * 1024
-                      ? `${(a.fileSize / 1024).toFixed(1)} KB`
-                      : `${(a.fileSize / (1024 * 1024)).toFixed(1)} MB`}
+                    {a.fileSize < 1024 * 1024 ? `${(a.fileSize / 1024).toFixed(1)} KB` : `${(a.fileSize / (1024 * 1024)).toFixed(1)} MB`}
                   </span>
                 </li>
               ))}
@@ -239,85 +276,72 @@ export default function PostDetailPage() {
           </div>
         )}
 
-        {/* 추천 버튼 */}
         <div className="flex justify-center mb-10">
           <button
             onClick={handleLike}
-            className={`flex items-center gap-2 px-8 py-2.5 border text-sm font-medium transition ${
-              liked
-                ? 'bg-black text-white border-black'
-                : 'border-black text-black hover:bg-gray-100'
-            }`}
+            className={`flex items-center gap-2 px-8 py-2.5 border text-sm font-medium transition ${liked ? 'bg-black text-white border-black' : 'border-black text-black hover:bg-gray-100'}`}
           >
             <i className={`fas fa-heart ${liked ? 'text-red-400' : 'text-red-300'}`} />
             추천 {likeCount}
           </button>
         </div>
 
-        {/* 댓글 */}
         <section>
           <h2 className="text-base font-bold mb-4 border-b border-black pb-2">
             댓글 <span className="text-gray-500 font-normal">{comments.length}</span>
           </h2>
 
-          {comments.length === 0 && (
+          {rootComments.length === 0 && (
             <p className="text-sm text-gray-400 mb-4">첫 댓글을 남겨보세요.</p>
           )}
 
           <ul className="flex flex-col gap-4 mb-6">
-            {comments.map(c => {
-              const isMyComment = c.authorUsername ? c.authorUsername === username : c.author === myName
-              return (
-                <li key={c.id} className="border-b border-gray-100 pb-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium">{c.author}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-400">{c.date}</span>
-                      {isMyComment && editingId !== c.id && (
-                        <>
-                          <button
-                            onClick={() => startEdit(c)}
-                            className="text-xs text-gray-400 hover:text-black"
-                          >수정</button>
-                          <button
-                            onClick={() => handleCommentDelete(c.id)}
-                            className="text-xs text-gray-400 hover:text-red-500"
-                          >삭제</button>
-                        </>
-                      )}
-                      {!isMyComment && memberType === 'admin' && (
-                        <button
-                          onClick={() => handleCommentDelete(c.id)}
-                          className="text-xs text-gray-400 hover:text-red-500"
-                        >삭제</button>
-                      )}
+            {rootComments.map(c => (
+              <li key={c.id} className="border-b border-gray-100 pb-3">
+                {/* 원댓글 */}
+                <ul>{renderComment(c, false)}</ul>
+
+                {/* 답글 달기 버튼 */}
+                {isLoggedIn && editingId !== c.id && (
+                  <button
+                    onClick={() => { setReplyingToId(replyingToId === c.id ? null : c.id); setReplyText('') }}
+                    className="text-xs text-gray-400 hover:text-black mt-1 ml-1"
+                  >
+                    ↩ 답글 달기
+                  </button>
+                )}
+
+                {/* 대댓글 목록 */}
+                {getReplies(c.id).length > 0 && (
+                  <ul className="flex flex-col gap-2 mt-2">
+                    {getReplies(c.id).map(reply => renderComment(reply, true))}
+                  </ul>
+                )}
+
+                {/* 답글 입력폼 */}
+                {replyingToId === c.id && (
+                  <div className="ml-6 mt-2 flex flex-col gap-1">
+                    <textarea
+                      value={replyText}
+                      onChange={e => setReplyText(e.target.value)}
+                      placeholder="답글을 입력하세요..."
+                      rows={2}
+                      className="border border-gray-400 px-3 py-2 text-sm outline-none resize-none"
+                    />
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        onClick={() => { setReplyingToId(null); setReplyText('') }}
+                        className="text-xs border border-gray-400 px-3 py-1 hover:bg-gray-100"
+                      >취소</button>
+                      <button
+                        onClick={() => handleReplySubmit(c.id)}
+                        className="text-xs bg-black text-white px-3 py-1 hover:bg-gray-800"
+                      >등록</button>
                     </div>
                   </div>
-                  {editingId === c.id ? (
-                    <div>
-                      <textarea
-                        value={editText}
-                        onChange={e => setEditText(e.target.value)}
-                        rows={3}
-                        className="border border-black px-3 py-2 text-sm outline-none resize-none w-full"
-                      />
-                      <div className="flex gap-2 justify-end mt-1">
-                        <button
-                          onClick={cancelEdit}
-                          className="text-xs border border-gray-400 px-3 py-1 hover:bg-gray-100"
-                        >취소</button>
-                        <button
-                          onClick={() => handleCommentEdit(c.id)}
-                          className="text-xs bg-black text-white px-3 py-1 hover:bg-gray-800"
-                        >저장</button>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{c.content}</p>
-                  )}
-                </li>
-              )
-            })}
+                )}
+              </li>
+            ))}
           </ul>
 
           {isLoggedIn ? (
@@ -330,18 +354,13 @@ export default function PostDetailPage() {
                 className="border border-black px-3 py-2 text-sm outline-none resize-none"
               />
               <div className="flex justify-end">
-                <button
-                  type="submit"
-                  className="px-5 py-2 text-sm bg-black text-white font-medium hover:bg-gray-800 transition"
-                >댓글 등록</button>
+                <button type="submit" className="px-5 py-2 text-sm bg-black text-white font-medium hover:bg-gray-800 transition">댓글 등록</button>
               </div>
             </form>
           ) : (
             <p className="text-sm text-gray-400 text-center py-4">
               댓글을 작성하려면{' '}
-              <button onClick={() => navigate('/login')} className="underline text-black">
-                로그인
-              </button>
+              <button onClick={() => navigate('/login')} className="underline text-black">로그인</button>
               하세요.
             </p>
           )}
