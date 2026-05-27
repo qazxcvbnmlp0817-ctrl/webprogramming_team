@@ -57,6 +57,24 @@ describe('RoleManageModal', () => {
     await waitFor(() => expect(onSave).toHaveBeenCalledWith(1, 'DEPT_ADMIN'))
   })
 
+  it('저장 성공 후 저장 버튼이 saving 상태에서 벗어난다', async () => {
+    const user = makeUser({ adminRole: null })
+    const onSave = vi.fn().mockResolvedValue(undefined)
+    render(<RoleManageModal user={user} onClose={vi.fn()} onSave={onSave} />)
+
+    const deptRadio = screen.getAllByRole('radio').find(
+      r => (r as HTMLInputElement).value === 'DEPT_ADMIN'
+    )!
+    fireEvent.click(deptRadio)
+
+    const saveButton = screen.getByRole('button', { name: '저장' })
+    fireEvent.click(saveButton)
+
+    await waitFor(() => expect(onSave).toHaveBeenCalled())
+    // After onSave resolves, button should not show "저장 중..."
+    expect(screen.queryByRole('button', { name: '저장 중...' })).not.toBeInTheDocument()
+  })
+
   it('onSave 실패 시 에러 메시지를 모달 내부에 표시한다', async () => {
     const user = makeUser({ adminRole: null })
     const onSave = vi.fn().mockRejectedValue(new Error('이미 상위 역할을 보유하고 있습니다'))

@@ -28,6 +28,7 @@ export default function RoleManageModal({ user, onClose, onSave }: Props) {
       await onSave(user.id, selected)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : '역할 변경에 실패했습니다.')
+    } finally {
       setSaving(false)
     }
   }
