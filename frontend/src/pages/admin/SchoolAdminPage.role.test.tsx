@@ -24,12 +24,15 @@ vi.mock('../../api/adminSchool', () => ({
   fetchSchoolVisitors: vi.fn().mockResolvedValue([]),
   fetchSchoolMonthlyStats: vi.fn().mockResolvedValue([]),
   fetchSchoolAllUsers: vi.fn().mockResolvedValue([
-    { id: 1, name: '김교수', username: 'prof_kim', memberType: 'professor', adminRole: null,         status: 'ACTIVE' },
-    { id: 2, name: '이조교', username: 'ta_lee',   memberType: 'assistant', adminRole: 'DEPT_ADMIN', status: 'ACTIVE' },
+    { id: 1, name: '김교수', username: 'prof_kim', memberType: 'professor',
+      adminRole: null, status: 'ACTIVE', department: null, universityId: '1', createdDate: '' },
+    { id: 2, name: '이조교', username: 'ta_lee', memberType: 'assistant',
+      adminRole: 'DEPT_ADMIN', status: 'ACTIVE', department: null, universityId: '1', createdDate: '' },
   ]),
   fetchSchoolPendingUsers: vi.fn().mockResolvedValue([]),
   fetchSchoolUsers: vi.fn().mockResolvedValue([
-    { id: 2, name: '이조교', username: 'ta_lee', memberType: 'assistant', adminRole: 'DEPT_ADMIN', status: 'ACTIVE' },
+    { id: 2, name: '이조교', username: 'ta_lee', memberType: 'assistant',
+      adminRole: 'DEPT_ADMIN', status: 'ACTIVE', department: null, universityId: '1', createdDate: '' },
   ]),
   fetchAdminLogs: vi.fn().mockResolvedValue([]),
   fetchSchoolPosts: vi.fn().mockResolvedValue({ posts: [], totalPages: 1 }),
@@ -53,7 +56,7 @@ function renderPage() {
   )
 }
 
-describe('SchoolAdminPage — 역할 관리', () => {
+describe('SchoolAdminPage — 역할 관리 모달', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockUpdateRole.mockResolvedValue(undefined)
@@ -62,48 +65,61 @@ describe('SchoolAdminPage — 역할 관리', () => {
     sessionStorage.setItem('universityId', '1')
   })
 
-  it('"전체 사용자" 탭에 관리자 역할 드롭다운이 표시된다', async () => {
+  it('"전체 사용자" 탭에 사용자마다 "역할 관리" 버튼이 표시된다', async () => {
     renderPage()
     fireEvent.click(await screen.findByText('전체 사용자'))
-    const selects = await screen.findAllByRole('combobox', { name: /관리자 역할/ })
-    expect(selects).toHaveLength(2)
+    const buttons = await screen.findAllByRole('button', { name: '역할 관리' })
+    expect(buttons).toHaveLength(2)
   })
 
-  it('드롭다운에서 DEPT_ADMIN 선택 시 updateSchoolUserRole이 호출된다', async () => {
+  it('"역할 관리" 버튼 클릭 시 모달 다이얼로그가 열린다', async () => {
     renderPage()
     fireEvent.click(await screen.findByText('전체 사용자'))
-    const selects = await screen.findAllByRole('combobox', { name: /관리자 역할/ })
-    // 김교수(adminRole: null) 행 — 첫 번째 드롭다운
-    fireEvent.change(selects[0], { target: { value: 'DEPT_ADMIN' } })
-    await waitFor(() => {
+    const buttons = await screen.findAllByRole('button', { name: '역할 관리' })
+    fireEvent.click(buttons[0])
+    expect(await screen.findByRole('dialog', { name: /역할 관리/ })).toBeInTheDocument()
+  })
+
+  it('모달에서 DEPT_ADMIN 선택 후 저장 시 updateSchoolUserRole이 호출된다', async () => {
+    renderPage()
+    fireEvent.click(await screen.findByText('전체 사용자'))
+    const buttons = await screen.findAllByRole('button', { name: '역할 관리' })
+    fireEvent.click(buttons[0])
+    await screen.findByRole('dialog')
+
+    const deptRadio = screen.getAllByRole('radio').find(
+      r => (r as HTMLInputElement).value === 'DEPT_ADMIN'
+    )!
+    fireEvent.click(deptRadio)
+    fireEvent.click(screen.getByRole('button', { name: '저장' }))
+
+    await waitFor(() =>
       expect(mockUpdateRole).toHaveBeenCalledWith(1, 'DEPT_ADMIN', undefined)
-    })
+    )
   })
 
-  it('드롭다운에서 없음 선택 시 updateSchoolUserRole이 빈 문자열로 호출된다', async () => {
+  it('역할 저장 실패 시 에러 메시지가 모달 내부에 표시된다', async () => {
+    mockUpdateRole.mockRejectedValueOnce(new Error('이미 상위 역할을 보유하고 있습니다'))
     renderPage()
     fireEvent.click(await screen.findByText('전체 사용자'))
-    const selects = await screen.findAllByRole('combobox', { name: /관리자 역할/ })
-    // 이조교(adminRole: DEPT_ADMIN) 행 — 두 번째 드롭다운에서 없음 선택
-    fireEvent.change(selects[1], { target: { value: '' } })
-    await waitFor(() => {
-      expect(mockUpdateRole).toHaveBeenCalledWith(2, '', undefined)
-    })
-  })
+    const buttons = await screen.findAllByRole('button', { name: '역할 관리' })
+    fireEvent.click(buttons[0])
+    await screen.findByRole('dialog')
 
-  it('역할 변경 실패 시 에러 메시지가 표시된다', async () => {
-    mockUpdateRole.mockRejectedValueOnce(new Error('서버 오류'))
-    renderPage()
-    fireEvent.click(await screen.findByText('전체 사용자'))
-    const selects = await screen.findAllByRole('combobox', { name: /관리자 역할/ })
-    fireEvent.change(selects[0], { target: { value: 'DEPT_ADMIN' } })
-    expect(await screen.findByText('역할 변경에 실패했습니다. 다시 시도해 주세요.')).toBeInTheDocument()
+    const deptRadio = screen.getAllByRole('radio').find(
+      r => (r as HTMLInputElement).value === 'DEPT_ADMIN'
+    )!
+    fireEvent.click(deptRadio)
+    fireEvent.click(screen.getByRole('button', { name: '저장' }))
+
+    expect(
+      await screen.findByText('이미 상위 역할을 보유하고 있습니다')
+    ).toBeInTheDocument()
   })
 
   it('"관리자 계정" 탭에 memberType 뱃지가 adminRole과 함께 표시된다', async () => {
     renderPage()
     fireEvent.click(await screen.findByText('관리자 계정'))
-    // fetchSchoolUsers mock: 이조교(assistant, DEPT_ADMIN) 반환
     expect(await screen.findByText('assistant')).toBeInTheDocument()
     expect(screen.getByText('DEPT_ADMIN')).toBeInTheDocument()
   })

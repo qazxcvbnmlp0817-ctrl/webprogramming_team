@@ -7,6 +7,7 @@ import {
 } from 'chart.js'
 import { Line, Doughnut, Bar } from 'react-chartjs-2'
 import Navbar from '../../components/Navbar'
+import RoleManageModal from '../../components/admin/RoleManageModal'
 import {
   fetchSchoolStats, fetchSchoolVisitors, fetchSchoolPosts,
   deleteSchoolPost, fetchSchoolUsers, updateSchoolUserRole,
@@ -55,7 +56,7 @@ export default function SchoolAdminPage() {
   const [selCourseId, setSelCourseId]     = useState<number | ''>('')
   const [selDeptId, setSelDeptId]         = useState<number | ''>('')
   const [assignError, setAssignError]     = useState<string | null>(null)
-  const [roleChangeError, setRoleChangeError] = useState<string | null>(null)
+  const [roleModalUser, setRoleModalUser] = useState<AdminUser | null>(null)
 
   useEffect(() => {
     Promise.all([
@@ -110,19 +111,15 @@ export default function SchoolAdminPage() {
     fetchAdminLogs(univId).then(setLogs)
   }
 
-  const handleInlineRoleChange = async (userId: number, newRole: string) => {
-    setRoleChangeError(null)
-    try {
-      await updateSchoolUserRole(userId, newRole, univId)
-      const [au, all] = await Promise.all([
-        fetchSchoolUsers(univId),
-        fetchSchoolAllUsers(univId),
-      ])
-      setAdminUsers(au)
-      setAllUsers(all)
-    } catch {
-      setRoleChangeError('역할 변경에 실패했습니다. 다시 시도해 주세요.')
-    }
+  const handleSaveRole = async (userId: number, newRole: string) => {
+    await updateSchoolUserRole(userId, newRole, univId)
+    const [au, all] = await Promise.all([
+      fetchSchoolUsers(univId),
+      fetchSchoolAllUsers(univId),
+    ])
+    setAdminUsers(au)
+    setAllUsers(all)
+    setRoleModalUser(null)
   }
 
   const filteredUsers = allUsers.filter(u => {
@@ -345,9 +342,6 @@ export default function SchoolAdminPage() {
                 {['전체', '학생', '교수', '정지됨'].map(f => <option key={f}>{f}</option>)}
               </select>
             </div>
-            {roleChangeError && (
-              <p className="text-sm text-red-500 mb-3">{roleChangeError}</p>
-            )}
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -370,16 +364,15 @@ export default function SchoolAdminPage() {
                       </td>
                       <td className="py-3 pr-4"><StatusBadge status={u.status} /></td>
                       <td className="py-3 pr-4">
-                        <select
-                          aria-label="관리자 역할"
-                          value={u.adminRole ?? ''}
-                          onChange={(e) => handleInlineRoleChange(u.id, e.target.value)}
-                          className="border border-gray-300 text-xs px-2 py-1 focus:outline-none focus:border-black"
+                        <span className="border border-gray-300 px-2 py-0.5 text-xs font-mono mr-2">
+                          {u.adminRole ?? '없음'}
+                        </span>
+                        <button
+                          onClick={() => setRoleModalUser(u)}
+                          className="text-xs border border-gray-400 px-2 py-0.5 hover:border-black transition"
                         >
-                          <option value="">없음</option>
-                          <option value="SCHOOL_ADMIN">SCHOOL_ADMIN</option>
-                          <option value="DEPT_ADMIN">DEPT_ADMIN</option>
-                        </select>
+                          역할 관리
+                        </button>
                       </td>
                       <td className="py-3 flex gap-2">
                         {u.status === 'ACTIVE' && (
@@ -629,6 +622,14 @@ export default function SchoolAdminPage() {
         })()}
 
       </main>
+
+      {roleModalUser && (
+        <RoleManageModal
+          user={roleModalUser}
+          onClose={() => setRoleModalUser(null)}
+          onSave={handleSaveRole}
+        />
+      )}
     </div>
   )
 }
