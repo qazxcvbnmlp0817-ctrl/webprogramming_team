@@ -559,6 +559,15 @@ public class AdminService {
                 .findFirst().orElse(null);
     }
 
+    /** Reverse lookup: given a university and a faculty(학부) name, return its id. */
+    public Long resolveFacultyIdByName(Long universityId, String facultyName) {
+        return collegeSchoolRepository.findByUniversityIdOrderByIdAsc(universityId).stream()
+                .flatMap(s -> facultyGroupRepository.findBySchoolIdOrderByIdAsc(s.getId()).stream())
+                .filter(f -> facultyName.equals(f.getName()))
+                .map(com.example.demo.entity.FacultyGroup::getId)
+                .findFirst().orElse(null);
+    }
+
     // ── Professor / Course / Assignment ─────────────────────────────────────
 
     public List<Map<String, Object>> getProfessorsByDept(Long deptId) {

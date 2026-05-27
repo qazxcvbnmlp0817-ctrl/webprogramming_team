@@ -14,6 +14,8 @@ const SESSION_KEYS = [
   'grade',
   'enrollmentStatus',
   'adminRole',
+  'deptId',
+  'facultyId',
 ] as const
 
 type SessionKey = (typeof SESSION_KEYS)[number]

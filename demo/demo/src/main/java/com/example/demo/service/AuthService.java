@@ -79,8 +79,7 @@ public class AuthService {
         response.put("college", user.getCollege());
         response.put("enrollmentStatus", user.getEnrollmentStatus());
 
-        // DEPT_ADMIN: include resolved deptId so the client banner can deep-link
-        // straight to /admin/dept/{id}.
+        // DEPT_ADMIN: resolved deptId for deep-link to /admin/dept/{id}
         if ("DEPT_ADMIN".equals(user.getAdminRole())
                 && user.getUniversityId() != null && user.getDepartment() != null) {
             try {
@@ -88,6 +87,15 @@ public class AuthService {
                         Long.parseLong(user.getUniversityId()), user.getDepartment());
                 if (deptId != null) response.put("deptId", deptId);
             } catch (NumberFormatException ignored) { /* leave deptId off */ }
+        }
+        // SCHOOL_ADMIN: resolved facultyId for deep-link to /admin/faculty/{id}
+        if ("SCHOOL_ADMIN".equals(user.getAdminRole())
+                && user.getUniversityId() != null && user.getCollege() != null) {
+            try {
+                Long facultyId = adminService.resolveFacultyIdByName(
+                        Long.parseLong(user.getUniversityId()), user.getCollege());
+                if (facultyId != null) response.put("facultyId", facultyId);
+            } catch (NumberFormatException ignored) { /* leave facultyId off */ }
         }
         return response;
     }

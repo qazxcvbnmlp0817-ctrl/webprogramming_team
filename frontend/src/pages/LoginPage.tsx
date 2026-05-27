@@ -80,6 +80,8 @@ export default function LoginPage() {
         if (result.grade != null)    setAuthItem('grade',            String(result.grade),           rememberMe)
         if (result.enrollmentStatus) setAuthItem('enrollmentStatus', result.enrollmentStatus,        rememberMe)
         if (result.adminRole)        setAuthItem('adminRole',        result.adminRole,               rememberMe)
+        if (result.deptId)           setAuthItem('deptId',           String(result.deptId),          rememberMe)
+        if (result.facultyId)        setAuthItem('facultyId',        String(result.facultyId),        rememberMe)
 
         if (result.department || result.universityId) {
           setDept({
