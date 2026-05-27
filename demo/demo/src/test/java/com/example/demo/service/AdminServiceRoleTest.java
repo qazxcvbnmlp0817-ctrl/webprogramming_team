@@ -2,25 +2,23 @@ package com.example.demo.service;
 
 import com.example.demo.entity.User;
 import com.example.demo.repository.*;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 class AdminServiceRoleTest {
 
     @Mock UserRepository userRepository;
@@ -48,16 +46,12 @@ class AdminServiceRoleTest {
         return u;
     }
 
-    @BeforeEach
-    void setUp() {
-        when(adminLogRepository.save(any())).thenReturn(null);
-    }
-
     @Test
     void dept_admin에게_school_admin_부여_성공() {
         User user = makeUser("professor", "DEPT_ADMIN");
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenReturn(user);
+        when(adminLogRepository.save(any())).thenReturn(null);
 
         var result = adminService.updateUserRole(1L, "SCHOOL_ADMIN", "actor", 1L);
 
@@ -96,10 +90,31 @@ class AdminServiceRoleTest {
         User user = makeUser("professor", "DEPT_ADMIN");
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenReturn(user);
+        when(adminLogRepository.save(any())).thenReturn(null);
 
         var result = adminService.updateUserRole(1L, "", "actor", 1L);
 
         assertThat(result.get("success")).isEqualTo(true);
         assertThat(user.getAdminRole()).isNull();
+    }
+
+    @Test
+    void 역할_없는_사용자에게_school_admin_부여_성공() {
+        // given
+        User user = new User();
+        user.setId(10L);
+        user.setUsername("new_admin");
+        user.setAdminRole(null);   // 현재 역할 없음
+        user.setMemberType("professor");
+        when(userRepository.findById(10L)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenReturn(user);
+        when(adminLogRepository.save(any())).thenReturn(null);
+
+        // when
+        Map<String, Object> result = adminService.updateUserRole(10L, "SCHOOL_ADMIN", "actor", 1L);
+
+        // then
+        assertEquals(true, result.get("success"));
+        assertEquals("SCHOOL_ADMIN", user.getAdminRole());
     }
 }
