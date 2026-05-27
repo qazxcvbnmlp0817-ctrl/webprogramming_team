@@ -132,7 +132,10 @@ export async function updateSchoolUserRole(userId: number, role: string, univId?
     headers: headers(),
     body: JSON.stringify({ role }),
   })
-  handle403(res)
+  if (!res.ok) {
+    handle403(res)
+    throw new Error('역할 변경 실패')
+  }
 }
 
 export async function fetchAdminLogs(univId?: number): Promise<AdminLog[]> {
