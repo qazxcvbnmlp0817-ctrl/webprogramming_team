@@ -144,8 +144,8 @@ public class SchoolAdminController {
             @RequestParam(required = false) Long univId) {
         Long resolvedUnivId = resolveUnivId(username, univId);
         String role = body.get("role");
-        if (role != null && !role.isBlank() && !"DEPT_ADMIN".equals(role))
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "School Admin은 DEPT_ADMIN만 부여 가능");
+        if (role != null && !role.isBlank() && "SUPER_ADMIN".equals(role))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "SUPER_ADMIN 역할은 부여할 수 없습니다");
         return ResponseEntity.ok(adminService.updateUserRole(id, role, resolveActor(username), resolvedUnivId));
     }
 
