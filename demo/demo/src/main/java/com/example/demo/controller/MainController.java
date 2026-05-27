@@ -37,10 +37,9 @@ public class MainController {
         Long id = deptId != null ? deptId : 1L;
         Map<String, Object> result = new HashMap<>();
         List<NoticeDto>   notices   = noticeService.getNoticesByDept(id);
-        List<PostDto>     posts     = postService.getPostsByDept(id);
         List<ScheduleDto> schedules = scheduleService.getSchedulesByDept(id);
-        result.put("notices",   notices.subList(0, Math.min(5, notices.size())));
-        result.put("posts",     posts.subList(0, Math.min(5, posts.size())));
+        result.put("notices",   notices);
+        result.put("posts",     postService.getTopPostsByLikesForDept(id, 5));
         result.put("schedules", schedules);
         result.put("today", LocalDate.now()
             .format(DateTimeFormatter.ofPattern("yyyy년 MM월 dd일 EEEE", Locale.KOREAN)));
@@ -53,10 +52,9 @@ public class MainController {
         Long id = facultyId != null ? facultyId : 1L;
         Map<String, Object> result = new HashMap<>();
         List<NoticeDto>   notices   = noticeService.getNoticesByFaculty(id);
-        List<PostDto>     posts     = postService.getPostsByFaculty(id);
         List<ScheduleDto> schedules = scheduleService.getSchedulesByFaculty(id);
-        result.put("notices",   notices.subList(0, Math.min(5, notices.size())));
-        result.put("posts",     posts.subList(0, Math.min(5, posts.size())));
+        result.put("notices",   notices);
+        result.put("posts",     postService.getTopPostsByLikesForFaculty(id, 5));
         result.put("schedules", schedules);
         result.put("today", LocalDate.now()
             .format(DateTimeFormatter.ofPattern("yyyy년 MM월 dd일 EEEE", Locale.KOREAN)));
