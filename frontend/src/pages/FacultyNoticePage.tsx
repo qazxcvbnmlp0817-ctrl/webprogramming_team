@@ -2,7 +2,6 @@ import { useState, useMemo, useEffect } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import FilterTabs from '../components/FilterTabs'
-import FeaturedCard from '../components/FeaturedCard'
 import Sidebar from '../components/Sidebar'
 import Pagination from '../components/Pagination'
 import { fetchUniversity } from '../api/universities'
@@ -33,7 +32,6 @@ export default function FacultyNoticePage() {
   const { data: univ }          = useDeptFetch(fetchUniversity, selectedUniversityId)
   const { data, loading }       = useDeptFetch(fetchFacultyNotices, facultyIdNum)
 
-  const featured = data?.featured ?? null
   const notices  = data?.notices  ?? []
 
   const filtered = useMemo(() => notices.filter(n => {
@@ -97,15 +95,6 @@ export default function FacultyNoticePage() {
           </div>
         ) : (
           <>
-            {featured && (
-              <FeaturedCard
-                category={featured.category}
-                title={featured.title}
-                date={featured.date}
-                meta={`👁 ${featured.viewCount}`}
-              />
-            )}
-
             <div className="mb-4">
               <div className="flex items-center border border-black">
                 <div className="flex border-r border-black">
