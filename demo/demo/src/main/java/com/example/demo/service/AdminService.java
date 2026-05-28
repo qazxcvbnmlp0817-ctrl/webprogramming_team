@@ -666,6 +666,19 @@ public class AdminService {
         return getDeptIdsForUniv(univId);
     }
 
+    public List<Map<String, Object>> getDeptsByUniv(Long univId) {
+        return collegeSchoolRepository.findByUniversityId(univId).stream()
+            .flatMap(cs -> facultyGroupRepository.findBySchoolId(cs.getId()).stream())
+            .flatMap(fg -> departmentRepository.findByFacultyId(fg.getId()).stream())
+            .map(d -> {
+                Map<String, Object> m = new HashMap<>();
+                m.put("id", d.getId());
+                m.put("name", d.getName());
+                return m;
+            })
+            .toList();
+    }
+
     private List<Long> getDeptIdsForUniv(Long univId) {
         return collegeSchoolRepository.findByUniversityId(univId).stream()
             .flatMap(cs -> facultyGroupRepository.findBySchoolId(cs.getId()).stream())

@@ -150,6 +150,11 @@ export async function fetchSchoolMonthlyStats(univId?: number): Promise<MonthlyS
   return res.json()
 }
 
+export interface DeptItem {
+  id: number
+  name: string
+}
+
 export interface ProfessorItem {
   id: number
   name: string
@@ -174,6 +179,12 @@ export interface AssignmentItem {
   deptId: number
   professorName: string
   courseName: string
+}
+
+export async function fetchSchoolDepts(univId?: number): Promise<DeptItem[]> {
+  const res = await fetch('/api/admin/school/departments' + qs(univParam(univId)), { headers: headers() })
+  handle403(res)
+  return res.json()
 }
 
 export async function fetchSchoolProfessors(univId?: number): Promise<ProfessorItem[]> {

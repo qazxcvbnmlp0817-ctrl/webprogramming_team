@@ -14,11 +14,11 @@ import {
   fetchSchoolAllUsers, fetchSchoolPendingUsers, updateUserStatus,
   fetchAdminLogs, fetchSchoolMonthlyStats,
   fetchSchoolProfessors, fetchSchoolCourses, fetchSchoolAssignments,
-  createSchoolAssignment, deleteSchoolAssignment,
+  createSchoolAssignment, deleteSchoolAssignment, fetchSchoolDepts,
 } from '../../api/adminSchool'
 import type {
   SchoolStats, VisitorPoint, PostItem, AdminUser, AdminLog, MonthlyStats,
-  ProfessorItem, CourseItem, AssignmentItem,
+  ProfessorItem, CourseItem, AssignmentItem, DeptItem,
 } from '../../api/adminSchool'
 
 ChartJS.register(
@@ -51,6 +51,7 @@ export default function SchoolAdminPage() {
   const [professors, setProfessors]   = useState<ProfessorItem[]>([])
   const [courses, setCourses]         = useState<CourseItem[]>([])
   const [assignments, setAssignments] = useState<AssignmentItem[]>([])
+  const [depts, setDepts]             = useState<DeptItem[]>([])
   const [selProfId, setSelProfId]         = useState<number | ''>('')
   const [selCourseId, setSelCourseId]     = useState<number | ''>('')
   const [selDeptId, setSelDeptId]         = useState<number | ''>('')
@@ -85,7 +86,8 @@ export default function SchoolAdminPage() {
       fetchSchoolProfessors(univId),
       fetchSchoolCourses(univId),
       fetchSchoolAssignments(univId),
-    ]).then(([p, c, a]) => { setProfessors(p); setCourses(c); setAssignments(a) })
+      fetchSchoolDepts(univId),
+    ]).then(([p, c, a, d]) => { setProfessors(p); setCourses(c); setAssignments(a); setDepts(d) })
   }, [tab, univId])
 
   const handleDeletePost = async (postId: number) => {
@@ -462,7 +464,6 @@ export default function SchoolAdminPage() {
         )}
 
         {tab === '교수 배정' && (() => {
-          const uniqueDeptIds = [...new Set(professors.map(p => p.deptId))]
           return (
             <div className="space-y-6">
               <div className="border-2 border-black p-6">
@@ -480,8 +481,8 @@ export default function SchoolAdminPage() {
                       className="border border-gray-300 text-sm px-3 py-2 focus:outline-none focus:border-black min-w-40"
                     >
                       <option value="">-- 학과 --</option>
-                      {uniqueDeptIds.map(did => (
-                        <option key={did} value={did}>학과 #{did}</option>
+                      {depts.map(dept => (
+                        <option key={dept.id} value={dept.id}>{dept.name}</option>
                       ))}
                     </select>
                   </div>

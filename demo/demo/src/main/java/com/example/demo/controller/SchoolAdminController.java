@@ -149,6 +149,14 @@ public class SchoolAdminController {
         return ResponseEntity.ok(adminService.updateUserRole(id, role, resolveActor(username), resolvedUnivId));
     }
 
+    @GetMapping("/departments")
+    public ResponseEntity<List<Map<String, Object>>> getDepartments(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @RequestParam(required = false) Long univId) {
+        Long id = resolveUnivId(username, univId);
+        return ResponseEntity.ok(adminService.getDeptsByUniv(id));
+    }
+
     @GetMapping("/professors")
     public ResponseEntity<List<Map<String, Object>>> getProfessors(
             @RequestHeader(value = "X-Username", required = false) String username,
