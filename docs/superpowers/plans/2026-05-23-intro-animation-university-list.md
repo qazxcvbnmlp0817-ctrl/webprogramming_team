@@ -1,6 +1,6 @@
 # Intro Animation + University List Page 구현 계획
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** 세션 기반 인트로 애니메이션을 추가하고, 대학교 선택 페이지에 검색/정렬/호버 프리뷰 패널을 구현한다.
 
@@ -30,7 +30,7 @@
 - Create: `frontend/src/components/common/IntroAnimation.tsx`
 - Create: `frontend/src/components/common/IntroAnimation.test.tsx`
 
-- [ ] **Step 1: 실패하는 테스트 작성**
+- [x] **Step 1: 실패하는 테스트 작성**
 
 `frontend/src/components/common/IntroAnimation.test.tsx` 를 아래 내용으로 생성:
 
@@ -73,7 +73,7 @@ test('언마운트 시 타이머가 정리된다', () => {
 })
 ```
 
-- [ ] **Step 2: 테스트 실패 확인**
+- [x] **Step 2: 테스트 실패 확인**
 
 ```bash
 cd frontend && npx vitest run src/components/common/IntroAnimation.test.tsx
@@ -81,7 +81,7 @@ cd frontend && npx vitest run src/components/common/IntroAnimation.test.tsx
 
 예상 결과: `Cannot find module './IntroAnimation'` 오류로 실패
 
-- [ ] **Step 3: IntroAnimation 구현**
+- [x] **Step 3: IntroAnimation 구현**
 
 `frontend/src/components/common/IntroAnimation.tsx` 생성:
 
@@ -127,7 +127,7 @@ export default function IntroAnimation({ onComplete }: Props) {
 }
 ```
 
-- [ ] **Step 4: 테스트 통과 확인**
+- [x] **Step 4: 테스트 통과 확인**
 
 ```bash
 cd frontend && npx vitest run src/components/common/IntroAnimation.test.tsx
@@ -135,7 +135,7 @@ cd frontend && npx vitest run src/components/common/IntroAnimation.test.tsx
 
 예상 결과: 4개 테스트 모두 PASS
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 
 ```bash
 git add frontend/src/components/common/IntroAnimation.tsx \
@@ -151,7 +151,7 @@ git commit -m "feat: IntroAnimation 컴포넌트 추가 (세션 기반 페이드
 - Create: `frontend/src/components/common/UniversityCard.tsx`
 - Create: `frontend/src/components/common/UniversityCard.test.tsx`
 
-- [ ] **Step 1: 실패하는 테스트 작성**
+- [x] **Step 1: 실패하는 테스트 작성**
 
 `frontend/src/components/common/UniversityCard.test.tsx` 생성:
 
@@ -220,7 +220,7 @@ test('프리뷰 패널에 단과대학/학과 수/활동 점수 레이블이 모
 })
 ```
 
-- [ ] **Step 2: 테스트 실패 확인**
+- [x] **Step 2: 테스트 실패 확인**
 
 ```bash
 cd frontend && npx vitest run src/components/common/UniversityCard.test.tsx
@@ -228,7 +228,7 @@ cd frontend && npx vitest run src/components/common/UniversityCard.test.tsx
 
 예상 결과: `Cannot find module './UniversityCard'` 오류로 실패
 
-- [ ] **Step 3: UniversityCard 구현**
+- [x] **Step 3: UniversityCard 구현**
 
 `frontend/src/components/common/UniversityCard.tsx` 생성:
 
@@ -330,7 +330,7 @@ function PreviewBar({
 }
 ```
 
-- [ ] **Step 4: 테스트 통과 확인**
+- [x] **Step 4: 테스트 통과 확인**
 
 ```bash
 cd frontend && npx vitest run src/components/common/UniversityCard.test.tsx
@@ -338,7 +338,7 @@ cd frontend && npx vitest run src/components/common/UniversityCard.test.tsx
 
 예상 결과: 6개 테스트 모두 PASS
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 
 ```bash
 git add frontend/src/components/common/UniversityCard.tsx \
@@ -354,7 +354,7 @@ git commit -m "feat: UniversityCard 컴포넌트 + activityScore 추가 (호버 
 - Create: `frontend/src/pages/UniversityListPage.test.tsx`
 - Modify: `frontend/src/pages/UniversityListPage.tsx`
 
-- [ ] **Step 1: 실패하는 테스트 작성**
+- [x] **Step 1: 실패하는 테스트 작성**
 
 `frontend/src/pages/UniversityListPage.test.tsx` 생성:
 
@@ -466,7 +466,7 @@ test('활동 많은 순 정렬 시 totalDeptCount가 높은 대학이 앞에 온
 })
 ```
 
-- [ ] **Step 2: 테스트 실패 확인**
+- [x] **Step 2: 테스트 실패 확인**
 
 ```bash
 cd frontend && npx vitest run src/pages/UniversityListPage.test.tsx
@@ -474,7 +474,7 @@ cd frontend && npx vitest run src/pages/UniversityListPage.test.tsx
 
 예상 결과: import 오류 또는 검색바/정렬 관련 테스트 실패
 
-- [ ] **Step 3: UniversityListPage 수정**
+- [x] **Step 3: UniversityListPage 수정**
 
 `frontend/src/pages/UniversityListPage.tsx` 를 아래 내용으로 교체:
 
@@ -633,7 +633,7 @@ export default function UniversityListPage() {
 }
 ```
 
-- [ ] **Step 4: 테스트 통과 확인**
+- [x] **Step 4: 테스트 통과 확인**
 
 ```bash
 cd frontend && npx vitest run src/pages/UniversityListPage.test.tsx
@@ -641,7 +641,7 @@ cd frontend && npx vitest run src/pages/UniversityListPage.test.tsx
 
 예상 결과: 5개 테스트 모두 PASS
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 
 ```bash
 git add frontend/src/pages/UniversityListPage.tsx \
@@ -656,7 +656,7 @@ git commit -m "feat: UniversityListPage 검색/정렬/카드 분리 적용"
 **Files:**
 - Modify: `frontend/src/App.tsx`
 
-- [ ] **Step 1: App.tsx 상단에 import 추가**
+- [x] **Step 1: App.tsx 상단에 import 추가**
 
 `frontend/src/App.tsx` 파일 상단의 import 블록 끝에 추가:
 
@@ -667,7 +667,7 @@ import IntroAnimation from './components/common/IntroAnimation'
 
 > 주의: `useState`는 이미 import되어 있지 않으면 추가, 이미 있으면 생략.
 
-- [ ] **Step 2: App 함수 내 인트로 상태 추가**
+- [x] **Step 2: App 함수 내 인트로 상태 추가**
 
 `export default function App()` 함수 본문 맨 앞에 추가:
 
@@ -677,7 +677,7 @@ const [introShown, setIntroShown] = useState(
 )
 ```
 
-- [ ] **Step 3: return 문 앞에 인트로 분기 추가**
+- [x] **Step 3: return 문 앞에 인트로 분기 추가**
 
 기존 `return (` 바로 위에 아래 코드를 삽입:
 
@@ -694,7 +694,7 @@ if (!introShown) {
 }
 ```
 
-- [ ] **Step 4: TypeScript 컴파일 확인**
+- [x] **Step 4: TypeScript 컴파일 확인**
 
 ```bash
 cd frontend && npx tsc --noEmit
@@ -702,7 +702,7 @@ cd frontend && npx tsc --noEmit
 
 예상 결과: 오류 없음
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 
 ```bash
 git add frontend/src/App.tsx
@@ -715,7 +715,7 @@ git commit -m "feat: App.tsx에 세션 기반 인트로 애니메이션 분기 �
 
 **Files:** 변경 없음 (검증만)
 
-- [ ] **Step 1: 전체 테스트 실행**
+- [x] **Step 1: 전체 테스트 실행**
 
 ```bash
 cd frontend && npx vitest run
@@ -723,7 +723,7 @@ cd frontend && npx vitest run
 
 예상 결과: 기존 테스트 포함 모두 PASS. 실패 시 오류 메시지를 확인하고 수정.
 
-- [ ] **Step 2: 프론트엔드 빌드**
+- [x] **Step 2: 프론트엔드 빌드**
 
 ```bash
 cd frontend && npm run build
@@ -731,7 +731,7 @@ cd frontend && npm run build
 
 예상 결과: `dist/` 생성 성공, TypeScript 오류 없음
 
-- [ ] **Step 3: 서버 기동 후 브라우저 확인**
+- [x] **Step 3: 서버 기동 후 브라우저 확인**
 
 백엔드가 실행 중인 상태에서 `http://localhost:8080` 접속:
 1. 인트로 애니메이션이 검은 화면에서 텍스트 페이드인으로 재생되는지 확인
@@ -742,7 +742,7 @@ cd frontend && npm run build
 6. 탭을 닫고 재접속 → 인트로가 다시 재생되는지 확인
 7. 같은 탭에서 뒤로가기 후 재진입 → 인트로 스킵 확인 (sessionStorage 유지)
 
-- [ ] **Step 4: 최종 커밋**
+- [x] **Step 4: 최종 커밋**
 
 ```bash
 git add frontend/demo/demo/src/main/resources/static

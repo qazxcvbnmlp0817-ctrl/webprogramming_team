@@ -1,6 +1,6 @@
 # Notice Board Page Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Replace the placeholder `notice/list.html` with a complete B&W minimalist notice board using Tailwind CSS, including a fixed navbar, featured notice, filter tabs, two-column list+sidebar layout, and mobile hamburger menu.
 
@@ -26,7 +26,7 @@
 **Files:**
 - Modify: `demo/demo/src/main/java/com/example/demo/dto/NoticeDto.java`
 
-- [ ] **Step 1: Replace NoticeDto with extended version**
+- [x] **Step 1: Replace NoticeDto with extended version**
 
 ```java
 package com.example.demo.dto;
@@ -67,7 +67,7 @@ public class NoticeDto {
 }
 ```
 
-- [ ] **Step 2: Fix MainController — NoticeDto constructor now needs 7 args**
+- [x] **Step 2: Fix MainController — NoticeDto constructor now needs 7 args**
 
 Open `demo/demo/src/main/java/com/example/demo/controller/MainController.java`.
 Find every `new NoticeDto(...)` call and add `"학사", 0, false` as the last three args.
@@ -89,7 +89,7 @@ new NoticeDto(1L, "수강신청 안내", "2026-05-10", "학사팀", "학사", 0,
 - Modify: `demo/demo/src/test/java/com/example/demo/controller/NoticeControllerTest.java`
 - Modify: `demo/demo/src/main/java/com/example/demo/controller/NoticeController.java`
 
-- [ ] **Step 1: Add failing test for `notices` model attribute**
+- [x] **Step 1: Add failing test for `notices` model attribute**
 
 ```java
 @Test
@@ -102,7 +102,7 @@ void notices_모델_속성_포함() throws Exception {
 }
 ```
 
-- [ ] **Step 2: Run test — expect FAIL**
+- [x] **Step 2: Run test — expect FAIL**
 
 ```
 cd demo/demo
@@ -110,7 +110,7 @@ cd demo/demo
 ```
 Expected: `AssertionError: Model attribute 'notices' does not exist`
 
-- [ ] **Step 3: Update NoticeController with dummy data**
+- [x] **Step 3: Update NoticeController with dummy data**
 
 ```java
 package com.example.demo.controller;
@@ -160,14 +160,14 @@ public class NoticeController {
 }
 ```
 
-- [ ] **Step 4: Run all NoticeController tests — expect PASS**
+- [x] **Step 4: Run all NoticeController tests — expect PASS**
 
 ```
 .\mvnw.cmd test -Dtest=NoticeControllerTest
 ```
 Expected: `Tests run: 2, Failures: 0, Errors: 0`
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```
 git add demo/demo/src/main/java/com/example/demo/dto/NoticeDto.java
@@ -183,7 +183,7 @@ git commit -m "feat: extend NoticeDto and add dummy data to NoticeController"
 **Files:**
 - Rewrite: `demo/demo/src/main/resources/templates/notice/list.html`
 
-- [ ] **Step 1: Write base HTML structure with Tailwind CDN**
+- [x] **Step 1: Write base HTML structure with Tailwind CDN**
 
 Replace the entire content of `notice/list.html` with:
 
@@ -283,7 +283,7 @@ Replace the entire content of `notice/list.html` with:
 </html>
 ```
 
-- [ ] **Step 2: Run the Spring Boot app and open `http://localhost:8080/notice`**
+- [x] **Step 2: Run the Spring Boot app and open `http://localhost:8080/notice`**
 
 ```
 cd demo/demo
@@ -291,7 +291,7 @@ cd demo/demo
 ```
 Verify: navbar is black, fixed at top when scrolling, hamburger appears on narrow window.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```
 git add demo/demo/src/main/resources/templates/notice/list.html
@@ -305,7 +305,7 @@ git commit -m "feat: add Tailwind fixed navbar to notice page"
 **Files:**
 - Modify: `demo/demo/src/main/resources/templates/notice/list.html`
 
-- [ ] **Step 1: Replace `<main>` placeholder with featured section**
+- [x] **Step 1: Replace `<main>` placeholder with featured section**
 
 Replace the `<main>` block with:
 
@@ -343,9 +343,9 @@ Replace the `<main>` block with:
 </main>
 ```
 
-- [ ] **Step 2: Verify in browser** — featured card shows title, category badge, date, view count overlaid on grey placeholder.
+- [x] **Step 2: Verify in browser** — featured card shows title, category badge, date, view count overlaid on grey placeholder.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```
 git add demo/demo/src/main/resources/templates/notice/list.html
@@ -359,7 +359,7 @@ git commit -m "feat: add featured notice section to notice page"
 **Files:**
 - Modify: `demo/demo/src/main/resources/templates/notice/list.html`
 
-- [ ] **Step 1: Replace `<!-- 필터 + 목록 영역 -->` placeholder with filter tabs and two-column wrapper**
+- [x] **Step 1: Replace `<!-- 필터 + 목록 영역 -->` placeholder with filter tabs and two-column wrapper**
 
 ```html
     <!-- ===== 카테고리 필터 탭 ===== -->
@@ -389,7 +389,7 @@ git commit -m "feat: add featured notice section to notice page"
     <!-- ===== 2단 레이아웃 끝 ===== -->
 ```
 
-- [ ] **Step 2: Add filter JS and tab style to the `<script>` block (before `</body>`)**
+- [x] **Step 2: Add filter JS and tab style to the `<script>` block (before `</body>`)**
 
 Replace the existing `<script>` block with:
 
@@ -431,9 +431,9 @@ Also add these inline styles inside `<head>` (Tailwind CDN doesn't support arbit
 </style>
 ```
 
-- [ ] **Step 3: Verify in browser** — filter tabs render; clicking 학사/장학 shows/hides (the list is still placeholder, but tabs toggle styles correctly).
+- [x] **Step 3: Verify in browser** — filter tabs render; clicking 학사/장학 shows/hides (the list is still placeholder, but tabs toggle styles correctly).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```
 git add demo/demo/src/main/resources/templates/notice/list.html
@@ -447,7 +447,7 @@ git commit -m "feat: add category filter tabs with JS to notice page"
 **Files:**
 - Modify: `demo/demo/src/main/resources/templates/notice/list.html`
 
-- [ ] **Step 1: Replace `<div id="noticeList">` placeholder**
+- [x] **Step 1: Replace `<div id="noticeList">` placeholder**
 
 ```html
         <!-- ===== 공지 목록: notices(List<NoticeDto>) 렌더링 ===== -->
@@ -490,7 +490,7 @@ git commit -m "feat: add category filter tabs with JS to notice page"
         <!-- ===== 공지 목록 끝 ===== -->
 ```
 
-- [ ] **Step 2: Add pagination below `</div><!-- noticeList -->`**
+- [x] **Step 2: Add pagination below `</div><!-- noticeList -->`**
 
 ```html
         <!-- 페이지네이션 (더미 — 팀원이 실제 로직으로 교체) -->
@@ -503,9 +503,9 @@ git commit -m "feat: add category filter tabs with JS to notice page"
         </div>
 ```
 
-- [ ] **Step 3: Verify in browser** — notice list renders with thumbnail placeholders, category badges, dates, view counts. Filter tabs hide/show rows correctly.
+- [x] **Step 3: Verify in browser** — notice list renders with thumbnail placeholders, category badges, dates, view counts. Filter tabs hide/show rows correctly.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```
 git add demo/demo/src/main/resources/templates/notice/list.html
@@ -519,7 +519,7 @@ git commit -m "feat: add notice list with filter and pagination to notice page"
 **Files:**
 - Modify: `demo/demo/src/main/resources/templates/notice/list.html`
 
-- [ ] **Step 1: Replace `<aside>` placeholder**
+- [x] **Step 1: Replace `<aside>` placeholder**
 
 ```html
         <!-- ===== 사이드바 ===== -->
@@ -564,9 +564,9 @@ git commit -m "feat: add notice list with filter and pagination to notice page"
         <!-- ===== 사이드바 끝 ===== -->
 ```
 
-- [ ] **Step 2: Verify in browser** — sidebar shows category counts and recent 5 notices. Clicking category rows in sidebar also triggers filter.
+- [x] **Step 2: Verify in browser** — sidebar shows category counts and recent 5 notices. Clicking category rows in sidebar also triggers filter.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```
 git add demo/demo/src/main/resources/templates/notice/list.html
@@ -577,7 +577,7 @@ git commit -m "feat: add sidebar category and recent notices widgets"
 
 ## Task 8: Final test run + cleanup
 
-- [ ] **Step 1: Run full test suite**
+- [x] **Step 1: Run full test suite**
 
 ```
 cd demo/demo
@@ -585,7 +585,7 @@ cd demo/demo
 ```
 Expected: All tests pass (0 failures).
 
-- [ ] **Step 2: Manual browser checks**
+- [x] **Step 2: Manual browser checks**
 
 | Check | Expected |
 |-------|----------|
@@ -595,7 +595,7 @@ Expected: All tests pass (0 failures).
 | Filter tabs | Each tab hides/shows correct rows |
 | Sidebar category click | Same filter as tabs |
 
-- [ ] **Step 3: Final commit**
+- [x] **Step 3: Final commit**
 
 ```
 git add .

@@ -1,6 +1,6 @@
 # School Admin v2 + Routing Bug Fix Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Fix the SUPER_ADMIN routing bug blocking school admin access, replace `approved` boolean with a `status` enum, add AdminLog entity, extend SchoolAdminController to accept both roles, and rewrite SchoolAdminPage into a 6-tab dashboard with user management, approval queue, and activity log.
 
@@ -39,7 +39,7 @@
 - Create: `demo/demo/src/main/java/com/example/demo/entity/AdminLog.java`
 - Create: `demo/demo/src/main/java/com/example/demo/repository/AdminLogRepository.java`
 
-- [ ] **Step 1: Replace `approved` field with `status` in User.java**
+- [x] **Step 1: Replace `approved` field with `status` in User.java**
 
 Replace the entire file content:
 
@@ -114,7 +114,7 @@ public class User {
 }
 ```
 
-- [ ] **Step 2: Create AdminLog.java**
+- [x] **Step 2: Create AdminLog.java**
 
 Create `demo/demo/src/main/java/com/example/demo/entity/AdminLog.java`:
 
@@ -167,7 +167,7 @@ public class AdminLog {
 }
 ```
 
-- [ ] **Step 3: Create AdminLogRepository.java**
+- [x] **Step 3: Create AdminLogRepository.java**
 
 Create `demo/demo/src/main/java/com/example/demo/repository/AdminLogRepository.java`:
 
@@ -184,7 +184,7 @@ public interface AdminLogRepository extends JpaRepository<AdminLog, Long> {
 }
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add demo/demo/src/main/java/com/example/demo/entity/User.java \
@@ -202,7 +202,7 @@ git commit -m "feat: replace approved with status in User, add AdminLog entity"
 - Modify: `demo/demo/src/main/java/com/example/demo/repository/PageVisitRepository.java`
 - Modify: `demo/demo/src/main/java/com/example/demo/repository/PostRepository.java`
 
-- [ ] **Step 1: Update UserRepository**
+- [x] **Step 1: Update UserRepository**
 
 Replace entire file:
 
@@ -239,7 +239,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 }
 ```
 
-- [ ] **Step 2: Update PageVisitRepository**
+- [x] **Step 2: Update PageVisitRepository**
 
 Replace entire file:
 
@@ -267,7 +267,7 @@ public interface PageVisitRepository extends JpaRepository<PageVisit, Long> {
 }
 ```
 
-- [ ] **Step 3: Update PostRepository**
+- [x] **Step 3: Update PostRepository**
 
 Replace entire file:
 
@@ -293,7 +293,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 }
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add demo/demo/src/main/java/com/example/demo/repository/UserRepository.java \
@@ -312,7 +312,7 @@ git commit -m "feat: add status/aggregated/monthly queries to repositories"
 
 **Context:** `ddl-auto=update` adds the `STATUS` column but does NOT drop the `APPROVED` column from Oracle. StatusMigrationRunner reads the still-present `APPROVED` column via native SQL (Oracle stores boolean as NUMBER(1): 1=true, 0=false) and derives the correct status.
 
-- [ ] **Step 1: Create StatusMigrationRunner.java**
+- [x] **Step 1: Create StatusMigrationRunner.java**
 
 Create `demo/demo/src/main/java/com/example/demo/util/StatusMigrationRunner.java`:
 
@@ -356,7 +356,7 @@ public class StatusMigrationRunner implements CommandLineRunner {
 }
 ```
 
-- [ ] **Step 2: Update AdminUserInitializer — replace setApproved with setStatus**
+- [x] **Step 2: Update AdminUserInitializer — replace setApproved with setStatus**
 
 Replace the entire file:
 
@@ -426,7 +426,7 @@ public class AdminUserInitializer implements CommandLineRunner {
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add demo/demo/src/main/java/com/example/demo/util/StatusMigrationRunner.java \
@@ -441,7 +441,7 @@ git commit -m "feat: add StatusMigrationRunner, update AdminUserInitializer to u
 **Files:**
 - Modify: `demo/demo/src/main/java/com/example/demo/service/AuthService.java`
 
-- [ ] **Step 1: Update login() to check status instead of approved**
+- [x] **Step 1: Update login() to check status instead of approved**
 
 Replace the `login()` method (lines 27–66). Only the `login()` and `signup()` methods change; everything else stays:
 
@@ -499,7 +499,7 @@ public Map<String, Object> login(LoginRequestDto request) {
 }
 ```
 
-- [ ] **Step 2: Update signup() to use setStatus**
+- [x] **Step 2: Update signup() to use setStatus**
 
 Replace the `signup()` method (lines 68–96):
 
@@ -535,7 +535,7 @@ public Map<String, Object> signup(SignupRequestDto request) {
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add demo/demo/src/main/java/com/example/demo/service/AuthService.java
@@ -551,7 +551,7 @@ git commit -m "feat: status-based login check in AuthService"
 
 **Context:** AdminService currently has `approveUser(Long, boolean)` which must be replaced by `updateUserStatus(Long, String, String, Long)`. Add `logAction()` helper, update `toUserMap()` to return `status` not `approved`, and add four new school-admin methods.
 
-- [ ] **Step 1: Replace AdminService.java entirely**
+- [x] **Step 1: Replace AdminService.java entirely**
 
 ```java
 package com.example.demo.service;
@@ -879,7 +879,7 @@ public class AdminService {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add demo/demo/src/main/java/com/example/demo/service/AdminService.java
@@ -895,7 +895,7 @@ git commit -m "feat: AdminService — logAction, updateUserStatus, monthly stats
 
 **Context:** Replace the single `verifySchoolAndGetUnivId(username)` helper (which only allows SCHOOL_ADMIN) with `resolveUnivId(username, univIdParam)` that accepts both SUPER_ADMIN and SCHOOL_ADMIN. SUPER_ADMIN must pass `?univId=X`; SCHOOL_ADMIN derives it from their profile. Add four new endpoints.
 
-- [ ] **Step 1: Replace SchoolAdminController.java entirely**
+- [x] **Step 1: Replace SchoolAdminController.java entirely**
 
 ```java
 package com.example.demo.controller;
@@ -1057,7 +1057,7 @@ public class SchoolAdminController {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add demo/demo/src/main/java/com/example/demo/controller/SchoolAdminController.java
@@ -1071,7 +1071,7 @@ git commit -m "feat: SchoolAdminController accepts SUPER_ADMIN + SCHOOL_ADMIN, a
 **Files:**
 - Modify: `frontend/src/App.tsx` line 64–68
 
-- [ ] **Step 1: Fix ProtectedSchoolAdmin to allow SUPER_ADMIN**
+- [x] **Step 1: Fix ProtectedSchoolAdmin to allow SUPER_ADMIN**
 
 Change only lines 64–68 (the `ProtectedSchoolAdmin` function):
 
@@ -1083,7 +1083,7 @@ function ProtectedSchoolAdmin({ children }: { children: ReactNode }) {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add frontend/src/App.tsx
@@ -1099,7 +1099,7 @@ git commit -m "fix: ProtectedSchoolAdmin allows SUPER_ADMIN to access school das
 
 **Context:** All existing fetch functions need an optional `univId?: number` parameter appended to the query string when present. Add new interfaces and functions for all-users, pending-users, status update, logs, monthly-stats.
 
-- [ ] **Step 1: Replace adminSchool.ts entirely**
+- [x] **Step 1: Replace adminSchool.ts entirely**
 
 ```ts
 const headers = (): HeadersInit => ({
@@ -1252,7 +1252,7 @@ export async function fetchSchoolMonthlyStats(univId?: number): Promise<MonthlyS
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add frontend/src/api/adminSchool.ts
@@ -1268,7 +1268,7 @@ git commit -m "feat: adminSchool.ts — univId param, new interfaces + API funct
 
 **Context:** Full rewrite. 6 tabs: 개요 (charts), 게시글 관리, 전체 사용자, 가입 승인, 관리자 계정, 활동 로그. SUPER_ADMIN sees "감독 모드" badge and passes `univId` from `useParams()` to all API calls. Chart.js + react-chartjs-2 already installed. The `Bar` component needs `BarElement` registered.
 
-- [ ] **Step 1: Replace SchoolAdminPage.tsx entirely**
+- [x] **Step 1: Replace SchoolAdminPage.tsx entirely**
 
 ```tsx
 import { useEffect, useState } from 'react'
@@ -1813,7 +1813,7 @@ function relativeTime(iso: string): string {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add frontend/src/pages/admin/SchoolAdminPage.tsx
@@ -1827,7 +1827,7 @@ git commit -m "feat: SchoolAdminPage 6-tab rewrite with user mgmt, approval queu
 **Files:**
 - Modify: `demo/demo/src/main/resources/static/` (auto-generated)
 
-- [ ] **Step 1: Build frontend**
+- [x] **Step 1: Build frontend**
 
 ```bash
 cd frontend && npm run build
@@ -1835,7 +1835,7 @@ cd frontend && npm run build
 
 Expected output: `dist/` directory created with `index.html` and `assets/`.
 
-- [ ] **Step 2: Copy build output to Spring Boot static**
+- [x] **Step 2: Copy build output to Spring Boot static**
 
 On Windows PowerShell:
 ```powershell
@@ -1851,7 +1851,7 @@ cp -r dist/assets ../demo/demo/src/main/resources/static/assets
 cp dist/index.html ../demo/demo/src/main/resources/static/index.html
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 cd ..

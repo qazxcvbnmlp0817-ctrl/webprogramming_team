@@ -2,7 +2,7 @@
 
 > Oracle 23ai Free + Spring Data JPA 연동 절차 및 현재 구현 상태
 >
-> **[2026-05-20 기준] 코드 구현은 완료된 상태입니다.**
+> **[2026-05-28 기준] 코드 구현은 완료된 상태입니다.**
 > 팀원은 아래 [로컬 Oracle 환경 구축] 섹션을 따라 Oracle을 설치하고 계정을 생성하면 바로 실행 가능합니다.
 
 ---
@@ -272,10 +272,11 @@ Stop-Service OracleServiceFREE
 ```
 ✅ application-secret.properties 구조 (팀원 로컬 생성 필요)
 ✅ pom.xml JPA/Oracle 의존성 활성화
-✅ Entity 15개 (ddl-auto=update로 자동 테이블 생성)
+✅ Entity 20개 (ddl-auto=update로 자동 테이블 생성)
    — User, Notice, Post, Schedule, University, CollegeSchool,
      FacultyGroup, Department, Professor, CurriculumItem,
-     PageVisit, AdminLog, ClassSchedule, Enrollment, ProfessorCourseAssignment
+     PageVisit, AdminLog, ClassSchedule, Enrollment, ProfessorCourseAssignment,
+     Comment, NoticeComment, NoticeAttachment, PostAttachment, PostLike
 ✅ Repository / Service / Controller 구현 완료
 ✅ DataInitializer (@Order 4) — 최초 실행 시 대학·학과 시드 데이터 자동 삽입
                                재실행 시 교수명 마이그레이션 (fixProfessorNamesIfNeeded)
@@ -286,6 +287,9 @@ Stop-Service OracleServiceFREE
 ✅ 학생 수강신청 + 시간표 조회 API (/api/student/*)
 ✅ SUPER_ADMIN 학교 CRUD API (/api/admin/super/schools) — University·CollegeSchool·FacultyGroup·Department 전체 계층 생성·수정·cascade 삭제
 ✅ SchoolCrudService — @Transactional Merge 수정, cascade 삭제 (학교 삭제 시 교수·수업·수강신청·공지 등 모두 제거)
+✅ 대댓글 기능 — parentId 필드 (null=원댓글, not null=대댓글), 1단계 중첩 검증, 부모 삭제 시 cascade
+✅ RBAC 역할 기반 접근 제어 — adminRole 기준 조건부 UI 렌더링, 비소속 페이지 관리자 배너 숨김, RoleManageModal 통합
+✅ 인기글 가중치 정렬 — 조회수·좋아요·댓글 수 기반 점수 계산, MainPage 상위 N개 표시
 ```
 
 ### 자동 생성 테이블 목록
@@ -307,6 +311,11 @@ Stop-Service OracleServiceFREE
 | CLASS_SCHEDULES | ClassSchedule | 교수 수업 시간표 |
 | ENROLLMENTS | Enrollment | 학생 수강신청 |
 | PROF_COURSE_ASSIGNMENTS | ProfessorCourseAssignment | 교수-강좌 배정 |
+| COMMENTS | Comment | 게시글 댓글 (parentId: null=원댓글, not null=대댓글) |
+| NOTICE_COMMENTS | NoticeComment | 공지 댓글 (parentId: null=원댓글, not null=대댓글) |
+| NOTICE_ATTACHMENTS | NoticeAttachment | 공지 첨부파일 |
+| POST_ATTACHMENTS | PostAttachment | 게시글 첨부파일 |
+| POST_LIKES | PostLike | 게시글 좋아요 |
 
 ### Mock 계정 (ProfessorAccountInitializer 자동 시딩)
 
