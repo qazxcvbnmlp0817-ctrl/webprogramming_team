@@ -216,7 +216,9 @@ public class PostService {
                 p.getVisibility(),
                 p.getContent(),
                 p.getAuthorUsername(),
-                attachments
+                attachments,
+                p.getScopeType(),
+                p.getScopeId()
         );
     }
 

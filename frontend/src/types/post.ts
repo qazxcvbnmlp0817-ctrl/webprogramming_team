@@ -24,4 +24,6 @@ export interface PostDto {
   content?: string
   authorUsername?: string
   attachments?: PostAttachmentDto[]
+  scopeType?: string
+  scopeId?: number
 }

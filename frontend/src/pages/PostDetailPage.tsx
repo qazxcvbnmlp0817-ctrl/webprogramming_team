@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import type { PostDto } from '../types/post'
+import AccessDenied from '../components/common/AccessDenied'
+import { isLoggedIn as checkLoggedIn, isPrivileged } from '../utils/accessCheck'
 
 interface CommentDto {
   id: number
@@ -159,6 +161,18 @@ export default function PostDetailPage() {
   }
 
   if (!post) return null
+
+  if (!isPrivileged() && post.scopeType && post.scopeType !== 'univ') {
+    if (!checkLoggedIn()) {
+      return (
+        <div className="bg-white text-black font-sans min-h-screen">
+          <Navbar />
+          <div className="pt-14" />
+          <AccessDenied message="로그인이 필요합니다." />
+        </div>
+      )
+    }
+  }
 
   const isAuthor  = username === post.authorUsername || myName === post.author
   const canDelete = isAuthor || memberType === 'admin'

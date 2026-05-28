@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import type { PostAttachmentDto } from '../types/post'
+import AccessDenied from '../components/common/AccessDenied'
+import { isLoggedIn as checkLoggedIn, isPrivileged } from '../utils/accessCheck'
 
 interface NoticeDetail {
   id: number
@@ -16,6 +18,9 @@ interface NoticeDetail {
   content: string | null
   attachments: PostAttachmentDto[] | null
   commentCount: number
+  isPublicToOutsiders?: boolean
+  scopeType?: string
+  scopeId?: number
 }
 
 interface NoticeCommentDto {
@@ -156,6 +161,18 @@ export default function NoticeDetailPage() {
   }
 
   if (!notice) return null
+
+  if (!isPrivileged() && notice.scopeType && notice.scopeType !== 'univ') {
+    if (!checkLoggedIn() && !notice.isPublicToOutsiders) {
+      return (
+        <div className="bg-white text-black font-sans min-h-screen">
+          <Navbar />
+          <div className="pt-14" />
+          <AccessDenied message="로그인이 필요합니다." />
+        </div>
+      )
+    }
+  }
 
   const isAuthor  = username === notice.authorUsername || myName === notice.author
   const canDelete = isAuthor || memberType === 'admin'

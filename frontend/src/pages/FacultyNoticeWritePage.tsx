@@ -19,6 +19,7 @@ export default function FacultyNoticeWritePage() {
   const [content, setContent]   = useState('')
 
   const [targetGrades, setTargetGrades] = useState<number[]>([1, 2, 3, 4])
+  const [isPublicToOutsiders, setIsPublicToOutsiders] = useState(false)
 
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [imageFiles, setImageFiles]       = useState<File[]>([])
@@ -83,6 +84,7 @@ export default function FacultyNoticeWritePage() {
         scopeId: Number(facultyId) || 1,
         attachments: uploadedAttachments,
         authorUsername: sessionStorage.getItem('username') ?? '',
+        isPublicToOutsiders,
       }),
     })
     if (res.ok) {
@@ -162,6 +164,20 @@ export default function FacultyNoticeWritePage() {
                 </label>
               ))}
             </div>
+          </div>
+
+          {/* 외부자 공개 */}
+          <div className="flex items-center gap-2 py-2">
+            <input
+              id="publicToOutsiders"
+              type="checkbox"
+              className="accent-black w-4 h-4"
+              checked={isPublicToOutsiders}
+              onChange={e => setIsPublicToOutsiders(e.target.checked)}
+            />
+            <label htmlFor="publicToOutsiders" className="text-sm font-medium cursor-pointer">
+              외부자 공개 <span className="text-gray-400 font-normal">(비소속 학생/비로그인 유저도 열람 가능)</span>
+            </label>
           </div>
 
           {/* 사진 첨부 */}

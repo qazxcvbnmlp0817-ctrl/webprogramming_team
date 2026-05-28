@@ -8,6 +8,7 @@ import { fetchNotices } from '../api/notices'
 import { useDept } from '../context/DeptContext'
 import { useDeptFetch } from '../hooks/useDeptFetch'
 import AdminBanner from '../components/common/AdminBanner'
+import { isLoggedIn, isPrivileged } from '../utils/accessCheck'
 
 const NOTICE_TABS = ['전체', '학사', '장학', '행사', '취업']
 const GRADE_TABS  = ['전체', '1학년', '2학년', '3학년', '4학년']
@@ -39,8 +40,11 @@ export default function NoticePage() {
     return catOk && searchOk && gradeOk
   }), [notices, active, gradeFilter, search, searchType])
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
-  const pageItems  = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE)
+  const isOutsider = !isPrivileged() && !isLoggedIn()
+  const visibleFiltered = isOutsider ? filtered.filter(n => n.isPublicToOutsiders) : filtered
+
+  const totalPages = Math.max(1, Math.ceil(visibleFiltered.length / PER_PAGE))
+  const pageItems  = visibleFiltered.slice((page - 1) * PER_PAGE, page * PER_PAGE)
 
   const categoryCounts = NOTICE_TABS.map(label => ({
     label,
@@ -154,7 +158,7 @@ export default function NoticePage() {
                   </div>
                   )
                 })}
-                {filtered.length === 0 && (
+                {visibleFiltered.length === 0 && (
                   <div className="py-16 text-center text-gray-400">
                     <i className="fas fa-inbox text-3xl mb-3 block" />공지사항이 없습니다.
                   </div>

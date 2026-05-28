@@ -16,24 +16,27 @@ public class NoticeDto {
     private final List<PostAttachmentDto> attachments;
     private final String authorUsername;
     private final int commentCount;
+    private final boolean isPublicToOutsiders;
+    private final String scopeType;
+    private final Long scopeId;
 
     public NoticeDto(Long id, String title, String date, String author,
                      String category, int viewCount, boolean featured) {
         this(id, title, date, author, category, viewCount, featured,
-             List.of(1, 2, 3, 4), null, null, null, 0);
+             List.of(1, 2, 3, 4), null, null, null, 0, false, null, null);
     }
 
     public NoticeDto(Long id, String title, String date, String author,
                      String category, int viewCount, boolean featured, List<Integer> targetGrades) {
         this(id, title, date, author, category, viewCount, featured,
-             targetGrades, null, null, null, 0);
+             targetGrades, null, null, null, 0, false, null, null);
     }
 
     public NoticeDto(Long id, String title, String date, String author,
                      String category, int viewCount, boolean featured,
                      List<Integer> targetGrades, String content, List<PostAttachmentDto> attachments) {
         this(id, title, date, author, category, viewCount, featured,
-             targetGrades, content, attachments, null, 0);
+             targetGrades, content, attachments, null, 0, false, null, null);
     }
 
     public NoticeDto(Long id, String title, String date, String author,
@@ -41,13 +44,22 @@ public class NoticeDto {
                      List<Integer> targetGrades, String content,
                      List<PostAttachmentDto> attachments, String authorUsername) {
         this(id, title, date, author, category, viewCount, featured,
-             targetGrades, content, attachments, authorUsername, 0);
+             targetGrades, content, attachments, authorUsername, 0, false, null, null);
     }
 
     public NoticeDto(Long id, String title, String date, String author,
                      String category, int viewCount, boolean featured,
                      List<Integer> targetGrades, String content,
                      List<PostAttachmentDto> attachments, String authorUsername, int commentCount) {
+        this(id, title, date, author, category, viewCount, featured,
+             targetGrades, content, attachments, authorUsername, commentCount, false, null, null);
+    }
+
+    public NoticeDto(Long id, String title, String date, String author,
+                     String category, int viewCount, boolean featured,
+                     List<Integer> targetGrades, String content,
+                     List<PostAttachmentDto> attachments, String authorUsername, int commentCount,
+                     boolean isPublicToOutsiders, String scopeType, Long scopeId) {
         this.id = id;
         this.title = title;
         this.date = date;
@@ -60,6 +72,9 @@ public class NoticeDto {
         this.attachments = attachments;
         this.authorUsername = authorUsername;
         this.commentCount = commentCount;
+        this.isPublicToOutsiders = isPublicToOutsiders;
+        this.scopeType = scopeType;
+        this.scopeId = scopeId;
     }
 
     public Long getId()                             { return id; }
@@ -74,4 +89,7 @@ public class NoticeDto {
     public List<PostAttachmentDto> getAttachments() { return attachments; }
     public String getAuthorUsername()               { return authorUsername; }
     public int getCommentCount()                    { return commentCount; }
+    public boolean isPublicToOutsiders()            { return isPublicToOutsiders; }
+    public String getScopeType()                    { return scopeType; }
+    public Long getScopeId()                        { return scopeId; }
 }

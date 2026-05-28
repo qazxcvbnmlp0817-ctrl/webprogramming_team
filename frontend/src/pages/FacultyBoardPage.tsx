@@ -8,6 +8,8 @@ import { fetchFacultyPosts } from '../api/school'
 import { useDept } from '../context/DeptContext'
 import { useDeptFetch } from '../hooks/useDeptFetch'
 import type { UniversityDto } from '../types/university'
+import AccessDenied from '../components/common/AccessDenied'
+import { isLoggedIn, isPrivileged, isSameFaculty } from '../utils/accessCheck'
 
 const BOARD_TABS   = ['전체', '자유게시판', '질문', '스터디', '취업후기']
 const GRADE_TABS   = ['전체', '1학년', '2학년', '3학년', '4학년']
@@ -132,7 +134,9 @@ export default function FacultyBoardPage() {
       </section>
 
       <main className="max-w-6xl mx-auto px-4 py-8">
-        {loading ? (
+        {!isPrivileged() && (!isLoggedIn() || !isSameFaculty(facultyIdNum, faculty?.name)) ? (
+          <AccessDenied message={!isLoggedIn() ? '로그인이 필요합니다.' : '소속 학부 학생만 이용할 수 있습니다.'} />
+        ) : loading ? (
           <div className="py-16 text-center text-gray-400">
             <i className="fas fa-spinner fa-spin text-3xl mb-3 block" />불러오는 중...
           </div>

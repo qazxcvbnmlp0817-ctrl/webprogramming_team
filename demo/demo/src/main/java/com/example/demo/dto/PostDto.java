@@ -20,6 +20,8 @@ public class PostDto {
     private final String content;
     private final String authorUsername;
     private final List<PostAttachmentDto> attachments;
+    private final String scopeType;
+    private final Long scopeId;
 
     // DummyDataHelper 호환용 (content = null, authorUsername = null, attachments = null)
     public PostDto(Long id, String title, String author, int likes,
@@ -53,6 +55,17 @@ public class PostDto {
                    int commentCount, boolean isNotice, String imageUrl,
                    List<Integer> targetGrades, String visibility, String content,
                    String authorUsername, List<PostAttachmentDto> attachments) {
+        this(id, title, author, likes, category, viewCount, date, featured,
+             commentCount, isNotice, imageUrl, targetGrades, visibility, content,
+             authorUsername, attachments, null, null);
+    }
+
+    public PostDto(Long id, String title, String author, int likes,
+                   String category, int viewCount, String date, boolean featured,
+                   int commentCount, boolean isNotice, String imageUrl,
+                   List<Integer> targetGrades, String visibility, String content,
+                   String authorUsername, List<PostAttachmentDto> attachments,
+                   String scopeType, Long scopeId) {
         this.id           = id;
         this.title        = title;
         this.author       = author;
@@ -69,6 +82,8 @@ public class PostDto {
         this.content      = content;
         this.authorUsername = authorUsername;
         this.attachments  = attachments;
+        this.scopeType    = scopeType;
+        this.scopeId      = scopeId;
     }
 
     public Long getId()                              { return id; }
@@ -87,4 +102,6 @@ public class PostDto {
     public String getContent()                       { return content; }
     public String getAuthorUsername()                { return authorUsername; }
     public List<PostAttachmentDto> getAttachments()  { return attachments; }
+    public String getScopeType()                     { return scopeType; }
+    public Long getScopeId()                         { return scopeId; }
 }

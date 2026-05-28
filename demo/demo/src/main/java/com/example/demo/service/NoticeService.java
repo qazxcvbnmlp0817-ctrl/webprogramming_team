@@ -81,6 +81,7 @@ public class NoticeService {
         notice.setFeatured(false);
         notice.setCreatedDate(LocalDateTime.now());
         notice.setAuthorUsername(req.getAuthorUsername());
+        notice.setIsPublicToOutsiders(Boolean.TRUE.equals(req.getIsPublicToOutsiders()));
         Notice saved = noticeRepository.save(notice);
 
         if (req.getAttachments() != null) {
@@ -122,7 +123,10 @@ public class NoticeService {
                 null,
                 fetchAttachments(n.getId()),
                 n.getAuthorUsername(),
-                n.getCommentCount()
+                n.getCommentCount(),
+                n.isPublicToOutsiders(),
+                n.getScopeType(),
+                n.getScopeId()
         );
     }
 
@@ -139,7 +143,10 @@ public class NoticeService {
                 n.getContent(),
                 fetchAttachments(n.getId()),
                 n.getAuthorUsername(),
-                n.getCommentCount()
+                n.getCommentCount(),
+                n.isPublicToOutsiders(),
+                n.getScopeType(),
+                n.getScopeId()
         );
     }
 

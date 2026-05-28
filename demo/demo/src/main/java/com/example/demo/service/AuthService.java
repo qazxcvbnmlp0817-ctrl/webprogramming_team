@@ -79,23 +79,20 @@ public class AuthService {
         response.put("college", user.getCollege());
         response.put("enrollmentStatus", user.getEnrollmentStatus());
 
-        // DEPT_ADMIN: resolved deptId for deep-link to /admin/dept/{id}
-        if ("DEPT_ADMIN".equals(user.getAdminRole())
-                && user.getUniversityId() != null && user.getDepartment() != null) {
+        // 모든 유저: deptId, facultyId 조회 (접근 권한 체크용)
+        if (user.getUniversityId() != null && user.getDepartment() != null) {
             try {
                 Long deptId = adminService.resolveDeptIdByName(
                         Long.parseLong(user.getUniversityId()), user.getDepartment());
                 if (deptId != null) response.put("deptId", deptId);
-            } catch (NumberFormatException ignored) { /* leave deptId off */ }
+            } catch (NumberFormatException ignored) {}
         }
-        // SCHOOL_ADMIN: resolved facultyId for deep-link to /admin/faculty/{id}
-        if ("SCHOOL_ADMIN".equals(user.getAdminRole())
-                && user.getUniversityId() != null && user.getCollege() != null) {
+        if (user.getUniversityId() != null && user.getCollege() != null) {
             try {
                 Long facultyId = adminService.resolveFacultyIdByName(
                         Long.parseLong(user.getUniversityId()), user.getCollege());
                 if (facultyId != null) response.put("facultyId", facultyId);
-            } catch (NumberFormatException ignored) { /* leave facultyId off */ }
+            } catch (NumberFormatException ignored) {}
         }
         return response;
     }

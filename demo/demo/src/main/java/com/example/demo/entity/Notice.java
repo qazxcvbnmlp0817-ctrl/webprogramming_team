@@ -47,6 +47,9 @@ public class Notice {
     @Column
     private Integer commentCount;
 
+    @Column(nullable = true)
+    private Boolean isPublicToOutsiders = false;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getTitle() { return title; }
@@ -73,4 +76,6 @@ public class Notice {
     public void setAuthorUsername(String authorUsername) { this.authorUsername = authorUsername; }
     public int getCommentCount() { return commentCount != null ? commentCount : 0; }
     public void setCommentCount(int commentCount) { this.commentCount = commentCount; }
+    public boolean isPublicToOutsiders() { return Boolean.TRUE.equals(isPublicToOutsiders); }
+    public void setIsPublicToOutsiders(boolean isPublicToOutsiders) { this.isPublicToOutsiders = isPublicToOutsiders; }
 }
