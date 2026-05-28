@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<!--
+  로그인 페이지
+  연결 컨트롤러: AuthController (GET /login)
+  스타일: Tailwind CSS (Bootstrap 미사용)
+  모델 변수:
+    - currentPage : "login"
+  TODO: [팀원-인증 담당] 실제 Spring Security 폼 액션 및 CSRF 토큰 연동
+-->
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로그인 | 학과정보통합서비스</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome 아이콘 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-white text-black font-sans">
+
+<!-- ===== 고정 네비게이션 바 ===== -->
+<!-- 로그인 페이지: 네비게이션 링크 중 활성 항목 없음 -->
+<nav class="fixed top-0 left-0 w-full bg-black text-white z-50 border-b border-gray-800">
+    <div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+
+        <!-- 로고: 메인 페이지로 이동 -->
+        <a th:href="@{/}" class="font-bold text-lg tracking-tight hover:opacity-80 transition">
+            학과정보통합서비스
+        </a>
+
+        <!-- 데스크탑 메뉴 -->
+        <ul class="hidden md:flex gap-8 text-sm font-medium">
+            <li><a th:href="@{/notice}"     class="pb-1 hover:opacity-70 transition border-b-2 border-transparent">공지사항</a></li>
+            <li><a th:href="@{/board}"      class="pb-1 hover:opacity-70 transition border-b-2 border-transparent">게시판</a></li>
+            <li><a th:href="@{/schedule}"   class="pb-1 hover:opacity-70 transition border-b-2 border-transparent">일정</a></li>
+            <li><a th:href="@{/department}" class="pb-1 hover:opacity-70 transition border-b-2 border-transparent">학과정보</a></li>
+        </ul>
+
+        <!-- 검색 입력 (로그인 페이지이므로 로그인 버튼 생략) -->
+        <div class="hidden md:flex items-center gap-3">
+            <div class="flex items-center border border-gray-600 rounded px-2 py-1 gap-2">
+                <i class="fas fa-search text-xs opacity-70"></i>
+                <input type="text" placeholder="검색..."
+                       class="bg-transparent text-white text-sm outline-none placeholder-gray-500 w-32">
+            </div>
+        </div>
+
+        <!-- 모바일 햄버거 버튼 -->
+        <button onclick="toggleMenu()" class="md:hidden text-white focus:outline-none">
+            <i class="fas fa-bars text-xl"></i>
+        </button>
+    </div>
+
+    <!-- 모바일 드롭다운 메뉴 -->
+    <div id="mobileMenu" class="hidden md:hidden bg-black border-t border-gray-700 px-4 py-4 flex flex-col gap-4 text-sm">
+        <a th:href="@{/notice}"      class="hover:opacity-70">공지사항</a>
+        <a th:href="@{/board}"       class="hover:opacity-70">게시판</a>
+        <a th:href="@{/schedule}"    class="hover:opacity-70">일정</a>
+        <a th:href="@{/department}"  class="hover:opacity-70">학과정보</a>
+    </div>
+</nav>
+<!-- ===== 네비게이션 바 끝 ===== -->
+
+<!-- 로그인 카드: 화면 전체 높이 중앙 정렬 -->
+<div class="min-h-screen flex items-center justify-center px-4 pt-14">
+    <div class="w-full max-w-sm border-2 border-black p-8">
+
+        <!-- 사이트 제목 -->
+        <h1 class="text-2xl font-bold text-center mb-2">학과정보통합서비스</h1>
+        <p class="text-center text-gray-500 text-sm mb-6">학과 포털 로그인</p>
+
+        <!-- 구분선 -->
+        <div class="border-t border-black mb-6"></div>
+
+        <!-- 로그인 폼 -->
+        <!-- TODO: [팀원-인증] th:action="@{/login}" method="post" 및 CSRF 토큰 추가 -->
+        <form>
+            <!-- 아이디 입력 -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-1" for="username">아이디</label>
+                <input type="text" id="username" name="username"
+                       placeholder="학번 또는 아이디 입력"
+                       class="w-full border-2 border-black px-3 py-2 text-sm outline-none focus:bg-gray-50 transition">
+            </div>
+
+            <!-- 비밀번호 입력 -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium mb-1" for="password">비밀번호</label>
+                <input type="password" id="password" name="password"
+                       placeholder="비밀번호 입력"
+                       class="w-full border-2 border-black px-3 py-2 text-sm outline-none focus:bg-gray-50 transition">
+            </div>
+
+            <!-- 로그인 버튼 (검정 채우기) -->
+            <button type="submit"
+                    class="w-full bg-black text-white py-2.5 text-sm font-bold hover:opacity-80 transition">
+                로그인
+            </button>
+        </form>
+
+        <!-- 구분선 -->
+        <div class="border-t border-gray-200 mt-6 pt-4"></div>
+
+        <!-- 보조 링크: 회원가입 | 비밀번호 찾기 -->
+        <!-- TODO: [팀원-인증] 실제 회원가입·비밀번호 찾기 페이지 URL로 교체 -->
+        <div class="flex justify-center gap-6 text-xs text-gray-500">
+            <a th:href="@{/register}" class="hover:text-black hover:underline transition">회원가입</a>
+            <span class="text-gray-300">|</span>
+            <a th:href="@{/forgot-password}" class="hover:text-black hover:underline transition">비밀번호 찾기</a>
+        </div>
+
+    </div>
+</div>
+
+<!-- ===== 자바스크립트 ===== -->
+<script>
+    /* 햄버거 메뉴 토글 (모바일) */
+    function toggleMenu() {
+        document.getElementById('mobileMenu').classList.toggle('hidden');
+    }
+</script>
+<!-- ===== 자바스크립트 끝 ===== -->
+
+</body>
+</html>

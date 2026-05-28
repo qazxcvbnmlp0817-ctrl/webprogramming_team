@@ -1,0 +1,171 @@
+package com.example.demo.controller;
+
+import com.example.demo.dto.SchoolTreeDto;
+import com.example.demo.entity.User;
+import com.example.demo.repository.UniversityRepository;
+import com.example.demo.repository.UserRepository;
+import com.example.demo.service.AdminService;
+import com.example.demo.service.SchoolCrudService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@RestController
+@RequestMapping("/api/admin/super")
+public class SuperAdminController {
+
+    private final AdminService adminService;
+    private final UserRepository userRepository;
+    private final UniversityRepository universityRepository;
+    private final SchoolCrudService schoolCrudService;
+
+    public SuperAdminController(AdminService adminService,
+                                 UserRepository userRepository,
+                                 UniversityRepository universityRepository,
+                                 SchoolCrudService schoolCrudService) {
+        this.adminService = adminService;
+        this.userRepository = userRepository;
+        this.universityRepository = universityRepository;
+        this.schoolCrudService = schoolCrudService;
+    }
+
+    private void verifySuper(String username) {
+        if (username == null || username.isBlank())
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "인증 정보 없음");
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "사용자 없음"));
+        if (!"SUPER_ADMIN".equals(user.getAdminRole()))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "권한 없음");
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<Map<String, Object>> getStats(
+            @RequestHeader(value = "X-Username", required = false) String username) {
+        verifySuper(username);
+        return ResponseEntity.ok(adminService.getSuperStats());
+    }
+
+    @GetMapping("/schools")
+    public ResponseEntity<List<Map<String, Object>>> getSchools(
+            @RequestHeader(value = "X-Username", required = false) String username) {
+        verifySuper(username);
+        List<Map<String, Object>> schools = universityRepository.findAll().stream()
+                .map(u -> Map.<String, Object>of(
+                        "id",          u.getId(),
+                        "name",        u.getName(),
+                        "description", u.getDescription() != null ? u.getDescription() : ""))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(schools);
+    }
+
+    @GetMapping("/visitors")
+    public ResponseEntity<List<Map<String, Object>>> getVisitors(
+            @RequestHeader(value = "X-Username", required = false) String username) {
+        verifySuper(username);
+        return ResponseEntity.ok(adminService.getGlobalVisitorTrend());
+    }
+
+    @GetMapping("/infra")
+    public ResponseEntity<Map<String, Object>> getInfra(
+            @RequestHeader(value = "X-Username", required = false) String username) {
+        verifySuper(username);
+        return ResponseEntity.ok(adminService.getInfraStats());
+    }
+
+    @GetMapping("/users")
+    public ResponseEntity<List<Map<String, Object>>> getUsers(
+            @RequestHeader(value = "X-Username", required = false) String username) {
+        verifySuper(username);
+        return ResponseEntity.ok(adminService.getAllAdminUsers());
+    }
+
+    @PutMapping("/users/{id}/role")
+    public ResponseEntity<Map<String, Object>> updateRole(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body) {
+        verifySuper(username);
+        Long univId = userRepository.findById(id)
+                .map(u -> {
+                    try {
+                        return (u.getUniversityId() != null && !u.getUniversityId().isBlank())
+                               ? Long.parseLong(u.getUniversityId()) : null;
+                    } catch (NumberFormatException e) { return null; }
+                }).orElse(null);
+        return ResponseEntity.ok(adminService.updateUserRole(id, body.get("role"), username, univId));
+    }
+
+    @PutMapping("/users/{id}/approve")
+    public ResponseEntity<Map<String, Object>> approveUser(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @PathVariable Long id,
+            @RequestBody Map<String, Boolean> body) {
+        verifySuper(username);
+        Boolean approved = body.get("approved");
+        if (approved == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "approved 필드 필요");
+        return ResponseEntity.ok(adminService.approveUser(id, approved, username));
+    }
+
+    @GetMapping("/pending-admins")
+    public ResponseEntity<List<Map<String, Object>>> getPendingAdmins(
+            @RequestHeader(value = "X-Username", required = false) String username) {
+        verifySuper(username);
+        return ResponseEntity.ok(adminService.getPendingAdmins());
+    }
+
+    @PutMapping("/users/{id}/approve-admin")
+    public ResponseEntity<Map<String, Object>> approveAdmin(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> body) {
+        verifySuper(username);
+        Object approveRaw = body.get("approve");
+        if (!(approveRaw instanceof Boolean approve))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "approve 필드 필요 (boolean)");
+        String role = body.get("role") == null ? null : body.get("role").toString();
+        return ResponseEntity.ok(adminService.approveAdmin(id, approve, role, username));
+    }
+
+    // ── School CRUD ──────────────────────────────────────────────────────────
+
+    @GetMapping("/schools/{id}/tree")
+    public ResponseEntity<SchoolTreeDto> getSchoolTree(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @PathVariable Long id) {
+        verifySuper(username);
+        return ResponseEntity.ok(schoolCrudService.getTree(id));
+    }
+
+    @PostMapping("/schools")
+    public ResponseEntity<Map<String, Object>> createSchool(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @RequestBody SchoolTreeDto req) {
+        verifySuper(username);
+        Long id = schoolCrudService.createSchool(req);
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("id", id));
+    }
+
+    @PutMapping("/schools/{id}")
+    public ResponseEntity<Void> updateSchool(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @PathVariable Long id,
+            @RequestBody SchoolTreeDto req) {
+        verifySuper(username);
+        schoolCrudService.updateSchool(id, req);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/schools/{id}")
+    public ResponseEntity<Void> deleteSchool(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @PathVariable Long id) {
+        verifySuper(username);
+        schoolCrudService.deleteSchool(id);
+        return ResponseEntity.noContent().build();
+    }
+}

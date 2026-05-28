@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<!--
+  학부 페이지 플레이스홀더
+  연결 컨트롤러: SchoolController (GET /faculty/{id})
+  모델 변수: facultyId (Long)
+-->
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>학부 페이지 | 학과정보통합서비스</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-white text-black font-sans">
+
+<!-- ===== 네비게이션 바 ===== -->
+<nav class="fixed top-0 left-0 w-full bg-black text-white z-50 border-b border-gray-800">
+    <div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+        <a th:href="@{/schools}" class="font-bold text-lg tracking-tight hover:opacity-80 transition">
+            학과정보통합서비스
+        </a>
+    </div>
+</nav>
+<!-- ===== 네비게이션 바 끝 ===== -->
+
+<div class="pt-14"></div>
+
+<!-- ===== 히어로 섹션 ===== -->
+<section class="bg-black text-white py-16 px-4">
+    <div class="max-w-6xl mx-auto text-center">
+        <h1 class="text-3xl font-bold mb-2">
+            <i class="fas fa-layer-group mr-3"></i>학부 페이지
+        </h1>
+        <p class="text-gray-400">이 페이지는 준비 중입니다</p>
+    </div>
+</section>
+<!-- ===== 히어로 섹션 끝 ===== -->
+
+<main class="max-w-6xl mx-auto px-4 py-20 text-center">
+    <i class="fas fa-tools text-5xl text-gray-300 mb-6 block"></i>
+    <p class="text-gray-500 text-lg mb-8">학부 페이지는 추후 구현 예정입니다.</p>
+    <a th:href="@{/schools}"
+       class="inline-block border-2 border-black px-6 py-3 font-medium
+              hover:bg-black hover:text-white transition">
+        ← 학과 목록으로 돌아가기
+    </a>
+</main>
+
+</body>
+</html>
