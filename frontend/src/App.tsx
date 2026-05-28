@@ -85,20 +85,10 @@ export default function App() {
     () => !!sessionStorage.getItem('intro_shown')
   )
 
-  if (!introShown) {
-    return (
-      <IntroAnimation
-        onComplete={() => {
-          sessionStorage.setItem('intro_shown', '1')
-          setIntroShown(true)
-        }}
-      />
-    )
-  }
-
   return (
     <DeptProvider>
       <BrowserRouter>
+        {/* 인트로가 끝나기 전에도 실제 페이지를 미리 렌더링 — 번쩍임 방지 */}
         <div className="min-h-screen flex flex-col">
           <div className="flex-1">
             <Routes>
@@ -169,6 +159,15 @@ export default function App() {
           <Footer />
         </div>
       </BrowserRouter>
+      {/* 인트로 오버레이 — fixed로 페이지 위에 덮고, 끝나면 언마운트 */}
+      {!introShown && (
+        <IntroAnimation
+          onComplete={() => {
+            sessionStorage.setItem('intro_shown', '1')
+            setIntroShown(true)
+          }}
+        />
+      )}
     </DeptProvider>
   )
 }
