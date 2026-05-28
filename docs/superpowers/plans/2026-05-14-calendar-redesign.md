@@ -1,6 +1,6 @@
 # MainPage 캘린더 통합 & 레이아웃 개편 구현 플랜
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** MainPage에 커스텀 MiniCalendar 컴포넌트를 추가하고, 2/3+1/3 그리드 레이아웃으로 개편하며 Navbar에 학교 변경 버튼을 추가한다.
 
@@ -29,7 +29,7 @@
 - Create: `frontend/src/components/MiniCalendar.tsx`
 - Create: `frontend/src/components/MiniCalendar.test.tsx`
 
-- [ ] **Step 1: 실패하는 테스트 작성**
+- [x] **Step 1: 실패하는 테스트 작성**
 
 `frontend/src/components/MiniCalendar.test.tsx` 파일을 생성한다:
 
@@ -89,7 +89,7 @@ describe('getEventsForDate', () => {
 })
 ```
 
-- [ ] **Step 2: 테스트가 실패하는지 확인**
+- [x] **Step 2: 테스트가 실패하는지 확인**
 
 ```bash
 cd frontend && npx vitest run src/components/MiniCalendar.test.tsx --reporter=verbose
@@ -97,7 +97,7 @@ cd frontend && npx vitest run src/components/MiniCalendar.test.tsx --reporter=ve
 
 예상 결과: `Cannot find module './MiniCalendar'` 오류 또는 전체 FAIL
 
-- [ ] **Step 3: 헬퍼 함수 구현**
+- [x] **Step 3: 헬퍼 함수 구현**
 
 `frontend/src/components/MiniCalendar.tsx` 파일을 생성한다:
 
@@ -125,7 +125,7 @@ export default function MiniCalendar(_: { schedules: ScheduleDto[] }) {
 }
 ```
 
-- [ ] **Step 4: 테스트 통과 확인**
+- [x] **Step 4: 테스트 통과 확인**
 
 ```bash
 cd frontend && npx vitest run src/components/MiniCalendar.test.tsx --reporter=verbose
@@ -133,7 +133,7 @@ cd frontend && npx vitest run src/components/MiniCalendar.test.tsx --reporter=ve
 
 예상 결과: `buildCalendarGrid > 6행 7열(42칸)을 반환한다 ✓` 등 6개 테스트 PASS
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 
 ```bash
 cd frontend && git add src/components/MiniCalendar.tsx src/components/MiniCalendar.test.tsx
@@ -148,7 +148,7 @@ git commit -m "feat: add MiniCalendar helper functions (buildCalendarGrid, getEv
 - Modify: `frontend/src/components/MiniCalendar.tsx`
 - Modify: `frontend/src/components/MiniCalendar.test.tsx`
 
-- [ ] **Step 1: 실패하는 테스트 추가**
+- [x] **Step 1: 실패하는 테스트 추가**
 
 `MiniCalendar.test.tsx` 파일 상단 import 블록(첫 두 줄 아래)에 아래 두 줄을 추가한다:
 
@@ -200,7 +200,7 @@ describe('MiniCalendar 컴포넌트', () => {
 })
 ```
 
-- [ ] **Step 2: 테스트가 실패하는지 확인**
+- [x] **Step 2: 테스트가 실패하는지 확인**
 
 ```bash
 cd frontend && npx vitest run src/components/MiniCalendar.test.tsx --reporter=verbose
@@ -208,7 +208,7 @@ cd frontend && npx vitest run src/components/MiniCalendar.test.tsx --reporter=ve
 
 예상 결과: `MiniCalendar 컴포넌트` 내 테스트들 FAIL
 
-- [ ] **Step 3: 컴포넌트 기본 구현으로 교체**
+- [x] **Step 3: 컴포넌트 기본 구현으로 교체**
 
 `frontend/src/components/MiniCalendar.tsx` 전체를 아래 내용으로 교체한다:
 
@@ -294,7 +294,7 @@ export default function MiniCalendar({ schedules }: Props) {
 }
 ```
 
-- [ ] **Step 4: 테스트 통과 확인**
+- [x] **Step 4: 테스트 통과 확인**
 
 ```bash
 cd frontend && npx vitest run src/components/MiniCalendar.test.tsx --reporter=verbose
@@ -302,7 +302,7 @@ cd frontend && npx vitest run src/components/MiniCalendar.test.tsx --reporter=ve
 
 예상 결과: Task 1 + Task 2의 전체 테스트 PASS
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 
 ```bash
 git add frontend/src/components/MiniCalendar.tsx frontend/src/components/MiniCalendar.test.tsx
@@ -317,7 +317,7 @@ git commit -m "feat: implement MiniCalendar base rendering with month navigation
 - Modify: `frontend/src/components/MiniCalendar.tsx`
 - Modify: `frontend/src/components/MiniCalendar.test.tsx`
 
-- [ ] **Step 1: 실패하는 테스트 추가**
+- [x] **Step 1: 실패하는 테스트 추가**
 
 `MiniCalendar.test.tsx`의 `describe('MiniCalendar 컴포넌트')` 블록 안에 추가한다:
 
@@ -395,7 +395,7 @@ function toDateStr(y: number, m: number, d: number) {
 }
 ```
 
-- [ ] **Step 2: 테스트가 실패하는지 확인**
+- [x] **Step 2: 테스트가 실패하는지 확인**
 
 ```bash
 cd frontend && npx vitest run src/components/MiniCalendar.test.tsx --reporter=verbose
@@ -403,7 +403,7 @@ cd frontend && npx vitest run src/components/MiniCalendar.test.tsx --reporter=ve
 
 예상 결과: 새로 추가한 7개 테스트 FAIL
 
-- [ ] **Step 3: 이벤트 점 & 팝오버 구현**
+- [x] **Step 3: 이벤트 점 & 팝오버 구현**
 
 `frontend/src/components/MiniCalendar.tsx` 전체를 아래 내용으로 교체한다:
 
@@ -543,7 +543,7 @@ export default function MiniCalendar({ schedules }: Props) {
 }
 ```
 
-- [ ] **Step 4: 전체 테스트 통과 확인**
+- [x] **Step 4: 전체 테스트 통과 확인**
 
 ```bash
 cd frontend && npx vitest run src/components/MiniCalendar.test.tsx --reporter=verbose
@@ -551,7 +551,7 @@ cd frontend && npx vitest run src/components/MiniCalendar.test.tsx --reporter=ve
 
 예상 결과: 전체 테스트 PASS (헬퍼 6개 + 컴포넌트 12개)
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 
 ```bash
 git add frontend/src/components/MiniCalendar.tsx frontend/src/components/MiniCalendar.test.tsx
@@ -566,7 +566,7 @@ git commit -m "feat: add event dots and hover popover to MiniCalendar"
 - Modify: `frontend/src/pages/MainPage.tsx`
 - Create: `frontend/src/pages/MainPage.test.tsx`
 
-- [ ] **Step 1: MainPage 테스트 파일 생성**
+- [x] **Step 1: MainPage 테스트 파일 생성**
 
 `frontend/src/pages/MainPage.test.tsx` 파일을 생성한다:
 
@@ -628,7 +628,7 @@ test('다가오는 일정 섹션이 렌더링된다', async () => {
 })
 ```
 
-- [ ] **Step 2: 테스트가 실패하는지 확인**
+- [x] **Step 2: 테스트가 실패하는지 확인**
 
 ```bash
 cd frontend && npx vitest run src/pages/MainPage.test.tsx --reporter=verbose
@@ -636,7 +636,7 @@ cd frontend && npx vitest run src/pages/MainPage.test.tsx --reporter=verbose
 
 예상 결과: `캘린더가 렌더링된다` FAIL (MiniCalendar가 아직 없음)
 
-- [ ] **Step 3: MainPage.tsx 수정**
+- [x] **Step 3: MainPage.tsx 수정**
 
 `frontend/src/pages/MainPage.tsx` 전체를 아래 내용으로 교체한다:
 
@@ -789,7 +789,7 @@ export default function MainPage() {
 }
 ```
 
-- [ ] **Step 4: 테스트 통과 확인**
+- [x] **Step 4: 테스트 통과 확인**
 
 ```bash
 cd frontend && npx vitest run src/pages/MainPage.test.tsx --reporter=verbose
@@ -797,7 +797,7 @@ cd frontend && npx vitest run src/pages/MainPage.test.tsx --reporter=verbose
 
 예상 결과: 4개 테스트 전체 PASS
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 
 ```bash
 git add frontend/src/pages/MainPage.tsx frontend/src/pages/MainPage.test.tsx
@@ -812,7 +812,7 @@ git commit -m "feat: refactor MainPage layout with MiniCalendar integration"
 - Modify: `frontend/src/components/Navbar.tsx`
 - Modify: `frontend/src/components/Navbar.test.tsx`
 
-- [ ] **Step 1: 실패하는 테스트 추가**
+- [x] **Step 1: 실패하는 테스트 추가**
 
 `frontend/src/components/Navbar.test.tsx` 하단에 추가한다:
 
@@ -836,7 +836,7 @@ test('모바일 메뉴에 학교 변경 항목이 있다', () => {
 })
 ```
 
-- [ ] **Step 2: 테스트가 실패하는지 확인**
+- [x] **Step 2: 테스트가 실패하는지 확인**
 
 ```bash
 cd frontend && npx vitest run src/components/Navbar.test.tsx --reporter=verbose
@@ -844,7 +844,7 @@ cd frontend && npx vitest run src/components/Navbar.test.tsx --reporter=verbose
 
 예상 결과: 새로 추가한 3개 테스트 FAIL
 
-- [ ] **Step 3: Navbar.tsx 수정**
+- [x] **Step 3: Navbar.tsx 수정**
 
 `frontend/src/components/Navbar.tsx` 전체를 아래 내용으로 교체한다:
 
@@ -950,7 +950,7 @@ export default function Navbar() {
 }
 ```
 
-- [ ] **Step 4: 전체 Navbar 테스트 통과 확인**
+- [x] **Step 4: 전체 Navbar 테스트 통과 확인**
 
 ```bash
 cd frontend && npx vitest run src/components/Navbar.test.tsx --reporter=verbose
@@ -958,7 +958,7 @@ cd frontend && npx vitest run src/components/Navbar.test.tsx --reporter=verbose
 
 예상 결과: 기존 4개 + 신규 3개 = 7개 테스트 전체 PASS
 
-- [ ] **Step 5: 전체 테스트 실행**
+- [x] **Step 5: 전체 테스트 실행**
 
 ```bash
 cd frontend && npx vitest run --reporter=verbose
@@ -966,7 +966,7 @@ cd frontend && npx vitest run --reporter=verbose
 
 예상 결과: 모든 테스트 PASS
 
-- [ ] **Step 6: 커밋**
+- [x] **Step 6: 커밋**
 
 ```bash
 git add frontend/src/components/Navbar.tsx frontend/src/components/Navbar.test.tsx

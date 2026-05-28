@@ -1,6 +1,6 @@
 # Selection Persistence & Sequential Flow Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** 앱 시작 시 저장된 대학교 ID를 확인해 학과 선택 그리드로 자동 이동하고, `/dept/*` 라우트에 접근 가드를 추가해 순차 흐름을 강제한다.
 
@@ -25,7 +25,7 @@
 **Files:**
 - Create: `frontend/src/hooks/useInitialRedirect.test.ts`
 
-- [ ] **Step 1: 테스트 파일 생성**
+- [x] **Step 1: 테스트 파일 생성**
 
 `frontend/src/hooks/useInitialRedirect.test.ts`를 아래 내용으로 생성한다:
 
@@ -71,7 +71,7 @@ describe('useInitialRedirect', () => {
 })
 ```
 
-- [ ] **Step 2: 테스트 실행 — FAIL 확인**
+- [x] **Step 2: 테스트 실행 — FAIL 확인**
 
 `frontend` 디렉터리에서 실행:
 ```
@@ -87,7 +87,7 @@ npx vitest run src/hooks/useInitialRedirect.test.ts
 **Files:**
 - Create: `frontend/src/hooks/useInitialRedirect.ts`
 
-- [ ] **Step 1: 훅 파일 생성**
+- [x] **Step 1: 훅 파일 생성**
 
 `frontend/src/hooks/useInitialRedirect.ts`를 아래 내용으로 생성한다:
 
@@ -108,7 +108,7 @@ export function useInitialRedirect(): string | null {
 }
 ```
 
-- [ ] **Step 2: 테스트 실행 — PASS 확인**
+- [x] **Step 2: 테스트 실행 — PASS 확인**
 
 ```
 npx vitest run src/hooks/useInitialRedirect.test.ts
@@ -124,7 +124,7 @@ Test Files  1 passed
 Tests       3 passed
 ```
 
-- [ ] **Step 3: 커밋**
+- [x] **Step 3: 커밋**
 
 ```bash
 git add frontend/src/hooks/useInitialRedirect.ts frontend/src/hooks/useInitialRedirect.test.ts
@@ -138,7 +138,7 @@ git commit -m "feat: add useInitialRedirect hook with auth injection point"
 **Files:**
 - Modify: `frontend/src/App.tsx`
 
-- [ ] **Step 1: `ProtectedMain` 수정 및 `ProtectedDept` 추가**
+- [x] **Step 1: `ProtectedMain` 수정 및 `ProtectedDept` 추가**
 
 `frontend/src/App.tsx`에서 아래 두 가지를 변경한다.
 
@@ -196,7 +196,7 @@ function ProtectedDept({ children }: { children: ReactNode }) {
 <Route path="/dept/department" element={<ProtectedDept><DepartmentPage /></ProtectedDept>} />
 ```
 
-- [ ] **Step 2: 기존 전체 테스트 통과 확인**
+- [x] **Step 2: 기존 전체 테스트 통과 확인**
 
 ```
 npx vitest run
@@ -204,7 +204,7 @@ npx vitest run
 
 예상 결과: 모든 테스트 PASS (기존 테스트 회귀 없음)
 
-- [ ] **Step 3: 커밋**
+- [x] **Step 3: 커밋**
 
 ```bash
 git add frontend/src/App.tsx
@@ -215,7 +215,7 @@ git commit -m "feat: redirect to dept grid on saved school, guard /dept/* routes
 
 ## Task 4: 빌드 및 최종 확인
 
-- [ ] **Step 1: TypeScript 빌드 오류 없음 확인**
+- [x] **Step 1: TypeScript 빌드 오류 없음 확인**
 
 ```
 cd frontend && npx tsc --noEmit
@@ -223,7 +223,7 @@ cd frontend && npx tsc --noEmit
 
 예상 결과: 오류 없이 종료
 
-- [ ] **Step 2: 전체 테스트 최종 통과 확인**
+- [x] **Step 2: 전체 테스트 최종 통과 확인**
 
 ```
 npx vitest run
@@ -231,7 +231,7 @@ npx vitest run
 
 예상 결과: 모든 테스트 PASS
 
-- [ ] **Step 3: 동작 수동 검증 (선택)**
+- [x] **Step 3: 동작 수동 검증 (선택)**
 
 `npx vite` 로 dev server 실행 후:
 1. localStorage 비운 상태로 `/` 접속 → `/universities`로 이동하는지 확인
