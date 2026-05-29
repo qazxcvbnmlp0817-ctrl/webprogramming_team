@@ -1,0 +1,41 @@
+# ===== DB 비밀정보 (절대 git에 올리지 말 것) =====
+application-secret.properties
+
+# ===== Java 빌드 산출물 =====
+target/
+*.class
+*.jar
+*.war
+
+# ===== IDE 설정 =====
+.idea/
+*.iml
+.vscode/
+*.eclipse
+
+# ===== OS 파일 =====
+.DS_Store
+Thumbs.db
+
+# ===== 브레인스토밍 임시 파일 =====
+.superpowers/
+
+# ===== 로그 파일 =====
+*.log
+
+# ===== 업로드된 파일 =====
+uploads/
+
+# ===== Claude Code 설정 =====
+.claude/
+
+# ===== 로컬 실행 스크립트 (개인 환경 전용) =====
+run-backend.cmd
+run-backend.ps1
+run-frontend-dev.cmd
+run-frontend-dev.ps1
+build-frontend.cmd
+build-frontend.ps1
+
+# ===== 브레인스토밍/디자인 문서 (로컬 전용) =====
+docs/superpowers/
