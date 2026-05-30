@@ -10,7 +10,7 @@
 
 **목적:** 국립목포대학교 등 여러 대학교의 학과 공지사항, 게시판, 일정, 학과정보를 하나의 웹 포털로 통합하여 학생과 교직원이 편리하게 접근할 수 있도록 합니다.
 
-**현재 단계:** 프론트엔드 UI + REST API + Oracle DB 연동 완성. 로그인·회원가입·인증, 관리자 시스템(3단계 역할), 교수 수업 시간표 CRUD, 학생 수강신청·시간표 자동 동기화, SUPER_ADMIN 학교 계층 CRUD까지 구현 완료. Mock 교수/학생 계정이 앱 시작 시 자동 시딩됩니다.
+**현재 단계:** 프론트엔드 UI + REST API + Oracle DB 연동 완성. 로그인·회원가입·인증, 관리자 시스템(3단계 역할), 교수 수업 시간표 CRUD, 학생 수강신청·시간표 자동 동기화, SUPER_ADMIN 학교 계층 CRUD, 가입 승인 시스템(학교·학부·학과 단위), 교수 학과 일정 공유, 개인 캘린더 + 소속 일정 통합 표시까지 구현 완료. Mock 교수/학생 계정이 앱 시작 시 자동 시딩됩니다.
 
 ---
 
@@ -312,7 +312,7 @@ webprogramming_team-main/
 | `/dept/board/write` | WritePostPage | 학과 게시글 작성 |
 | `/dept/schedule` | SchedulePage | 학과 일정 |
 | `/dept/department` | DepartmentPage | 학과정보 |
-| `/calendar` | CalendarPage | 개인 캘린더 (로그인 전용 — 학생은 수업 시간표 자동 동기화) |
+| `/calendar` | CalendarRouter → CalendarPage / SchedulePage | **로그인 시** 개인 캘린더 (학생: 수업 시간표 자동 동기화, 교수/조교: 학과 이벤트 등록 가능) / **비로그인 시** 학과 일정(SchedulePage) |
 | `/login` | LoginPage | 로그인 |
 | `/signup` | SignupPage | 회원가입 |
 | `/mypage` | MyPage | 마이페이지 |
@@ -535,7 +535,11 @@ const FOOTER_HIDDEN_PATHS = ['/universities']
 |----|------|
 | `student` | 일반 학생 |
 | `professor` | 교수 |
-| `admin` | 관리자 (가입 후 승인 필요) |
+| `employee` | 직원 |
+| `assistant` | 조교 |
+| `admin` | 관리자 |
+
+> **가입 승인 정책 (2026-05-30 변경):** 모든 회원 유형이 가입 후 `PENDING_APPROVAL` 상태로 시작합니다. 로그인은 승인 후에만 가능합니다. 관리자 신청(`memberType=admin`)은 SUPER_ADMIN이 승인, 일반 사용자(학생·교수 등)는 소속 학교/학과/학부 관리자가 각 관리 대시보드의 "가입 승인" 탭에서 승인합니다.
 
 ### useInitialRedirect.ts 리다이렉트 로직
 
@@ -633,7 +637,7 @@ return '/universities'
 | 컬럼 | 값 | 의미 |
 |------|-----|------|
 | `STATUS` | `ACTIVE` | 정상 사용자 — 로그인 가능 |
-|          | `PENDING_APPROVAL` | 관리자 가입 신청 대기 — 로그인 차단 |
+|          | `PENDING_APPROVAL` | 가입 승인 대기 — 로그인 차단 (모든 유형) |
 |          | `SUSPENDED` | 정지됨 — 로그인 차단 |
 |          | `DELETED` | 소프트 삭제 — 로그인 차단 |
 | `ADMIN_ROLE` | `SUPER_ADMIN` | 전 시스템 + 모든 학교 관리 |
@@ -644,8 +648,9 @@ return '/universities'
 ### 14.2 인증 흐름
 
 1. **회원가입** (`AuthService.signup`)
-   - 일반 사용자(`student`/`professor`/`staff`) → `STATUS=ACTIVE`, `ADMIN_ROLE=null`
-   - 관리자 신청(`memberType=admin`) → `STATUS=PENDING_APPROVAL`, `ADMIN_ROLE=null` (역할은 승인자가 결정)
+   - **모든 유형** → `STATUS=PENDING_APPROVAL`, `ADMIN_ROLE=null`
+   - 관리자 신청(`memberType=admin`) → SUPER_ADMIN이 승인 + 역할 부여
+   - 일반 사용자(`student`/`professor`/`assistant`/`employee`) → 소속 학교·학과·학부 관리자가 해당 대시보드 "가입 승인" 탭에서 승인
 
 2. **로그인** (`AuthService.login`)
    - `STATUS` 분기:
@@ -707,16 +712,41 @@ return '/universities'
 - 학교 생성/편집 폼: 이름·설명 + `SchoolTreeEditor`(단과대학→학부→학과 계층 편집)
 - 삭제: `window.confirm` 2회 확인 후 cascade 삭제
 
-**SchoolAdminPage / DeptAdminPage / FacultyAdminPage** — 6탭 구조 (동일 패턴)
+**SchoolAdminPage** — 6탭 구조
 
 | 탭 | 내용 |
 |----|------|
 | 개요 | 통계 카드 + 방문자 라인 차트 + 콘텐츠 비율 도넛 차트 |
-| 학교/학과/학부 페이지 | 일반 페이지를 `embedded` 모드로 임베드 (Navbar/AdminBanner 숨김) |
+| 게시글 관리 | 페이지네이션 + 삭제 |
+| 전체 사용자 | 학교 소속 사용자 + 상태 변경 + 역할 부여 모달 |
+| **가입 승인** | `PENDING_APPROVAL` 상태 사용자 목록 (admin 제외). 승인 → `ACTIVE` / 거절 → `DELETED` |
+| 활동 로그 | 관리자 액션 감사 로그 |
+| 교수 배정 | 학과·교수·강의 선택 배정. **다른 소속 교수** 버튼으로 같은 학교 전체 교수 이름 검색 가능 |
+
+**DeptAdminPage** — 8탭 구조
+
+| 탭 | 내용 |
+|----|------|
+| 개요 | 통계 카드 + 방문자 라인 차트 |
+| 학과 페이지 | 일반 DepartmentPage를 embedded 모드로 표시 |
 | 게시글 관리 | 페이지네이션 + 삭제 |
 | 공지 관리 | 페이지네이션 + 삭제 |
-| 사용자 | 학교/학과/학부 소속 사용자 + 상태 변경 (ACTIVE/SUSPENDED/DELETED) |
-| 통계 | 6개월 월간 신규가입/게시글/방문자 바 차트 |
+| 사용자 | 학과 소속 사용자 + 상태 변경 |
+| **가입 승인** | 해당 학과 소속 `PENDING_APPROVAL` 사용자만 표시. 승인/거절 |
+| 통계 | 6개월 월간 바 차트 |
+| 교수 배정 | 교수·강의 선택 배정. **다른 소속 교수** 버튼으로 같은 학교 전체 교수 이름 검색 후 선택 가능 |
+
+**FacultyAdminPage** — 7탭 구조
+
+| 탭 | 내용 |
+|----|------|
+| 개요 | 통계 카드 + 방문자 라인 차트 |
+| 학부 페이지 | 일반 FacultyPage를 embedded 모드로 표시 |
+| 게시글 관리 | 페이지네이션 + 삭제 |
+| 공지 관리 | 페이지네이션 + 삭제 |
+| 사용자 | 학부 소속 학과 사용자 통합 표시 + 상태 변경 |
+| **가입 승인** | 해당 학부 소속 학과의 `PENDING_APPROVAL` 사용자만 표시. 승인/거절 |
+| 통계 | 6개월 월간 바 차트 |
 
 학과/학부 대시보드 헤더에는 `[학과 글쓰기]`, `[공지 작성]` 버튼이 있어 기존 `/dept/board/write`, `/dept/notice/write` (또는 `/school/faculty/:id/*/write`) 라우트로 DeptContext 설정 후 이동합니다.
 
@@ -982,3 +1012,118 @@ SuperAdminPage
 
 - `docs/superpowers/specs/2026-05-24-school-crud-design.md` — 전체 설계 스펙
 - `docs/superpowers/plans/2026-05-24-school-crud.md` — 12-Task 구현 계획
+
+---
+
+## 17. 일정 시스템 통합 (2026-05-30 추가)
+
+### 17.1 /calendar 라우팅 분기 (CalendarRouter)
+
+`App.tsx`의 `CalendarRouter` 컴포넌트가 로그인 상태를 **reactive하게** 감지하여 목적지를 결정합니다.
+
+| 로그인 상태 | `/calendar` 접속 결과 |
+|------------|----------------------|
+| 로그인 됨  | `CalendarPage` — 개인 캘린더 |
+| 비로그인   | `SchedulePage` — 현재 선택된 학과 일정 |
+
+> `CalendarRouter`는 `loginChanged` / `storage` 이벤트를 구독하여 탭 간 로그인/로그아웃 시에도 즉각 반응합니다.
+
+### 17.2 CalendarPage 확장 — 교수 학과 이벤트 공유
+
+**교수/조교 전용 기능:**
+- "수업 일정 등록" 버튼으로 `ProfEventModal` 열기
+- 과목 선택 → 제목·날짜·카테고리(시험/과제/기타) 입력 → `POST /api/professor/dept-schedules` (DB 저장)
+- DB 저장 실패 시 localStorage 폴백 (`sharedCourseEvents.ts`, key: `class_course_events_v1`)
+- 등록한 이벤트는 같은 학과 학생의 캘린더에 자동 반영 (`dept-event-*` 접두사)
+
+**학생 캘린더에 표시되는 일정 종류:**
+1. `course-*` — 반복 수업 시간표 (교수 등록, ±3개월 확장, 읽기 전용)
+2. `prof-event-*` — 수강 과목 교수가 등록한 이벤트 (시험/과제, 읽기 전용)
+3. `dept-event-*` — DB 저장된 학과 전체 교수 이벤트 (읽기 전용)
+4. `ce-*` — localStorage 공유 이벤트 (DB 폴백, 같은 브라우저 세션 동기화)
+5. 개인 일정 — localStorage 직접 등록 (`my_schedules_v1`)
+
+**StorageEvent 실시간 동기화**: 교수가 같은 브라우저에서 이벤트를 등록하면 학생 탭이 `storage` 이벤트를 받아 `ce-*` 항목만 갱신합니다 (`dept-event-*` 등 기존 항목 보존).
+
+### 17.3 MainPage — 로그인 여부에 따른 일정 표시
+
+| 섹션 | 비로그인 | 로그인 |
+|------|---------|-------|
+| **달력** | 현재 선택된 학과 일정 (API) | 개인 일정 + 소속 학과·학부·학교 일정 통합 |
+| **다가오는 일정** | 학과 일정 (API, 최대 8개) | 개인 일정 + 소속 일정 통합, 날짜 오름차순, 최대 8개 |
+| **인기 게시글** | 🔒 로그인 필요 | 표시 |
+| **최신 공지사항** | `isPublicToOutsiders=true`인 것만 | 전체 표시 |
+| **일정 더보기 링크** | `/dept/schedule` | `/calendar` |
+
+**소속 일정 소스:**
+- `/api/schedules?deptId={userDeptId}` — 학과 일정
+- `/api/faculty/schedules?facultyId={userFacultyId}` — 학부 일정
+- `/api/univ/schedules?univId={userUnivId}` — 학교 일정
+- `/api/student/dept-events?deptId={userDeptId}` — 교수 등록 학과 이벤트
+
+> `userDeptId`가 없으면 현재 `selectedDeptId`(보고 있는 학과)로 폴백합니다.
+
+### 17.4 Navbar "일정" 링크 동적 라우팅
+
+```ts
+// Navbar.tsx — buildDeptNav
+{ to: loggedIn ? '/calendar' : '/dept/schedule', label: '일정' }
+```
+
+`isLoggedInState`는 `loginChanged` / `storage` 이벤트로 reactive하게 갱신됩니다.
+
+---
+
+## 18. MyPage 기능 확장 (2026-05-30 추가)
+
+### 18.1 탭 구성
+
+| 탭 | 표시 조건 | 내용 |
+|----|----------|------|
+| 내 정보 | 모든 유저 | 이름 수정, 비밀번호 변경, 회원 탈퇴 |
+| **수업 선택** | 학생(`student`)만 | 수강신청 관리 (학과 ID 입력 → 과목 조회 → 추가/취소) |
+| 내가 쓴 글 | 모든 유저 | 작성한 게시글 목록. **수정·삭제** 기능 (hover 시 표시) |
+| 댓글 관리 | 모든 유저 | 작성한 댓글 목록. **인라인 수정·삭제** 기능 |
+| 내 일정 관리 | 모든 유저 | 목록/달력 뷰, 필터·검색, 추가·수정·삭제 |
+| 알림 설정 | 모든 유저 | 공지/댓글/D-Day 알림 on/off |
+
+### 18.2 수업 선택 탭 (학생 전용)
+
+- `GET /api/courses?deptId=X` — 학과 과목 목록 조회
+- `GET /api/student/enrollments?semester=` — 현재 수강 과목 조회
+- `POST /api/student/enrollments` — 수강신청
+- `DELETE /api/student/enrollments/{enrollmentId}` — 수강 취소
+
+---
+
+## 19. 회원가입 — API 기반 대학·학과 로딩 (2026-05-30 변경)
+
+기존의 하드코딩된 `COLLEGES`/`DEPARTMENTS` 상수 배열을 제거하고, 실제 API를 호출합니다.
+
+| 단계 | 데이터 소스 |
+|------|------------|
+| Step 1 — 대학교 선택 | `GET /api/universities` → 전체 대학 목록 동적 로드 |
+| Step 3 — 단과대 선택 | `GET /api/universities/{selectedUnivId}` → 선택된 대학의 schools 목록 |
+| Step 3 — 학과 선택 | 선택된 단과대의 faculties → depts 목록 |
+
+> `universityId` 페이로드에 실제 숫자 ID(`String(selectedUnivId)`)가 저장되어 DB 조회와 정확히 일치합니다. (이전: `"mokpo"`, `"suncheon"` 등 임의 문자열 → 조회 오류)
+
+---
+
+## 20. 교수 배정 — 타 소속 교수 지원 (2026-05-30 추가)
+
+### 20.1 변경 사항
+
+**백엔드** (`AdminService.createAssignment`): 교수의 소속 학과(`prof.getDeptId()`)가 배정 대상 학과(`deptId`)와 같아야 한다는 검증을 제거했습니다. 강의의 소속 학과만 검증합니다.
+
+**프론트엔드** 교수 배정 폼:
+- 교수 select 오른쪽에 **"다른 소속 교수"** 버튼 추가
+- 클릭 시 같은 학교의 전체 교수를 이름으로 검색하는 인라인 패널 표시
+- 선택 시 select에 자동 반영, 패널 닫힘
+
+### 20.2 API
+
+| 엔드포인트 | 설명 |
+|-----------|------|
+| `GET /api/admin/dept/univ-professors` | 해당 학과가 속한 대학의 전체 교수 목록 (DeptAdminPage용) |
+| `GET /api/admin/school/professors` | 학교 전체 교수 목록 (SchoolAdminPage용, 기존 엔드포인트) |
