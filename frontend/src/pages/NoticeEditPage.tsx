@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 
-const CATEGORIES = ['학사', '장학', '행사', '취업']
+const CATEGORIES = ['일반', '학사', '장학', '행사', '취업']
 
 export default function NoticeEditPage() {
   const navigate = useNavigate()

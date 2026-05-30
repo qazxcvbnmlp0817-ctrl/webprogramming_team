@@ -1,9 +1,10 @@
 import { useRef, useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import { isSameFaculty } from '../utils/accessCheck'
 import type { PostAttachmentDto } from '../types/post'
 
-const CATEGORIES = ['학사', '장학', '행사', '취업']
+const CATEGORIES = ['일반', '학사', '장학', '행사', '취업']
 
 function formatFileSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`
@@ -15,7 +16,7 @@ export default function FacultyNoticeWritePage() {
   const navigate = useNavigate()
   const { facultyId } = useParams<{ facultyId: string }>()
   const [title, setTitle]       = useState('')
-  const [category, setCategory] = useState('학사')
+  const [category, setCategory] = useState('일반')
   const [content, setContent]   = useState('')
 
   const [targetGrades, setTargetGrades] = useState<number[]>([1, 2, 3, 4])
@@ -30,7 +31,11 @@ export default function FacultyNoticeWritePage() {
 
   useEffect(() => {
     const memberType = sessionStorage.getItem('memberType') ?? ''
-    if (memberType !== 'professor' && memberType !== 'admin') {
+    const isAdmin = memberType === 'admin'
+    if (!['professor', 'admin', 'assistant'].includes(memberType)) {
+      navigate(`/school/faculty/${facultyId}/notice`, { replace: true }); return
+    }
+    if (!isAdmin && !isSameFaculty(facultyId ? Number(facultyId) : null)) {
       navigate(`/school/faculty/${facultyId}/notice`, { replace: true })
     }
   }, [navigate, facultyId])

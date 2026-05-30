@@ -1,8 +1,9 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import { useDept } from '../context/DeptContext'
 import type { PostAttachmentDto } from '../types/post'
+import { isLoggedIn, isSameDept } from '../utils/accessCheck'
 
 const CATEGORIES = ['자유게시판', '질문', '스터디', '취업후기']
 
@@ -14,7 +15,15 @@ function formatFileSize(bytes: number) {
 
 export default function WritePostPage() {
   const navigate = useNavigate()
-  const { selectedDeptId } = useDept()
+  const { selectedDeptId, selectedDeptName } = useDept()
+
+  useEffect(() => {
+    const mt = sessionStorage.getItem('memberType') ?? ''
+    if (!isLoggedIn()) { navigate('/login', { replace: true }); return }
+    if (mt !== 'admin' && !isSameDept(selectedDeptId, selectedDeptName))
+      navigate('/dept/board', { replace: true })
+  }, [navigate, selectedDeptId, selectedDeptName])
+
   const [title, setTitle]       = useState('')
   const [category, setCategory] = useState('자유게시판')
   const [content, setContent]   = useState('')

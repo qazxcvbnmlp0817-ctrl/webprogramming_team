@@ -4,7 +4,7 @@ import Navbar from '../components/Navbar'
 import { useDept } from '../context/DeptContext'
 import type { PostAttachmentDto } from '../types/post'
 
-const CATEGORIES = ['학사', '장학', '행사', '취업']
+const CATEGORIES = ['일반', '학사', '장학', '행사', '취업']
 
 function formatFileSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`
@@ -16,7 +16,7 @@ export default function SchoolNoticeWritePage() {
   const navigate = useNavigate()
   const { selectedUniversityId } = useDept()
   const [title, setTitle]       = useState('')
-  const [category, setCategory] = useState('학사')
+  const [category, setCategory] = useState('일반')
   const [content, setContent]   = useState('')
 
   const [targetGrades, setTargetGrades] = useState<number[]>([1, 2, 3, 4])
@@ -30,7 +30,7 @@ export default function SchoolNoticeWritePage() {
 
   useEffect(() => {
     const memberType = sessionStorage.getItem('memberType') ?? ''
-    if (memberType !== 'professor' && memberType !== 'admin') {
+    if (!['professor', 'admin', 'assistant'].includes(memberType)) {
       navigate('/school/notice', { replace: true })
     }
   }, [navigate])

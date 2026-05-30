@@ -2,9 +2,10 @@ import { useRef, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import { useDept } from '../context/DeptContext'
+import { isSameDept } from '../utils/accessCheck'
 import type { PostAttachmentDto } from '../types/post'
 
-const CATEGORIES = ['학사', '장학', '행사', '취업']
+const CATEGORIES = ['일반', '학사', '장학', '행사', '취업']
 
 function formatFileSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`
@@ -14,9 +15,9 @@ function formatFileSize(bytes: number) {
 
 export default function NoticeWritePage() {
   const navigate = useNavigate()
-  const { selectedDeptId } = useDept()
+  const { selectedDeptId, selectedDeptName } = useDept()
   const [title, setTitle]       = useState('')
-  const [category, setCategory] = useState('학사')
+  const [category, setCategory] = useState('일반')
   const [content, setContent]   = useState('')
 
   const [targetGrades, setTargetGrades] = useState<number[]>([1, 2, 3, 4])
@@ -31,10 +32,14 @@ export default function NoticeWritePage() {
 
   useEffect(() => {
     const memberType = sessionStorage.getItem('memberType') ?? ''
-    if (memberType !== 'professor' && memberType !== 'admin') {
+    const isAdmin = memberType === 'admin'
+    if (!['professor', 'admin', 'assistant'].includes(memberType)) {
+      navigate('/dept/notice', { replace: true }); return
+    }
+    if (!isAdmin && !isSameDept(selectedDeptId, selectedDeptName)) {
       navigate('/dept/notice', { replace: true })
     }
-  }, [navigate])
+  }, [navigate, selectedDeptId, selectedDeptName])
 
   function handleImageAdd(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = Array.from(e.target.files ?? [])

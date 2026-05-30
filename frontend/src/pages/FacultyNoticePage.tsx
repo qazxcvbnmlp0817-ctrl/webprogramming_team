@@ -8,9 +8,9 @@ import { fetchUniversity } from '../api/universities'
 import { fetchFacultyNotices } from '../api/school'
 import { useDept } from '../context/DeptContext'
 import { useDeptFetch } from '../hooks/useDeptFetch'
-import { isLoggedIn, isPrivileged } from '../utils/accessCheck'
+import { isSameFaculty } from '../utils/accessCheck'
 
-const NOTICE_TABS = ['전체', '학사', '장학', '행사', '취업']
+const NOTICE_TABS = ['전체', '일반', '학사', '장학', '행사', '취업']
 const GRADE_TABS  = ['전체', '1학년', '2학년', '3학년', '4학년']
 
 export default function FacultyNoticePage() {
@@ -26,7 +26,8 @@ export default function FacultyNoticePage() {
 
   useEffect(() => { setPage(1) }, [active, gradeFilter, search, searchType])
 
-  const canWrite = ['professor', 'admin'].includes(sessionStorage.getItem('memberType') ?? '')
+  const memberType = sessionStorage.getItem('memberType') ?? ''
+  const isAdmin = memberType === 'admin'
 
   const facultyIdNum = facultyId ? Number(facultyId) : null
 
@@ -48,8 +49,9 @@ export default function FacultyNoticePage() {
   const school  = univ?.schools.find(s => s.faculties.some(f => f.id === facultyIdNum))
   const faculty = school?.faculties.find(f => f.id === facultyIdNum)
 
-  const isOutsider = !isPrivileged() && !isLoggedIn()
-  const visibleFiltered = isOutsider ? filtered.filter(n => n.isPublicToOutsiders) : filtered
+  const isMember = isAdmin || isSameFaculty(facultyIdNum, faculty?.name)
+  const canWrite = isMember && ['professor', 'assistant', 'admin'].includes(memberType)
+  const visibleFiltered = isMember ? filtered : filtered.filter(n => n.isPublicToOutsiders)
 
   const totalPages = Math.max(1, Math.ceil(visibleFiltered.length / PER_PAGE))
   const pageItems  = visibleFiltered.slice((page - 1) * PER_PAGE, page * PER_PAGE)

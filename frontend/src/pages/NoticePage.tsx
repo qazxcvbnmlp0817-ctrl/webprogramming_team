@@ -8,9 +8,9 @@ import { fetchNotices } from '../api/notices'
 import { useDept } from '../context/DeptContext'
 import { useDeptFetch } from '../hooks/useDeptFetch'
 import AdminBanner from '../components/common/AdminBanner'
-import { isLoggedIn, isPrivileged } from '../utils/accessCheck'
+import { isSameDept } from '../utils/accessCheck'
 
-const NOTICE_TABS = ['전체', '학사', '장학', '행사', '취업']
+const NOTICE_TABS = ['전체', '일반', '학사', '장학', '행사', '취업']
 const GRADE_TABS  = ['전체', '1학년', '2학년', '3학년', '4학년']
 
 export default function NoticePage() {
@@ -25,7 +25,10 @@ export default function NoticePage() {
 
   useEffect(() => { setPage(1) }, [active, gradeFilter, search, searchType])
 
-  const canWrite = ['professor', 'admin'].includes(sessionStorage.getItem('memberType') ?? '')
+  const memberType = sessionStorage.getItem('memberType') ?? ''
+  const isAdmin = memberType === 'admin'
+  const isMember = isAdmin || isSameDept(selectedDeptId, selectedDeptName)
+  const canWrite = isMember && ['professor', 'assistant', 'admin'].includes(memberType)
 
   const { data, loading } = useDeptFetch(fetchNotices, selectedDeptId)
   const notices  = data?.notices  ?? []
@@ -40,8 +43,7 @@ export default function NoticePage() {
     return catOk && searchOk && gradeOk
   }), [notices, active, gradeFilter, search, searchType])
 
-  const isOutsider = !isPrivileged() && !isLoggedIn()
-  const visibleFiltered = isOutsider ? filtered.filter(n => n.isPublicToOutsiders) : filtered
+  const visibleFiltered = isMember ? filtered : filtered.filter(n => n.isPublicToOutsiders)
 
   const totalPages = Math.max(1, Math.ceil(visibleFiltered.length / PER_PAGE))
   const pageItems  = visibleFiltered.slice((page - 1) * PER_PAGE, page * PER_PAGE)

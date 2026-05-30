@@ -1,7 +1,8 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import type { PostAttachmentDto } from '../types/post'
+import { isLoggedIn, isSameFaculty } from '../utils/accessCheck'
 
 const CATEGORIES = ['자유게시판', '질문', '스터디', '취업후기']
 
@@ -14,6 +15,14 @@ function formatFileSize(bytes: number) {
 export default function FacultyWritePostPage() {
   const navigate = useNavigate()
   const { facultyId } = useParams<{ facultyId: string }>()
+
+  useEffect(() => {
+    const mt = sessionStorage.getItem('memberType') ?? ''
+    if (!isLoggedIn()) { navigate('/login', { replace: true }); return }
+    if (mt !== 'admin' && !isSameFaculty(facultyId ? Number(facultyId) : null))
+      navigate(`/school/faculty/${facultyId}/board`, { replace: true })
+  }, [navigate, facultyId])
+
   const [title, setTitle]       = useState('')
   const [category, setCategory] = useState('자유게시판')
   const [content, setContent]   = useState('')

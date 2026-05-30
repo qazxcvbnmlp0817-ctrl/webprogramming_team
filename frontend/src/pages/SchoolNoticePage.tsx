@@ -9,7 +9,7 @@ import { useDeptFetch } from '../hooks/useDeptFetch'
 import { useDept } from '../context/DeptContext'
 import AdminBanner from '../components/common/AdminBanner'
 
-const TABS       = ['전체', '학사', '장학', '행사', '취업']
+const TABS       = ['전체', '일반', '학사', '장학', '행사', '취업']
 const GRADE_TABS = ['전체', '1학년', '2학년', '3학년', '4학년']
 
 export default function SchoolNoticePage() {
@@ -24,7 +24,7 @@ export default function SchoolNoticePage() {
 
   useEffect(() => { setPage(1) }, [active, gradeFilter, search, searchType])
 
-  const canWrite = ['professor', 'admin'].includes(sessionStorage.getItem('memberType') ?? '')
+  const canWrite = ['professor', 'admin', 'assistant'].includes(sessionStorage.getItem('memberType') ?? '')
 
   const { data, loading } = useDeptFetch(fetchSchoolNotices, selectedUniversityId)
   const notices  = data?.notices  ?? []
