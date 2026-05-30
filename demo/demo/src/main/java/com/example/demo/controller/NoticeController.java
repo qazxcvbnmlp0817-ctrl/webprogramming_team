@@ -4,6 +4,7 @@ import com.example.demo.dto.NoticeCommentDto;
 import com.example.demo.dto.NoticeCommentWriteRequestDto;
 import com.example.demo.dto.NoticeDto;
 import com.example.demo.dto.NoticeWriteRequestDto;
+import com.example.demo.service.AdminService;
 import com.example.demo.service.NoticeCommentService;
 import com.example.demo.service.NoticeService;
 import org.springframework.http.ResponseEntity;
@@ -17,11 +18,14 @@ public class NoticeController {
 
     private final NoticeService noticeService;
     private final NoticeCommentService noticeCommentService;
+    private final AdminService adminService;
 
     public NoticeController(NoticeService noticeService,
-                            NoticeCommentService noticeCommentService) {
+                            NoticeCommentService noticeCommentService,
+                            AdminService adminService) {
         this.noticeService        = noticeService;
         this.noticeCommentService = noticeCommentService;
+        this.adminService         = adminService;
     }
 
     // ── GET ──────────────────────────────────────────────────────────────────
@@ -88,6 +92,15 @@ public class NoticeController {
     public ResponseEntity<?> deleteNotice(@PathVariable Long id) {
         noticeService.delete(id);
         return ResponseEntity.ok(Map.of("success", true));
+    }
+
+    @PutMapping("/api/notices/{id}/hidden")
+    public ResponseEntity<Map<String, Object>> setNoticeHidden(
+            @PathVariable Long id,
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @RequestBody Map<String, Boolean> body) {
+        boolean hidden = Boolean.TRUE.equals(body.get("hidden"));
+        return ResponseEntity.ok(adminService.setNoticeHidden(id, hidden, username != null ? username : "unknown"));
     }
 
     // ── 댓글 ─────────────────────────────────────────────────────────────────

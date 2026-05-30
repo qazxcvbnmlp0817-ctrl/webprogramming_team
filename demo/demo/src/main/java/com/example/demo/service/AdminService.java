@@ -111,6 +111,24 @@ public class AdminService {
 
     // ── School Admin ─────────────────────────────────────────────────────────
 
+    public Map<String, Object> setPostHidden(Long postId, boolean hidden, String actor) {
+        Post p = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found: " + postId));
+        p.setHidden(hidden);
+        postRepository.save(p);
+        logAction(actor, hidden ? "HIDE" : "UNHIDE", null, "post#" + postId, p.getScopeId());
+        return Map.of("success", true, "hidden", hidden);
+    }
+
+    public Map<String, Object> setNoticeHidden(Long noticeId, boolean hidden, String actor) {
+        Notice n = noticeRepository.findById(noticeId)
+                .orElseThrow(() -> new RuntimeException("Notice not found: " + noticeId));
+        n.setHidden(hidden);
+        noticeRepository.save(n);
+        logAction(actor, hidden ? "HIDE" : "UNHIDE", null, "notice#" + noticeId, n.getScopeId());
+        return Map.of("success", true, "hidden", hidden);
+    }
+
     public Map<String, Object> deleteSchoolPost(Long postId, Long univId, String actor) {
         Post p = postRepository.findById(postId)
                 .orElseThrow(() -> new RuntimeException("Post not found: " + postId));
@@ -156,6 +174,21 @@ public class AdminService {
         return getScopedPosts("univ", univId, page);
     }
 
+    public Map<String, Object> getSchoolNotices(Long univId, int page) {
+        return getScopedNotices("univ", univId, page);
+    }
+
+    public Map<String, Object> deleteSchoolNotice(Long noticeId, Long univId, String actor) {
+        Notice n = noticeRepository.findById(noticeId)
+                .orElseThrow(() -> new RuntimeException("Notice not found: " + noticeId));
+        if (!"univ".equals(n.getScopeType()) || !univId.equals(n.getScopeId())) {
+            throw new RuntimeException("Notice scope mismatch");
+        }
+        noticeRepository.deleteById(noticeId);
+        logAction(actor, "DELETE", null, "univ notice#" + noticeId, univId);
+        return Map.of("success", true);
+    }
+
     public Map<String, Object> getScopedPosts(String scopeType, Long scopeId, int page) {
         Page<Post> postPage = postRepository.findByScopeTypeAndScopeId(
                 scopeType, scopeId,
@@ -169,6 +202,7 @@ public class AdminService {
             m.put("category",    p.getCategory());
             m.put("viewCount",   p.getViewCount());
             m.put("createdDate", p.getCreatedDate() != null ? p.getCreatedDate().toString() : "");
+            m.put("hidden",      p.isHidden());
             return m;
         }).collect(Collectors.toList());
 
@@ -193,6 +227,7 @@ public class AdminService {
             m.put("viewCount",   n.getViewCount());
             m.put("featured",    n.isFeatured());
             m.put("createdDate", n.getCreatedDate() != null ? n.getCreatedDate().toString() : "");
+            m.put("hidden",      n.isHidden());
             return m;
         }).collect(Collectors.toList());
 
@@ -218,6 +253,20 @@ public class AdminService {
         return userRepository.findByUniversityIdAndStatusAndMemberTypeNot(
                         String.valueOf(univId), "PENDING_APPROVAL", "admin")
                 .stream().map(this::toUserMap).collect(Collectors.toList());
+    }
+
+    public List<Map<String, Object>> getAllAdminLogs() {
+        return adminLogRepository.findTop200ByOrderByCreatedAtDesc()
+                .stream().map(log -> {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("id",             log.getId());
+                    m.put("actionType",     log.getActionType());
+                    m.put("actorUsername",  log.getActorUsername());
+                    m.put("targetUsername", log.getTargetUsername());
+                    m.put("detail",         log.getDetail());
+                    m.put("createdAt",      log.getCreatedAt().toString());
+                    return m;
+                }).collect(Collectors.toList());
     }
 
     public List<Map<String, Object>> getAdminLogs(Long univId) {

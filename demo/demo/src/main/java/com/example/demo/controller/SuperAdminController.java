@@ -131,6 +131,13 @@ public class SuperAdminController {
         return ResponseEntity.ok(adminService.approveAdmin(id, approve, role, username));
     }
 
+    @GetMapping("/logs")
+    public ResponseEntity<List<Map<String, Object>>> getLogs(
+            @RequestHeader(value = "X-Username", required = false) String username) {
+        verifySuper(username);
+        return ResponseEntity.ok(adminService.getAllAdminLogs());
+    }
+
     // ── School CRUD ──────────────────────────────────────────────────────────
 
     @GetMapping("/schools/{id}/tree")

@@ -4,6 +4,7 @@ import com.example.demo.dto.CommentDto;
 import com.example.demo.dto.CommentWriteRequestDto;
 import com.example.demo.dto.PostDto;
 import com.example.demo.dto.PostWriteRequestDto;
+import com.example.demo.service.AdminService;
 import com.example.demo.service.CommentService;
 import com.example.demo.service.PostService;
 import org.springframework.http.ResponseEntity;
@@ -17,10 +18,12 @@ public class BoardController {
 
     private final PostService postService;
     private final CommentService commentService;
+    private final AdminService adminService;
 
-    public BoardController(PostService postService, CommentService commentService) {
+    public BoardController(PostService postService, CommentService commentService, AdminService adminService) {
         this.postService    = postService;
         this.commentService = commentService;
+        this.adminService   = adminService;
     }
 
     // ── 목록 조회 ────────────────────────────────────────────────────────────
@@ -100,6 +103,15 @@ public class BoardController {
     public ResponseEntity<Void> deletePost(@PathVariable Long id) {
         postService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/api/posts/{id}/hidden")
+    public ResponseEntity<Map<String, Object>> setPostHidden(
+            @PathVariable Long id,
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @RequestBody Map<String, Boolean> body) {
+        boolean hidden = Boolean.TRUE.equals(body.get("hidden"));
+        return ResponseEntity.ok(adminService.setPostHidden(id, hidden, username != null ? username : "unknown"));
     }
 
     // ── 추천 ─────────────────────────────────────────────────────────────────

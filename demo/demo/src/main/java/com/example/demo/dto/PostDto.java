@@ -22,6 +22,7 @@ public class PostDto {
     private final List<PostAttachmentDto> attachments;
     private final String scopeType;
     private final Long scopeId;
+    private final boolean hidden;
 
     // DummyDataHelper 호환용 (content = null, authorUsername = null, attachments = null)
     public PostDto(Long id, String title, String author, int likes,
@@ -29,7 +30,7 @@ public class PostDto {
                    int commentCount, boolean isNotice, String imageUrl,
                    List<Integer> targetGrades, String visibility) {
         this(id, title, author, likes, category, viewCount, date, featured,
-             commentCount, isNotice, imageUrl, targetGrades, visibility, null, null, null);
+             commentCount, isNotice, imageUrl, targetGrades, visibility, null, null, null, null, null, false);
     }
 
     public PostDto(Long id, String title, String author, int likes,
@@ -37,7 +38,7 @@ public class PostDto {
                    int commentCount, boolean isNotice, String imageUrl,
                    List<Integer> targetGrades, String visibility, String content) {
         this(id, title, author, likes, category, viewCount, date, featured,
-             commentCount, isNotice, imageUrl, targetGrades, visibility, content, null, null);
+             commentCount, isNotice, imageUrl, targetGrades, visibility, content, null, null, null, null, false);
     }
 
     public PostDto(Long id, String title, String author, int likes,
@@ -47,7 +48,7 @@ public class PostDto {
                    String authorUsername) {
         this(id, title, author, likes, category, viewCount, date, featured,
              commentCount, isNotice, imageUrl, targetGrades, visibility, content,
-             authorUsername, null);
+             authorUsername, null, null, null, false);
     }
 
     public PostDto(Long id, String title, String author, int likes,
@@ -57,7 +58,7 @@ public class PostDto {
                    String authorUsername, List<PostAttachmentDto> attachments) {
         this(id, title, author, likes, category, viewCount, date, featured,
              commentCount, isNotice, imageUrl, targetGrades, visibility, content,
-             authorUsername, attachments, null, null);
+             authorUsername, attachments, null, null, false);
     }
 
     public PostDto(Long id, String title, String author, int likes,
@@ -66,6 +67,17 @@ public class PostDto {
                    List<Integer> targetGrades, String visibility, String content,
                    String authorUsername, List<PostAttachmentDto> attachments,
                    String scopeType, Long scopeId) {
+        this(id, title, author, likes, category, viewCount, date, featured,
+             commentCount, isNotice, imageUrl, targetGrades, visibility, content,
+             authorUsername, attachments, scopeType, scopeId, false);
+    }
+
+    public PostDto(Long id, String title, String author, int likes,
+                   String category, int viewCount, String date, boolean featured,
+                   int commentCount, boolean isNotice, String imageUrl,
+                   List<Integer> targetGrades, String visibility, String content,
+                   String authorUsername, List<PostAttachmentDto> attachments,
+                   String scopeType, Long scopeId, boolean hidden) {
         this.id           = id;
         this.title        = title;
         this.author       = author;
@@ -84,6 +96,7 @@ public class PostDto {
         this.attachments  = attachments;
         this.scopeType    = scopeType;
         this.scopeId      = scopeId;
+        this.hidden       = hidden;
     }
 
     public Long getId()                              { return id; }
@@ -104,4 +117,5 @@ public class PostDto {
     public List<PostAttachmentDto> getAttachments()  { return attachments; }
     public String getScopeType()                     { return scopeType; }
     public Long getScopeId()                         { return scopeId; }
+    public boolean isHidden()                        { return hidden; }
 }

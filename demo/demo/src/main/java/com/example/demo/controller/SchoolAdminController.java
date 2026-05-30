@@ -82,6 +82,46 @@ public class SchoolAdminController {
         return ResponseEntity.ok(adminService.deleteSchoolPost(postId, resolvedUnivId, resolveActor(username)));
     }
 
+    @PutMapping("/posts/{postId}/hidden")
+    public ResponseEntity<Map<String, Object>> setPostHidden(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @PathVariable Long postId,
+            @RequestParam(required = false) Long univId,
+            @RequestBody Map<String, Boolean> body) {
+        resolveUnivId(username, univId);
+        boolean hidden = Boolean.TRUE.equals(body.get("hidden"));
+        return ResponseEntity.ok(adminService.setPostHidden(postId, hidden, resolveActor(username)));
+    }
+
+    @PutMapping("/notices/{noticeId}/hidden")
+    public ResponseEntity<Map<String, Object>> setNoticeHidden(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @PathVariable Long noticeId,
+            @RequestParam(required = false) Long univId,
+            @RequestBody Map<String, Boolean> body) {
+        resolveUnivId(username, univId);
+        boolean hidden = Boolean.TRUE.equals(body.get("hidden"));
+        return ResponseEntity.ok(adminService.setNoticeHidden(noticeId, hidden, resolveActor(username)));
+    }
+
+    @GetMapping("/notices")
+    public ResponseEntity<Map<String, Object>> getNotices(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) Long univId) {
+        Long id = resolveUnivId(username, univId);
+        return ResponseEntity.ok(adminService.getSchoolNotices(id, page));
+    }
+
+    @DeleteMapping("/notices/{noticeId}")
+    public ResponseEntity<Map<String, Object>> deleteNotice(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @PathVariable Long noticeId,
+            @RequestParam(required = false) Long univId) {
+        Long id = resolveUnivId(username, univId);
+        return ResponseEntity.ok(adminService.deleteSchoolNotice(noticeId, id, resolveActor(username)));
+    }
+
     @GetMapping("/users")
     public ResponseEntity<List<Map<String, Object>>> getAdminUsers(
             @RequestHeader(value = "X-Username", required = false) String username,
