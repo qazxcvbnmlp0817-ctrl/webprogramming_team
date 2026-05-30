@@ -39,3 +39,9 @@ build-frontend.ps1
 
 # ===== 브레인스토밍/디자인 문서 (로컬 전용) =====
 docs/superpowers/
+
+# ===== Node.js =====
+node_modules/
+
+# ===== UI 테스트 스크린샷 (로컬 전용) =====
+frontend/test-screenshots/
