@@ -9,8 +9,9 @@ import {
   type LocalSchedule,
 } from '../utils/localSchedule'
 import { getAuthItem, clearAuthStorage } from '../utils/authStorage'
+import { fetchCoursesByDept, type CourseDto } from '../api/classSchedules'
 
-type Tab = '내 정보' | '내가 쓴 글' | '댓글 관리' | '내 일정 관리' | '알림 설정'
+type Tab = '내 정보' | '수업 선택' | '내가 쓴 글' | '댓글 관리' | '내 일정 관리' | '알림 설정'
 
 interface MyPost {
   id: number
@@ -19,6 +20,7 @@ interface MyPost {
   commentCount: number
   date: string
   scopeType: string
+  scopeId: number
 }
 
 interface MyComment {
@@ -27,7 +29,17 @@ interface MyComment {
   content: string
   date: string
   postTitle?: string
+  authorUsername?: string
 }
+
+interface EnrolledCourse {
+  enrollmentId: number
+  courseId: number
+  courseName: string
+  semester: string
+  enrolledAt: string
+}
+
 type MyFilter = 'all' | 'today' | 'week' | 'month' | 'past'
 type MyView = 'list' | 'calendar'
 
@@ -35,6 +47,11 @@ const PAGE_SIZE = 7
 const DAYS_KO = ['일','월','화','수','목','금','토']
 function pad(n: number) { return String(n).padStart(2,'0') }
 function toDS(y: number, m: number, d: number) { return `${y}-${pad(m)}-${pad(d)}` }
+
+function currentSemester() {
+  const now = new Date()
+  return `${now.getFullYear()}-${now.getMonth() + 1 <= 7 ? '1' : '2'}`
+}
 
 function MyCalendar({ year, month, onPrev, onNext, onToday, schedules, onEventClick, onDayClick }: {
   year: number; month: number
@@ -111,6 +128,7 @@ export default function MyPage() {
   const department       = getAuthItem('department')       || ''
   const grade            = getAuthItem('grade')
   const enrollmentStatus = getAuthItem('enrollmentStatus')
+  const isStudent        = memberType === 'student'
 
   const memberTypeLabel  = memberType==='student'?'학생':memberType==='professor'?'교수':memberType==='employee'?'직원':memberType==='assistant'?'조교':memberType==='admin'?'관리자':'회원'
   const enrollmentLabel  = enrollmentStatus==='freshman'?'신입생':enrollmentStatus==='enrolled'?'재학생':enrollmentStatus==='graduated'?'졸업생':''
@@ -217,29 +235,217 @@ export default function MyPage() {
   const calNext  = () => { if(calMonth===12){setCalYear(y=>y+1);setCalMonth(1)}else setCalMonth(m=>m+1) }
   const calToday = () => { setCalYear(now.getFullYear()); setCalMonth(now.getMonth()+1) }
 
-  const [myPosts, setMyPosts]       = useState<MyPost[]>([])
-  const [myComments, setMyComments] = useState<MyComment[]>([])
-  const [postsLoading, setPostsLoading]       = useState(false)
-  const [commentsLoading, setCommentsLoading] = useState(false)
+  // ── 내가 쓴 글 ──────────────────────────────────────────────────────────────
+  const [myPosts, setMyPosts]           = useState<MyPost[]>([])
+  const [postsLoading, setPostsLoading] = useState(false)
+  const [postEditOpen, setPostEditOpen] = useState(false)
+  const [editPost, setEditPost]         = useState<MyPost | null>(null)
+  const [editPostTitle, setEditPostTitle]     = useState('')
+  const [editPostContent, setEditPostContent] = useState('')
+  const [editPostLoading, setEditPostLoading] = useState(false)
+
+  const loadMyPosts = useCallback(() => {
+    if (!username) return
+    setPostsLoading(true)
+    fetch(`/api/my/posts?username=${encodeURIComponent(username)}`)
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setMyPosts(data) })
+      .catch(() => {})
+      .finally(() => setPostsLoading(false))
+  }, [username])
 
   useEffect(() => {
-    if (activeTab === '내가 쓴 글' && username && myPosts.length === 0) {
-      setPostsLoading(true)
-      fetch(`/api/my/posts?username=${encodeURIComponent(username)}`)
-        .then(r => r.json())
-        .then(data => { if (Array.isArray(data)) setMyPosts(data) })
-        .catch(() => {})
-        .finally(() => setPostsLoading(false))
+    if (activeTab === '내가 쓴 글') loadMyPosts()
+  }, [activeTab, loadMyPosts])
+
+  const handleDeletePost = async (postId: number) => {
+    if (!window.confirm('게시글을 삭제하시겠습니까?')) return
+    try {
+      const res = await fetch(`/api/posts/${postId}`, { method: 'DELETE' })
+      if (res.ok || res.status === 204) {
+        setMyPosts(prev => prev.filter(p => p.id !== postId))
+      }
+    } catch {}
+  }
+
+  const openPostEdit = async (post: MyPost) => {
+    setEditPost(post)
+    setEditPostTitle(post.title)
+    setEditPostContent('')
+    setPostEditOpen(true)
+    try {
+      const res = await fetch(`/api/posts/${post.id}`)
+      if (res.ok) {
+        const data = await res.json()
+        setEditPostContent(data.content ?? '')
+      }
+    } catch {}
+  }
+
+  const handleEditPost = async () => {
+    if (!editPost) return
+    if (!editPostTitle.trim()) { alert('제목을 입력해주세요.'); return }
+    setEditPostLoading(true)
+    try {
+      const res = await fetch(`/api/posts/${editPost.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: editPostTitle,
+          content: editPostContent,
+          category: editPost.category,
+          authorUsername: username,
+        }),
+      })
+      if (res.ok) {
+        setMyPosts(prev => prev.map(p => p.id === editPost.id ? { ...p, title: editPostTitle } : p))
+        setPostEditOpen(false)
+        setEditPost(null)
+      } else {
+        alert('수정에 실패했습니다.')
+      }
+    } catch {
+      alert('서버 연결에 실패했습니다.')
+    } finally {
+      setEditPostLoading(false)
     }
-    if (activeTab === '댓글 관리' && username && myComments.length === 0) {
-      setCommentsLoading(true)
-      fetch(`/api/my/comments?username=${encodeURIComponent(username)}`)
-        .then(r => r.json())
-        .then(data => { if (Array.isArray(data)) setMyComments(data) })
-        .catch(() => {})
-        .finally(() => setCommentsLoading(false))
+  }
+
+  // ── 댓글 관리 ──────────────────────────────────────────────────────────────
+  const [myComments, setMyComments]         = useState<MyComment[]>([])
+  const [commentsLoading, setCommentsLoading] = useState(false)
+  const [editingCommentId, setEditingCommentId]   = useState<number | null>(null)
+  const [editingCommentText, setEditingCommentText] = useState('')
+  const [commentEditLoading, setCommentEditLoading] = useState(false)
+
+  const loadMyComments = useCallback(() => {
+    if (!username) return
+    setCommentsLoading(true)
+    fetch(`/api/my/comments?username=${encodeURIComponent(username)}`)
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setMyComments(data) })
+      .catch(() => {})
+      .finally(() => setCommentsLoading(false))
+  }, [username])
+
+  useEffect(() => {
+    if (activeTab === '댓글 관리') loadMyComments()
+  }, [activeTab, loadMyComments])
+
+  const handleDeleteComment = async (comment: MyComment) => {
+    if (!window.confirm('댓글을 삭제하시겠습니까?')) return
+    try {
+      const res = await fetch(
+        `/api/posts/${comment.postId}/comments/${comment.id}?username=${encodeURIComponent(username)}`,
+        { method: 'DELETE' }
+      )
+      if (res.ok || res.status === 204) {
+        setMyComments(prev => prev.filter(c => c.id !== comment.id))
+      }
+    } catch {}
+  }
+
+  const startCommentEdit = (comment: MyComment) => {
+    setEditingCommentId(comment.id)
+    setEditingCommentText(comment.content)
+  }
+
+  const handleEditComment = async (comment: MyComment) => {
+    if (!editingCommentText.trim()) return
+    setCommentEditLoading(true)
+    try {
+      const res = await fetch(`/api/posts/${comment.postId}/comments/${comment.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: editingCommentText, authorUsername: username }),
+      })
+      if (res.ok) {
+        setMyComments(prev => prev.map(c =>
+          c.id === comment.id ? { ...c, content: editingCommentText } : c
+        ))
+        setEditingCommentId(null)
+        setEditingCommentText('')
+      } else {
+        alert('수정에 실패했습니다.')
+      }
+    } catch {
+      alert('서버 연결에 실패했습니다.')
+    } finally {
+      setCommentEditLoading(false)
     }
-  }, [activeTab, username])
+  }
+
+  // ── 수업 선택 ──────────────────────────────────────────────────────────────
+  const semester = currentSemester()
+  const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([])
+  const [availableCourses, setAvailableCourses] = useState<CourseDto[]>([])
+  const [coursesLoading, setCoursesLoading] = useState(false)
+  const [courseSearch, setCourseSearch] = useState('')
+  const [enrollMsg, setEnrollMsg] = useState<{ type: 'success'|'error'; text: string }|null>(null)
+  const [deptIdInput, setDeptIdInput] = useState('')
+
+  const loadEnrollments = useCallback(() => {
+    if (!username) return
+    fetch(`/api/student/enrollments?semester=${encodeURIComponent(semester)}`, {
+      headers: { 'X-Username': username },
+    })
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setEnrolledCourses(data) })
+      .catch(() => {})
+  }, [username, semester])
+
+  useEffect(() => {
+    if (activeTab === '수업 선택' && isStudent) {
+      loadEnrollments()
+    }
+  }, [activeTab, isStudent, loadEnrollments])
+
+  const handleLoadCourses = async (deptId: number) => {
+    setCoursesLoading(true)
+    const courses = await fetchCoursesByDept(deptId)
+    setAvailableCourses(courses)
+    setCoursesLoading(false)
+  }
+
+  const handleEnroll = async (courseId: number) => {
+    try {
+      const res = await fetch('/api/student/enrollments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Username': username },
+        body: JSON.stringify({ courseId, semester }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setEnrollMsg({ type: 'success', text: '수강신청이 완료되었습니다.' })
+        loadEnrollments()
+      } else {
+        setEnrollMsg({ type: 'error', text: data.message || '수강신청에 실패했습니다.' })
+      }
+    } catch {
+      setEnrollMsg({ type: 'error', text: '서버 연결에 실패했습니다.' })
+    }
+    setTimeout(() => setEnrollMsg(null), 2500)
+  }
+
+  const handleCancelEnrollment = async (enrollmentId: number) => {
+    if (!window.confirm('수강을 취소하시겠습니까?')) return
+    try {
+      const res = await fetch(`/api/student/enrollments/${enrollmentId}`, {
+        method: 'DELETE',
+        headers: { 'X-Username': username },
+      })
+      if (res.ok || res.status === 204) {
+        setEnrolledCourses(prev => prev.filter(e => e.enrollmentId !== enrollmentId))
+      }
+    } catch {}
+  }
+
+  const enrolledCourseIds = useMemo(() => new Set(enrolledCourses.map(e => e.courseId)), [enrolledCourses])
+  const filteredAvailable = useMemo(() => {
+    if (!courseSearch.trim()) return availableCourses
+    const q = courseSearch.toLowerCase()
+    return availableCourses.filter(c => c.courseName.toLowerCase().includes(q))
+  }, [availableCourses, courseSearch])
 
   const [noti, setNoti] = useState({ notice:true, comment:true, dday:true })
   const [notiLoading, setNotiLoading] = useState(false)
@@ -273,7 +479,18 @@ export default function MyPage() {
     finally { setNotiLoading(false); setTimeout(() => setNotiMsg(null), 2000) }
   }
 
-  const TABS: Tab[] = ['내 정보','내가 쓴 글','댓글 관리','내 일정 관리','알림 설정']
+  const TABS: Tab[] = isStudent
+    ? ['내 정보','수업 선택','내가 쓴 글','댓글 관리','내 일정 관리','알림 설정']
+    : ['내 정보','내가 쓴 글','댓글 관리','내 일정 관리','알림 설정']
+
+  const TAB_ICONS: Record<Tab, string> = {
+    '내 정보': '👤',
+    '수업 선택': '📚',
+    '내가 쓴 글': '✏️',
+    '댓글 관리': '💬',
+    '내 일정 관리': '📅',
+    '알림 설정': '🔔',
+  }
 
   return (
     <div className="bg-gray-50 text-black font-sans min-h-screen">
@@ -309,9 +526,7 @@ export default function MyPage() {
                 className={`w-full text-left px-4 py-2.5 text-sm transition flex items-center gap-2
                   ${i<TABS.length-1?'border-b border-gray-100':''}
                   ${activeTab===tab?'bg-gray-900 text-white font-semibold':'hover:bg-gray-50 text-gray-700'}`}>
-                <span className="text-base">
-                  {tab==='내 정보'&&'👤'}{tab==='내가 쓴 글'&&'✏️'}{tab==='댓글 관리'&&'💬'}{tab==='내 일정 관리'&&'📅'}{tab==='알림 설정'&&'🔔'}
-                </span>
+                <span className="text-base">{TAB_ICONS[tab]}</span>
                 {tab}
               </button>
             ))}
@@ -397,9 +612,105 @@ export default function MyPage() {
             </div>
           )}
 
+          {/* 수업 선택 (학생 전용) */}
+          {activeTab==='수업 선택' && isStudent && (
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-bold">수업 선택</h2>
+                  <p className="text-xs text-gray-400 mt-0.5">{semester} 학기 수강 과목을 관리하세요.</p>
+                </div>
+              </div>
+
+              {enrollMsg && (
+                <p className={`text-xs px-3 py-2 rounded border ${enrollMsg.type==='success'?'bg-green-50 border-green-200 text-green-700':'bg-red-50 border-red-200 text-red-600'}`}>
+                  {enrollMsg.text}
+                </p>
+              )}
+
+              <div className="bg-white border border-gray-200 rounded-lg p-5">
+                <h3 className="text-sm font-bold mb-3">현재 수강 중인 과목 ({enrolledCourses.length})</h3>
+                {enrolledCourses.length === 0 ? (
+                  <p className="text-sm text-gray-400 py-4 text-center">수강 중인 과목이 없습니다.</p>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {enrolledCourses.map(e => (
+                      <div key={e.enrollmentId} className="flex items-center justify-between py-2.5 px-3 bg-blue-50/60 rounded-lg border border-blue-100">
+                        <div>
+                          <p className="text-sm font-semibold text-gray-800">{e.courseName}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">{e.semester}</p>
+                        </div>
+                        <button onClick={() => handleCancelEnrollment(e.enrollmentId)}
+                          className="text-xs text-red-500 border border-red-200 rounded px-3 py-1 hover:bg-red-50 transition flex-shrink-0">
+                          수강 취소
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-white border border-gray-200 rounded-lg p-5">
+                <h3 className="text-sm font-bold mb-3">과목 추가</h3>
+                <div className="flex gap-2 mb-3">
+                  <input
+                    type="number"
+                    placeholder="학과 ID 입력 (예: 1)"
+                    value={deptIdInput}
+                    onChange={e => setDeptIdInput(e.target.value)}
+                    className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-blue-500"
+                  />
+                  <button
+                    onClick={() => { if (deptIdInput) handleLoadCourses(Number(deptIdInput)) }}
+                    disabled={!deptIdInput || coursesLoading}
+                    className="px-4 py-2 bg-gray-900 text-white rounded text-sm font-semibold hover:opacity-90 disabled:opacity-50 flex-shrink-0">
+                    {coursesLoading ? '조회 중...' : '조회'}
+                  </button>
+                </div>
+                {availableCourses.length > 0 && (
+                  <>
+                    <input
+                      placeholder="과목명 검색"
+                      value={courseSearch}
+                      onChange={e => setCourseSearch(e.target.value)}
+                      className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-blue-500 mb-3"
+                    />
+                    <div className="flex flex-col gap-1.5 max-h-64 overflow-y-auto">
+                      {filteredAvailable.map(c => {
+                        const enrolled = enrolledCourseIds.has(c.courseId)
+                        return (
+                          <div key={c.courseId}
+                            className={`flex items-center justify-between py-2 px-3 rounded border ${enrolled?'bg-gray-50 border-gray-200':'bg-white border-gray-200 hover:bg-gray-50'} transition`}>
+                            <div>
+                              <p className={`text-sm font-medium ${enrolled?'text-gray-400':''}`}>{c.courseName}</p>
+                              <p className="text-xs text-gray-400">{c.year}학년 · {c.credits}학점 {c.required?'· 필수':''}</p>
+                            </div>
+                            <button
+                              onClick={() => !enrolled && handleEnroll(c.courseId)}
+                              disabled={enrolled}
+                              className={`text-xs rounded px-3 py-1 flex-shrink-0 transition ${enrolled?'bg-gray-200 text-gray-400 cursor-default':'bg-blue-600 text-white hover:bg-blue-700'}`}>
+                              {enrolled ? '수강중' : '추가'}
+                            </button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </>
+                )}
+                <p className="text-xs text-gray-400 mt-3">
+                  학과 ID는 학과 페이지 URL에서 확인하거나 학교 포털에서 확인할 수 있습니다.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* 내가 쓴 글 */}
           {activeTab==='내가 쓴 글' && (
             <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <h2 className="text-base font-bold mb-5">내가 쓴 글</h2>
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-base font-bold">내가 쓴 글</h2>
+                <span className="text-xs text-gray-400">{myPosts.length}개</span>
+              </div>
               {postsLoading ? (
                 <div className="py-14 text-center text-gray-400 text-sm">불러오는 중...</div>
               ) : myPosts.length === 0 ? (
@@ -407,11 +718,26 @@ export default function MyPage() {
               ) : (
                 <div className="flex flex-col gap-1">
                   {myPosts.map(post => (
-                    <div key={post.id} className="flex items-center gap-3 py-3 border-b border-gray-100 hover:bg-gray-50 transition px-2 rounded">
+                    <div key={post.id}
+                      className="flex items-center gap-3 py-3 border-b border-gray-100 hover:bg-gray-50 transition px-2 rounded group">
                       <span className="text-xs bg-gray-100 text-gray-500 font-medium px-2 py-0.5 rounded flex-shrink-0">{post.category}</span>
-                      <p className="flex-1 text-sm font-medium text-gray-800 truncate">{post.title}</p>
+                      <button
+                        onClick={() => navigate(`/post/${post.id}`)}
+                        className="flex-1 text-left text-sm font-medium text-gray-800 truncate hover:text-blue-600 transition">
+                        {post.title}
+                      </button>
                       <span className="text-xs text-gray-400 flex-shrink-0">댓글 {post.commentCount}</span>
                       <span className="text-xs text-gray-300 flex-shrink-0">{post.date?.slice(0,10)}</span>
+                      <button
+                        onClick={() => openPostEdit(post)}
+                        className="text-xs text-blue-400 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition flex-shrink-0 px-1">
+                        수정
+                      </button>
+                      <button
+                        onClick={() => handleDeletePost(post.id)}
+                        className="text-xs text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition flex-shrink-0 px-1">
+                        삭제
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -419,9 +745,13 @@ export default function MyPage() {
             </div>
           )}
 
+          {/* 댓글 관리 */}
           {activeTab==='댓글 관리' && (
             <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <h2 className="text-base font-bold mb-5">댓글 관리</h2>
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-base font-bold">댓글 관리</h2>
+                <span className="text-xs text-gray-400">{myComments.length}개</span>
+              </div>
               {commentsLoading ? (
                 <div className="py-14 text-center text-gray-400 text-sm">불러오는 중...</div>
               ) : myComments.length === 0 ? (
@@ -429,10 +759,54 @@ export default function MyPage() {
               ) : (
                 <div className="flex flex-col gap-1">
                   {myComments.map(comment => (
-                    <div key={comment.id} className="flex items-start gap-3 py-3 border-b border-gray-100 hover:bg-gray-50 transition px-2 rounded">
-                      <span className="text-xs bg-blue-50 text-blue-500 font-medium px-2 py-0.5 rounded flex-shrink-0 mt-0.5">댓글</span>
-                      <p className="flex-1 text-sm text-gray-700 break-all">{comment.content}</p>
-                      <span className="text-xs text-gray-300 flex-shrink-0">{comment.date?.slice(0,10)}</span>
+                    <div key={comment.id}
+                      className="py-3 border-b border-gray-100 hover:bg-gray-50 transition px-2 rounded group">
+                      {comment.postTitle && (
+                        <button
+                          onClick={() => navigate(`/post/${comment.postId}`)}
+                          className="text-xs text-blue-500 hover:text-blue-700 font-medium mb-1 truncate block w-full text-left">
+                          원글: {comment.postTitle}
+                        </button>
+                      )}
+                      {editingCommentId === comment.id ? (
+                        <div className="flex flex-col gap-2 mt-1">
+                          <textarea
+                            value={editingCommentText}
+                            onChange={e => setEditingCommentText(e.target.value)}
+                            rows={3}
+                            className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-blue-500 resize-none"
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => { setEditingCommentId(null); setEditingCommentText('') }}
+                              className="flex-1 border border-gray-300 rounded py-1.5 text-xs font-semibold hover:bg-gray-50">
+                              취소
+                            </button>
+                            <button
+                              onClick={() => handleEditComment(comment)}
+                              disabled={commentEditLoading}
+                              className="flex-1 bg-blue-600 text-white rounded py-1.5 text-xs font-semibold hover:bg-blue-700 disabled:opacity-50">
+                              {commentEditLoading ? '저장 중...' : '저장'}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-start gap-3">
+                          <span className="text-xs bg-blue-50 text-blue-500 font-medium px-2 py-0.5 rounded flex-shrink-0 mt-0.5">댓글</span>
+                          <p className="flex-1 text-sm text-gray-700 break-all">{comment.content}</p>
+                          <span className="text-xs text-gray-300 flex-shrink-0">{comment.date?.slice(0,10)}</span>
+                          <button
+                            onClick={() => startCommentEdit(comment)}
+                            className="text-xs text-blue-400 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition flex-shrink-0">
+                            수정
+                          </button>
+                          <button
+                            onClick={() => handleDeleteComment(comment)}
+                            className="text-xs text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition flex-shrink-0">
+                            삭제
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -586,6 +960,49 @@ export default function MyPage() {
         onSave={handleSave} onClose={()=>{setModalOpen(false);setEditTarget(null)}}/>
       <ScheduleDetailModal schedule={detailTarget} onClose={()=>setDetailTarget(null)}
         onEdit={openEdit} onDelete={handleDelete}/>
+
+      {/* 게시글 수정 모달 */}
+      {postEditOpen && editPost && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 mx-4">
+            <h3 className="text-base font-bold mb-4">게시글 수정</h3>
+            <div className="flex flex-col gap-3">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">제목</label>
+                <input
+                  value={editPostTitle}
+                  onChange={e => setEditPostTitle(e.target.value)}
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-blue-500"
+                  placeholder="제목을 입력하세요"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">내용</label>
+                <textarea
+                  value={editPostContent}
+                  onChange={e => setEditPostContent(e.target.value)}
+                  rows={8}
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-blue-500 resize-none"
+                  placeholder="내용을 입력하세요"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-5">
+              <button
+                onClick={() => { setPostEditOpen(false); setEditPost(null) }}
+                className="flex-1 border border-gray-300 rounded py-2 text-sm font-semibold hover:bg-gray-50">
+                취소
+              </button>
+              <button
+                onClick={handleEditPost}
+                disabled={editPostLoading}
+                className="flex-1 bg-blue-600 text-white rounded py-2 text-sm font-semibold hover:bg-blue-700 disabled:opacity-50">
+                {editPostLoading ? '저장 중...' : '저장'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

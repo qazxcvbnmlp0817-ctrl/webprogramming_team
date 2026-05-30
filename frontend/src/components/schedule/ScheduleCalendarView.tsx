@@ -458,48 +458,120 @@ function WeekDayView({ viewMode, selDate, evMap, today, onEventClick, categoryMe
   onEventClick: (ev: ScheduleItem) => void
   categoryMeta: Record<string, CategoryMeta>
 }) {
-  const selD = new Date(selDate)
+  // 주간 모드에서는 selDate가 무슨 요일이든 항상 해당 주 일요일부터 시작
+  const baseD = new Date(selDate)
+  if (viewMode === '주간') baseD.setDate(baseD.getDate() - baseD.getDay())
+
   const count = viewMode === '주간' ? 7 : 1
   const weekDays = Array.from({ length: count }, (_, i) => {
-    const d = new Date(selD)
-    if (viewMode === '주간') d.setDate(selD.getDate() - selD.getDay() + i)
-    const ds = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    const d = new Date(baseD)
+    d.setDate(baseD.getDate() + i)
+    const ds = toDS(d.getFullYear(), d.getMonth() + 1, d.getDate())
     return { d, ds, evs: evMap.get(ds) ?? [] }
   })
-  return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden mb-4">
-      <div className="grid border-b border-gray-200" style={{ gridTemplateColumns: `repeat(${count}, 1fr)` }}>
-        {weekDays.map(({ d, ds }) => {
-          const dow = d.getDay()
-          const isToday = ds === today
-          return (
-            <div key={ds} className={`text-center py-2 text-xs font-semibold border-r border-gray-100 last:border-r-0 ${isToday ? 'bg-blue-50' : ''}`}>
-              <span className={dow === 0 ? 'text-red-500' : dow === 6 ? 'text-blue-500' : 'text-gray-600'}>{DAYS[dow]}</span>
-              <div className={`mx-auto mt-0.5 w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold
-                ${isToday ? 'bg-blue-600 text-white' : 'text-gray-700'}`}>{d.getDate()}</div>
+
+  // ── 일간 뷰: 단일 날짜 상세 카드 ──
+  if (viewMode === '일간') {
+    const { d, ds, evs } = weekDays[0]
+    const dow = d.getDay()
+    const isToday = ds === today
+    return (
+      <div className="mb-4">
+        <div className={`rounded-xl border-2 ${isToday ? 'border-blue-400 shadow-md' : 'border-gray-200'} bg-white overflow-hidden`}>
+          <div className={`px-5 py-4 flex items-center gap-4 ${isToday ? 'bg-blue-600' : dow === 0 ? 'bg-red-50' : dow === 6 ? 'bg-blue-50' : 'bg-gray-50'}`}>
+            <div className={`text-4xl font-extrabold leading-none ${isToday ? 'text-white' : dow === 0 ? 'text-red-500' : dow === 6 ? 'text-blue-500' : 'text-gray-800'}`}>
+              {d.getDate()}
             </div>
-          )
-        })}
-      </div>
-      <div className="grid min-h-[200px]" style={{ gridTemplateColumns: `repeat(${count}, 1fr)` }}>
-        {weekDays.map(({ ds, evs }) => (
-          <div key={ds} className="border-r border-gray-100 last:border-r-0 p-1.5 flex flex-col gap-1">
+            <div>
+              <div className={`text-base font-bold ${isToday ? 'text-white' : dow === 0 ? 'text-red-500' : dow === 6 ? 'text-blue-500' : 'text-gray-800'}`}>
+                {d.getFullYear()}년 {d.getMonth() + 1}월 {d.getDate()}일 ({DAYS[dow]})
+              </div>
+              {isToday
+                ? <div className="text-xs font-semibold text-blue-200 mt-0.5">오늘</div>
+                : <div className="text-xs text-gray-400 mt-0.5">일정 {evs.length}건</div>
+              }
+            </div>
+          </div>
+          <div className="p-4 min-h-[150px]">
             {evs.length === 0
-              ? <p className="text-[11px] text-gray-300 text-center mt-4">없음</p>
+              ? <p className="text-sm text-gray-400 text-center py-10">일정이 없습니다</p>
               : evs.map(ev => {
                 const m = categoryMeta[ev.category] ?? fallbackMeta(ev.category)
                 return (
                   <div key={ev.id} onClick={() => onEventClick(ev)}
-                    className="text-[11px] px-1.5 py-1 rounded cursor-pointer hover:opacity-80 truncate font-medium"
-                    style={{ background: m.color + '22', color: m.color }}>
-                    {!ev.allDay && ev.startTime} {ev.title}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1.5 cursor-pointer hover:opacity-90 transition-opacity"
+                    style={{ background: m.color + '18', borderLeft: `3px solid ${m.color}` }}>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold truncate" style={{ color: m.color }}>{ev.title}</div>
+                      {!ev.allDay && ev.startTime && (
+                        <div className="text-xs text-gray-400 mt-0.5">{ev.startTime}{ev.endTime ? ` ~ ${ev.endTime}` : ''}</div>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-white px-2 py-0.5 rounded-full flex-shrink-0"
+                      style={{ background: m.color }}>{m.label}</span>
                   </div>
                 )
               })
             }
           </div>
-        ))}
+        </div>
       </div>
+    )
+  }
+
+  // ── 주간 뷰: 7개 날짜 카드 ──
+  return (
+    <div className="grid grid-cols-7 gap-2 mb-4">
+      {weekDays.map(({ d, ds, evs }) => {
+        const dow = d.getDay()
+        const isToday = ds === today
+        return (
+          <div key={ds}
+            className={`rounded-xl border-2 flex flex-col overflow-hidden transition-shadow
+              ${isToday ? 'border-blue-400 shadow-lg' : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'} bg-white`}>
+            {/* 카드 헤더 */}
+            <div className={`px-1.5 pt-2.5 pb-2 text-center flex-shrink-0
+              ${isToday ? 'bg-blue-600' : dow === 0 ? 'bg-red-50' : dow === 6 ? 'bg-blue-50' : 'bg-gray-50'}`}>
+              <div className={`text-[11px] font-semibold tracking-wide uppercase
+                ${isToday ? 'text-blue-200' : dow === 0 ? 'text-red-400' : dow === 6 ? 'text-blue-400' : 'text-gray-400'}`}>
+                {DAYS[dow]}
+              </div>
+              <div className={`text-2xl font-extrabold leading-tight mt-0.5
+                ${isToday ? 'text-white' : dow === 0 ? 'text-red-500' : dow === 6 ? 'text-blue-500' : 'text-gray-800'}`}>
+                {d.getDate()}
+              </div>
+              <div className={`text-[10px] mt-0.5 ${isToday ? 'text-blue-200' : 'text-gray-300'}`}>
+                {d.getMonth() + 1}월
+              </div>
+              {evs.length > 0 && (
+                <div className={`text-[10px] font-bold mt-1 w-4 h-4 rounded-full mx-auto flex items-center justify-center
+                  ${isToday ? 'bg-white text-blue-600' : 'bg-blue-500 text-white'}`}>
+                  {evs.length}
+                </div>
+              )}
+            </div>
+            {/* 일정 목록 */}
+            <div className="p-1.5 flex-1 min-h-[110px] flex flex-col gap-0.5 overflow-hidden">
+              {evs.length === 0
+                ? <p className="text-[10px] text-gray-300 text-center mt-5">없음</p>
+                : evs.map(ev => {
+                  const m = categoryMeta[ev.category] ?? fallbackMeta(ev.category)
+                  return (
+                    <div key={ev.id} onClick={() => onEventClick(ev)}
+                      className="text-[10px] px-1.5 py-1 rounded cursor-pointer truncate font-medium leading-snug hover:opacity-80 transition-opacity"
+                      style={{ background: m.color + '20', color: m.color, borderLeft: `2px solid ${m.color}` }}>
+                      {!ev.allDay && ev.startTime && (
+                        <span className="mr-0.5 opacity-70">{ev.startTime}</span>
+                      )}
+                      {ev.title}
+                    </div>
+                  )
+                })
+              }
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -569,8 +641,37 @@ export default function ScheduleCalendarView({
   const totalCells = Math.ceil((dim + firstDow) / 7) * 7
   const today      = todayStr()
 
-  function prevMain() { if (mainM === 1) { setMainY(y => y - 1); setMainM(12) } else setMainM(m => m - 1) }
-  function nextMain() { if (mainM === 12) { setMainY(y => y + 1); setMainM(1) } else setMainM(m => m + 1) }
+  function shiftSelDate(days: number) {
+    setSelDate(prev => {
+      const d = new Date(prev)
+      d.setDate(d.getDate() + days)
+      setMainY(d.getFullYear())
+      setMainM(d.getMonth() + 1)
+      return toDS(d.getFullYear(), d.getMonth() + 1, d.getDate())
+    })
+  }
+  // 주간: 7일(1주)씩 이동하며 항상 일요일로 정렬
+  function shiftSelDateByWeek(delta: number) {
+    setSelDate(prev => {
+      const d = new Date(prev)
+      // 현재 주의 일요일 → delta주 이동
+      const sun = new Date(d)
+      sun.setDate(d.getDate() - d.getDay() + delta * 7)
+      setMainY(sun.getFullYear())
+      setMainM(sun.getMonth() + 1)
+      return toDS(sun.getFullYear(), sun.getMonth() + 1, sun.getDate())
+    })
+  }
+  function prevMain() {
+    if (viewMode === '주간') shiftSelDateByWeek(-1)
+    else if (viewMode === '일간') shiftSelDate(-1)
+    else if (mainM === 1) { setMainY(y => y - 1); setMainM(12) } else setMainM(m => m - 1)
+  }
+  function nextMain() {
+    if (viewMode === '주간') shiftSelDateByWeek(1)
+    else if (viewMode === '일간') shiftSelDate(1)
+    else if (mainM === 12) { setMainY(y => y + 1); setMainM(1) } else setMainM(m => m + 1)
+  }
   function prevMini() { if (miniM === 1) { setMiniY(y => y - 1); setMiniM(12) } else setMiniM(m => m - 1) }
   function nextMini() { if (miniM === 12) { setMiniY(y => y + 1); setMiniM(1) } else setMiniM(m => m + 1) }
   function goToday() {
@@ -579,6 +680,21 @@ export default function ScheduleCalendarView({
     setMiniY(n.getFullYear()); setMiniM(n.getMonth() + 1)
     setSelDate(todayStr())
   }
+
+  const headerLabel = useMemo(() => {
+    if (viewMode === '월간') return `${mainY}년 ${mainM}월`
+    if (viewMode === '일간') {
+      const [y, m, d] = selDate.split('-').map(Number)
+      return `${y}년 ${m}월 ${d}일`
+    }
+    const startD = new Date(selDate)
+    const endD = new Date(startD)
+    endD.setDate(startD.getDate() + 6)
+    const sm = startD.getMonth() + 1, sd = startD.getDate()
+    const em = endD.getMonth() + 1, ed = endD.getDate()
+    if (sm === em) return `${startD.getFullYear()}년 ${sm}월 ${sd}~${ed}일`
+    return `${startD.getFullYear()}년 ${sm}월 ${sd}일 ~ ${em}월 ${ed}일`
+  }, [viewMode, mainY, mainM, selDate])
 
   const toggleCat = useCallback((key: string) => {
     setCatFilter(prev => {
@@ -626,9 +742,19 @@ export default function ScheduleCalendarView({
         <MiniCal year={miniY} month={miniM} onPrev={prevMini} onNext={nextMini}
           selectedDate={selDate}
           onSelect={ds => {
-            setSelDate(ds)
-            const [y, m] = ds.split('-').map(Number)
-            setMainY(y); setMainM(m)
+            if (viewMode === '주간') {
+              // 주간 모드: 선택한 날짜가 속한 주의 일요일로 스냅
+              const d = new Date(ds)
+              const sun = new Date(d)
+              sun.setDate(d.getDate() - d.getDay())
+              const sunDs = toDS(sun.getFullYear(), sun.getMonth() + 1, sun.getDate())
+              setSelDate(sunDs)
+              setMainY(sun.getFullYear()); setMainM(sun.getMonth() + 1)
+            } else {
+              setSelDate(ds)
+              const [y, m] = ds.split('-').map(Number)
+              setMainY(y); setMainM(m)
+            }
           }} />
 
         {/* 검색 */}
@@ -681,7 +807,7 @@ export default function ScheduleCalendarView({
             className="w-7 h-7 border border-gray-300 rounded flex items-center justify-center text-gray-500 hover:bg-gray-50 text-sm">‹</button>
           <button onClick={nextMain}
             className="w-7 h-7 border border-gray-300 rounded flex items-center justify-center text-gray-500 hover:bg-gray-50 text-sm">›</button>
-          <h2 className="flex-1 text-center text-sm sm:text-lg font-bold whitespace-nowrap">{mainY}년 {mainM}월</h2>
+          <h2 className="flex-1 text-center text-sm sm:text-lg font-bold whitespace-nowrap">{headerLabel}</h2>
           {writeEnabled && (
             <button onClick={() => setFormModal({ date: today })}
               className="lg:hidden px-3 py-1.5 bg-gray-800 text-white text-xs font-semibold rounded hover:bg-gray-700 transition whitespace-nowrap">
@@ -701,7 +827,20 @@ export default function ScheduleCalendarView({
             {viewDropdown && (
               <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded shadow-lg z-50 min-w-[100px]">
                 {(['월간', '주간', '일간'] as const).map(v => (
-                  <button key={v} onClick={() => { setViewMode(v); setViewDropdown(false) }}
+                  <button key={v} onClick={() => {
+                    if (v === '주간') {
+                      // 주간 전환 시 selDate를 해당 주 일요일로 스냅
+                      setSelDate(prev => {
+                        const d = new Date(prev)
+                        const sun = new Date(d)
+                        sun.setDate(d.getDate() - d.getDay())
+                        setMainY(sun.getFullYear())
+                        setMainM(sun.getMonth() + 1)
+                        return toDS(sun.getFullYear(), sun.getMonth() + 1, sun.getDate())
+                      })
+                    }
+                    setViewMode(v); setViewDropdown(false)
+                  }}
                     className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition ${viewMode === v ? 'font-semibold text-blue-600' : ''}`}>
                     {v} 보기
                   </button>

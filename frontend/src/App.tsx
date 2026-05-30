@@ -44,6 +44,22 @@ import DeptAdminPage    from './pages/admin/DeptAdminPage'
 import FacultyAdminPage from './pages/admin/FacultyAdminPage'
 import CalendarPage from './pages/CalendarPage'
 import TimetablePage from './pages/TimetablePage'
+import { isLoggedIn as checkLoggedIn } from './utils/accessCheck'
+import { useEffect } from 'react'
+
+function CalendarRouter() {
+  const [loggedIn, setLoggedIn] = useState(() => checkLoggedIn())
+  useEffect(() => {
+    const sync = () => setLoggedIn(checkLoggedIn())
+    window.addEventListener('loginChanged', sync)
+    window.addEventListener('storage', sync)
+    return () => {
+      window.removeEventListener('loginChanged', sync)
+      window.removeEventListener('storage', sync)
+    }
+  }, [])
+  return loggedIn ? <CalendarPage /> : <SchedulePage />
+}
 
 function ProtectedSchool({ children }: { children: ReactNode }) {
   const { selectedUniversityId } = useDept()
@@ -142,7 +158,7 @@ export default function App() {
           <Route path="/mypage"        element={<MyPage />} />
           <Route path="/find-id"       element={<FindIdPage />} />
           <Route path="/find-password" element={<FindPasswordPage />} />
-          <Route path="/calendar"      element={<CalendarPage />} />
+          <Route path="/calendar"      element={<CalendarRouter />} />
 
           {/* 어드민 페이지 */}
           <Route path="/admin/super"      element={<ProtectedSuperAdmin><SuperAdminPage /></ProtectedSuperAdmin>} />

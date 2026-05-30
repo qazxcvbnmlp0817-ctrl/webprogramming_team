@@ -11,13 +11,15 @@ const SCHOOL_NAV = [
   { to: '/school/info',        label: '학교정보' },
 ]
 
-const DEPT_NAV = [
-  { to: '/dept/notice',     label: '공지사항' },
-  { to: '/dept/board',      label: '게시판' },
-  { to: '/dept/schedule',   label: '일정' },
-  { to: '/timetable',       label: '시간표' },
-  { to: '/dept/department', label: '학과정보' },
-]
+function buildDeptNav(loggedIn: boolean) {
+  return [
+    { to: '/dept/notice',              label: '공지사항' },
+    { to: '/dept/board',               label: '게시판' },
+    { to: loggedIn ? '/calendar' : '/dept/schedule', label: '일정' },
+    { to: '/timetable',                label: '시간표' },
+    { to: '/dept/department',          label: '학과정보' },
+  ]
+}
 
 function buildFacultyNav(facultyId: string) {
   return [
@@ -57,7 +59,7 @@ export default function Navbar() {
     ? buildFacultyNav(facultyId)
     : isSchool
       ? SCHOOL_NAV
-      : DEPT_NAV
+      : buildDeptNav(isLoggedInState)
 
   const homeLink = isFaculty
     ? `/school/faculty/${facultyId}`
