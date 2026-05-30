@@ -2,14 +2,17 @@ import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useDept } from '../context/DeptContext'
 
-const SCHOOL_NAV = [
-  { to: '/school/departments', label: '학과 선택' },
-  { to: '/school/notice',      label: '공지사항' },
-  { to: '/school/board',       label: '게시판' },
-  { to: '/school/schedule',    label: '일정' },
-  { to: '/timetable',          label: '시간표' },
-  { to: '/school/info',        label: '학교정보' },
-]
+function buildSchoolNav(univId: number | null) {
+  return [
+    { to: `/universities/${univId ?? ''}`, label: '홈' },
+    { to: '/school/departments',           label: '학과 선택' },
+    { to: '/school/notice',                label: '공지사항' },
+    { to: '/school/board',                 label: '게시판' },
+    { to: '/school/schedule',              label: '일정' },
+    { to: '/timetable',                    label: '시간표' },
+    { to: '/school/info',                  label: '학교정보' },
+  ]
+}
 
 function buildDeptNav(loggedIn: boolean) {
   return [
@@ -58,7 +61,7 @@ export default function Navbar() {
   const navLinks = isFaculty
     ? buildFacultyNav(facultyId)
     : isSchool
-      ? SCHOOL_NAV
+      ? buildSchoolNav(selectedUniversityId)
       : buildDeptNav(isLoggedInState)
 
   const homeLink = isFaculty

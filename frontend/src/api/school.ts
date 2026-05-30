@@ -28,13 +28,13 @@ export async function fetchFacultySchedules(facultyId: number): Promise<Schedule
 
 // DB 연동 시 URL만 실제 엔드포인트로 교체하면 됨
 
-export async function fetchSchoolNotices(univId: number): Promise<{ featured: NoticeDto; notices: NoticeDto[] }> {
+export async function fetchSchoolNotices(univId: number): Promise<{ featured?: NoticeDto; notices: NoticeDto[] }> {
   const res = await fetch(`/api/school/notices?univId=${univId}`)
   if (!res.ok) throw new Error('학교 공지사항 로딩 실패')
   return res.json()
 }
 
-export async function fetchSchoolPosts(univId: number): Promise<{ featured: PostDto; posts: PostDto[] }> {
+export async function fetchSchoolPosts(univId: number): Promise<{ featured?: PostDto; posts: PostDto[] }> {
   const res = await fetch(`/api/school/posts?univId=${univId}`)
   if (!res.ok) throw new Error('학교 게시판 로딩 실패')
   return res.json()

@@ -51,14 +51,23 @@ public class SpaController {
         // 게시글 상세 / 수정
         "/post/{postId:[0-9]+}",
         "/post/{postId:[0-9]+}/edit",
+        // 공지사항 상세 / 수정
+        "/notice/{noticeId:[0-9]+}",
+        "/notice/{noticeId:[0-9]+}/edit",
         // 인증
         "/login",
         "/signup",
         "/mypage",
         "/find-id",
         "/find-password",
-        // 개인 캘린더 (localStorage 기반)
-        "/calendar"
+        // 개인 캘린더
+        "/calendar",
+        "/timetable",
+        // 관리자 페이지
+        "/admin/super",
+        "/admin/school/{id:[0-9]+}",
+        "/admin/dept/{id:[0-9]+}",
+        "/admin/faculty/{id:[0-9]+}"
     })
     public String forward() {
         return "forward:/index.html";
