@@ -19,7 +19,7 @@ interface FacultyPageProps {
 export default function FacultyPage({ embedded = false, facultyIdOverride }: FacultyPageProps = {}) {
   const params = useParams<{ facultyId: string }>()
   const facultyId = facultyIdOverride != null ? String(facultyIdOverride) : params.facultyId
-  const { selectedUniversityId } = useDept()
+  const { selectedUniversityId, setFacultyName } = useDept()
 
   const facultyIdNum = facultyId ? Number(facultyId) : null
 
@@ -49,6 +49,11 @@ export default function FacultyPage({ embedded = false, facultyIdOverride }: Fac
   const faculty = school?.faculties.find(f => f.id === facultyIdNum)
   const facultyName = faculty?.name ?? '학부'
 
+  useEffect(() => {
+    if (faculty?.name) setFacultyName(faculty.name)
+    return () => { if (!embedded) setFacultyName(null) }
+  }, [faculty?.name])
+
   const base = `/school/faculty/${facultyId}`
 
   const body = (<>
@@ -76,7 +81,7 @@ export default function FacultyPage({ embedded = false, facultyIdOverride }: Fac
         </div>
       </section>
 
-      {!embedded && <AdminBanner scope="school" targetId={selectedUniversityId ?? undefined} />}
+      {!embedded && <AdminBanner scope="faculty" targetId={facultyIdNum ?? undefined} />}
 
       <main className="max-w-6xl mx-auto px-4 py-10">
         {loading ? (

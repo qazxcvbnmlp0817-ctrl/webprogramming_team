@@ -38,7 +38,7 @@ function buildFacultyNav(facultyId: string) {
 export default function Navbar() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
-  const { selectedUniversityId, selectedUniversityName, selectedDeptName } = useDept()
+  const { selectedUniversityId, selectedUniversityName, selectedDeptName, selectedFacultyName } = useDept()
   const [menuOpen, setMenuOpen] = useState(false)
   const [isLoggedInState, setIsLoggedInState] = useState(false)
 
@@ -78,30 +78,51 @@ export default function Navbar() {
     navigate('/login')
   }
 
+  // 컨텍스트 breadcrumb 구성
+  const contextCrumbs: { icon: string; label: string; to?: string }[] = []
+  if (selectedUniversityName && selectedUniversityId) {
+    contextCrumbs.push({
+      icon: 'fa-university',
+      label: selectedUniversityName,
+      to: `/universities/${selectedUniversityId}`,
+    })
+  }
+  if (isFaculty && selectedFacultyName) {
+    contextCrumbs.push({ icon: 'fa-layer-group', label: selectedFacultyName })
+  }
+  if (!isSchool && !isFaculty && selectedDeptName) {
+    contextCrumbs.push({ icon: 'fa-door-open', label: selectedDeptName })
+  }
+
   return (
     <nav className="fixed top-0 left-0 w-full bg-black text-white z-50 border-b border-gray-800">
       <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link to={homeLink} className="font-bold text-lg tracking-tight hover:opacity-80 transition">
+        <div className="flex items-center gap-0 min-w-0">
+          <Link to={homeLink} className="font-bold text-base tracking-tight hover:opacity-80 transition shrink-0">
             학과정보통합서비스
           </Link>
-          {isFaculty && selectedUniversityName && (
-            <span className="hidden md:inline-flex items-center gap-1 text-xs text-gray-400 border border-gray-700 px-2 py-0.5 rounded">
-              <i className="fas fa-layer-group text-[10px]" />
-              학부 포털
-            </span>
-          )}
-          {isSchool && selectedUniversityName && (
-            <span className="hidden md:inline-flex items-center gap-1 text-xs text-gray-400 border border-gray-700 px-2 py-0.5 rounded">
-              <i className="fas fa-university text-[10px]" />
-              {selectedUniversityName}
-            </span>
-          )}
-          {!isSchool && !isFaculty && selectedDeptName && (
-            <span className="hidden md:inline-flex items-center gap-1 text-xs text-gray-400 border border-gray-700 px-2 py-0.5 rounded">
-              <i className="fas fa-door-open text-[10px]" />
-              {selectedDeptName}
-            </span>
+          {contextCrumbs.length > 0 && (
+            <div className="flex items-center gap-0 ml-2 min-w-0">
+              {contextCrumbs.map((crumb, idx) => (
+                <span key={idx} className="flex items-center gap-0 min-w-0">
+                  <span className="text-gray-600 mx-1 text-xs shrink-0">›</span>
+                  {crumb.to ? (
+                    <Link
+                      to={crumb.to}
+                      className="flex items-center gap-1 text-xs text-gray-300 hover:text-white transition truncate max-w-[120px] md:max-w-[180px]"
+                    >
+                      <i className={`fas ${crumb.icon} text-[10px] shrink-0 text-gray-500`} />
+                      <span className="truncate">{crumb.label}</span>
+                    </Link>
+                  ) : (
+                    <span className="flex items-center gap-1 text-xs text-gray-300 truncate max-w-[100px] md:max-w-[160px]">
+                      <i className={`fas ${crumb.icon} text-[10px] shrink-0 text-gray-500`} />
+                      <span className="truncate">{crumb.label}</span>
+                    </span>
+                  )}
+                </span>
+              ))}
+            </div>
           )}
         </div>
 
