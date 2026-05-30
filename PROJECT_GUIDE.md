@@ -10,7 +10,7 @@
 
 **목적:** 국립목포대학교 등 여러 대학교의 학과 공지사항, 게시판, 일정, 학과정보를 하나의 웹 포털로 통합하여 학생과 교직원이 편리하게 접근할 수 있도록 합니다.
 
-**현재 단계:** 프론트엔드 UI + REST API + Oracle DB 연동 완성. 로그인·회원가입·인증, 관리자 시스템(3단계 역할), 교수 수업 시간표 CRUD, 학생 수강신청·시간표 자동 동기화, SUPER_ADMIN 학교 계층 CRUD, 가입 승인 시스템(학교·학부·학과 단위), 교수 학과 일정 공유, 개인 캘린더 + 소속 일정 통합 표시까지 구현 완료. Mock 교수/학생 계정이 앱 시작 시 자동 시딩됩니다.
+**현재 단계:** 프론트엔드 UI + REST API + Oracle DB 연동 완성. 로그인·회원가입·인증, 관리자 시스템(3단계 역할), 교수 수업 시간표 CRUD, 학생 수강신청·시간표 자동 동기화, SUPER_ADMIN 학교 계층 CRUD, 가입 승인 시스템(학교·학부·학과 단위), 교수 학과 일정 공유, 개인 캘린더 + 소속 일정 통합 표시, 게시글/공지 숨김 처리, 관리자 직접 숨김/삭제 버튼까지 구현 완료. Mock 교수/학생 계정이 앱 시작 시 자동 시딩됩니다.
 
 ---
 
@@ -159,7 +159,7 @@ webprogramming_team-main/
 │       │   └── scheduleItem.ts         ← ScheduleItem 타입 + 공유 헬퍼
 │       │
 │       ├── data/                       ← 프론트엔드 더미/정적 데이터
-│       │   └── footerData.ts           ← 푸터 표시 정보 (대학명·주소·연락처·저작권)
+│       │   └── (footerData.ts 삭제됨 — Footer가 DB에서 직접 로드)
 │       │
 │       ├── types/                      ← TypeScript 타입 정의
 │       │   ├── university.ts
@@ -500,19 +500,28 @@ const FOOTER_HIDDEN_PATHS = ['/universities']
 
 제외할 경로가 추가되면 이 배열에 경로 문자열만 추가하면 됩니다.
 
-### 푸터 데이터 (`data/footerData.ts`)
+### 푸터 — DB 연동
 
-| 필드 | 설명 |
-|------|------|
-| `universityName` | 대학교 이름 |
-| `serviceName` | 서비스 이름 |
-| `address` | 주소 |
-| `phone` | 대표 전화 |
-| `email` | 웹마스터 이메일 |
-| `copyright` | 저작권 문구 (연도 자동 계산) |
-| `links` | 하단 링크 목록 (`label`, `href`) |
+`Footer.tsx`는 하드코딩 없이 URL 또는 `DeptContext`의 `selectedUniversityId`에서 대학 ID를 읽어 `/api/universities/:id`를 호출해 **대학명·설명을 실시간 로드**합니다.
 
-> DB 연동 시: `footerData` 상수를 API 호출 결과로 교체하면 됩니다.
+- URL `/universities/2` 형태라면 URL 파싱 우선 → 다른 대학 페이지 이동 시 즉시 업데이트
+- URL에 ID 없으면 context 값 fallback
+- 대학이 선택되지 않은 상태(`/universities` 목록 페이지 등)에서는 푸터 숨김
+
+> 기존 `data/footerData.ts`(하드코딩 주소·전화·이메일·빈 링크)는 삭제되었습니다.
+
+### Navbar — 현재 위치 breadcrumb (2026-05-30 추가)
+
+URL 기반으로 학교/학부/학과 컨텍스트를 자동 감지하고, 현재 위치를 breadcrumb 형식으로 항상 표시합니다 (모바일 포함).
+
+| 컨텍스트 | 표시 예시 |
+|----------|-----------|
+| 학교 페이지 | `학과정보통합서비스 › 🏛 국립목포대학교` (클릭 시 대학 홈 이동) |
+| 학부 페이지 | `학과정보통합서비스 › 🏛 국립목포대학교 › 🗂 공과대학` |
+| 학과 페이지 | `학과정보통합서비스 › 🏛 국립목포대학교 › 🚪 컴퓨터공학과` |
+
+- `DeptContext`에 `selectedFacultyName` 필드 추가 — `FacultyPage`가 학부 데이터 로드 후 `setFacultyName()`으로 저장
+- 텍스트 오버플로우 시 `truncate` 처리 (긴 대학명도 깔끔하게 표시)
 
 ---
 
@@ -579,14 +588,13 @@ return '/universities'
 | 파일 | 역할 |
 |------|------|
 | `App.tsx` | 전체 라우트 정의, ProtectedSchool/ProtectedDept 접근 보호, sticky footer 레이아웃 |
-| `Footer.tsx` | 하단 고정 푸터. `FOOTER_HIDDEN_PATHS`로 특정 경로 제외 가능 |
-| `data/footerData.ts` | 푸터 표시 정보 더미 데이터. DB 연동 시 API 응답으로 교체 |
-| `DeptContext.tsx` | 선택된 대학/학과 전역 상태, localStorage 동기화 |
+| `Footer.tsx` | 하단 고정 푸터. URL 또는 DeptContext에서 대학 ID를 읽어 `/api/universities/:id`로 대학명·설명 실시간 로드 |
+| `DeptContext.tsx` | 선택된 대학/학과/학부 전역 상태, localStorage 동기화. `setFacultyName()` 메서드로 현재 학부명 저장 |
 | `useDeptFetch.ts` | fetcher 함수 + id를 받아 데이터 로딩 처리하는 범용 훅 |
 | `useInitialRedirect.ts` | 앱 시작 리다이렉트 결정 훅. 로그인 연동 시 `[AUTH_HOOK]` 주석 위치에 주입 |
-| `Navbar.tsx` | URL 기반 학교/학부/학과 3모드 자동 전환 네비게이션 바. 로그인 시 "일정" 링크 → `/calendar`, 비로그인 시 원래 경로 |
+| `Navbar.tsx` | URL 기반 학교/학부/학과 3모드 자동 전환. 현재 위치를 breadcrumb(`대학 › 학부 › 학과`)으로 항상 표시 — 모바일 포함. 학교 컨텍스트에 "홈" 링크 포함 |
 | `UniversityListPage.tsx` | 대학교 카드 목록, 선택 시 학과 선택 페이지로 이동 |
-| `UniversityShowPage.tsx` | 대학교 홈 (단과대 목록, 바로가기) |
+| `UniversityShowPage.tsx` | 대학교 홈. 미니 캘린더 + 다가오는 일정 + 최신 공지 + 인기 게시글 2×2 그리드 (FacultyPage 동일 구조) |
 | `SchoolDepartmentsPage.tsx` | 단과대·학부·학과 3단 계층 그리드. 학부명 클릭 시 `/school/faculty/:id`, 학과 클릭 시 `/dept/home`으로 이동 |
 | `FacultyPage.tsx` | 학부 메인 대시보드 (캘린더·일정·공지·인기 게시글 2×2 그리드) |
 | `FacultyNoticePage.tsx` | 학부 공지사항 (탭 필터·FeaturedCard·Sidebar) |
@@ -685,11 +693,12 @@ return '/universities'
 
 `AdminBanner` 컴포넌트가 일반 페이지에 떠 있으면서 해당 페이지의 스코프에 해당하는 어드민 대시보드로 이동시킵니다.
 
-| 스코프 | 표시되는 페이지 | 허용 역할 |
-|--------|-----------------|-----------|
-| `selection` | `/universities` | 모든 어드민 |
-| `school` | UniversityShowPage / SchoolBoardPage 등 | SUPER, SCHOOL |
-| `dept` | DepartmentPage / BoardPage 등 | SUPER, SCHOOL, DEPT |
+| 스코프 | 표시되는 페이지 | 허용 역할 | 이동 경로 |
+|--------|-----------------|-----------|-----------|
+| `selection` | `/universities` | 모든 어드민 | `/admin/super` or `/admin/school/:id` etc |
+| `school` | UniversityShowPage / SchoolBoardPage 등 | SUPER, SCHOOL | `/admin/school/:univId` |
+| `faculty` | FacultyPage 등 학부 페이지 | SUPER, SCHOOL | `/admin/faculty/:facultyId` |
+| `dept` | DepartmentPage / BoardPage 등 | SUPER, SCHOOL, DEPT | `/admin/dept/:deptId` |
 
 `selection` 스코프의 URL 결정 로직:
 - SUPER → `/admin/super`
@@ -698,29 +707,32 @@ return '/universities'
 
 ### 14.5 어드민 대시보드 구조
 
-**SuperAdminPage** — "개요 | 학교 관리" 2탭 구조
+**SuperAdminPage** — "개요 | 학교 관리 | 활동 로그" 3탭 구조
 
-**개요 탭** (기존 스크롤 대시보드)
+**개요 탭**
 - 4-카드 통계 (총 사용자, 7일/30일 신규 가입, 등록 학교)
 - 차트 (방문자 추이, 사용자 현황)
 - 등록 학교 목록 + 서버 인프라
 - **관리자 가입 승인 대기 섹션** — 역할 드롭다운 + 승인/거절
 - 관리자 계정 관리 테이블
 
-**학교 관리 탭** (신규, `SchoolManagementTab`)
+**학교 관리 탭** (`SchoolManagementTab`)
 - 학교 목록 테이블 (ID, 이름, 설명, 편집/삭제 버튼)
 - 학교 생성/편집 폼: 이름·설명 + `SchoolTreeEditor`(단과대학→학부→학과 계층 편집)
 - 삭제: `window.confirm` 2회 확인 후 cascade 삭제
+
+**활동 로그 탭** (전체 시스템 로그, `GET /api/admin/super/logs`)
+- 전체 학교 관리자 액션 최대 200건 시간 역순 표시
 
 **SchoolAdminPage** — 6탭 구조
 
 | 탭 | 내용 |
 |----|------|
 | 개요 | 통계 카드 + 방문자 라인 차트 + 콘텐츠 비율 도넛 차트 |
-| 게시글 관리 | 페이지네이션 + 삭제 |
+| 게시글 관리 | 페이지네이션 + 제목 클릭 이동 + **숨김/표시 토글** + 삭제 |
+| 공지 관리 | 페이지네이션 + 제목 클릭 이동 + **숨김/표시 토글** + 삭제 |
 | 전체 사용자 | 학교 소속 사용자 + 상태 변경 + 역할 부여 모달 |
 | **가입 승인** | `PENDING_APPROVAL` 상태 사용자 목록 (admin 제외). 승인 → `ACTIVE` / 거절 → `DELETED` |
-| 활동 로그 | 관리자 액션 감사 로그 |
 | 교수 배정 | 학과·교수·강의 선택 배정. **다른 소속 교수** 버튼으로 같은 학교 전체 교수 이름 검색 가능 |
 
 **DeptAdminPage** — 8탭 구조
@@ -729,8 +741,8 @@ return '/universities'
 |----|------|
 | 개요 | 통계 카드 + 방문자 라인 차트 |
 | 학과 페이지 | 일반 DepartmentPage를 embedded 모드로 표시 |
-| 게시글 관리 | 페이지네이션 + 삭제 |
-| 공지 관리 | 페이지네이션 + 삭제 |
+| 게시글 관리 | 페이지네이션 + 제목 클릭 이동 + **숨김/표시 토글** + 삭제 |
+| 공지 관리 | 페이지네이션 + 제목 클릭 이동 + **숨김/표시 토글** + 삭제 |
 | 사용자 | 학과 소속 사용자 + 상태 변경 |
 | **가입 승인** | 해당 학과 소속 `PENDING_APPROVAL` 사용자만 표시. 승인/거절 |
 | 통계 | 6개월 월간 바 차트 |
@@ -742,8 +754,8 @@ return '/universities'
 |----|------|
 | 개요 | 통계 카드 + 방문자 라인 차트 |
 | 학부 페이지 | 일반 FacultyPage를 embedded 모드로 표시 |
-| 게시글 관리 | 페이지네이션 + 삭제 |
-| 공지 관리 | 페이지네이션 + 삭제 |
+| 게시글 관리 | 페이지네이션 + 제목 클릭 이동 + **숨김/표시 토글** + 삭제 |
+| 공지 관리 | 페이지네이션 + 제목 클릭 이동 + **숨김/표시 토글** + 삭제 |
 | 사용자 | 학부 소속 학과 사용자 통합 표시 + 상태 변경 |
 | **가입 승인** | 해당 학부 소속 학과의 `PENDING_APPROVAL` 사용자만 표시. 승인/거절 |
 | 통계 | 6개월 월간 바 차트 |
@@ -780,25 +792,55 @@ private Long resolveDeptId(String username, Long deptIdParam) {
 
 ### 14.7 ADMIN_LOGS — 관리자 액션 감사 로그
 
-모든 상태 변경/역할 부여/승인/거절은 `AdminLog` 엔티티에 기록됩니다.
+모든 상태 변경/역할 부여/승인/거절/숨김 처리는 `AdminLog` 엔티티에 기록됩니다.
 
 | 컬럼 | 설명 |
 |------|------|
 | `actorUsername` | 액션 수행자 |
-| `actionType` | `APPROVE` / `REJECT` / `SUSPEND` / `UNSUSPEND` / `DELETE` / `ROLE_GRANT` / `ROLE_REVOKE` |
+| `actionType` | `APPROVE` / `REJECT` / `SUSPEND` / `UNSUSPEND` / `DELETE` / `ROLE_GRANT` / `ROLE_REVOKE` / `HIDE` / `UNHIDE` |
 | `targetUsername` | 대상 사용자 (nullable) |
 | `detail` | 사람이 읽을 수 있는 설명 |
 | `universityId` | 스코프 필터링용 학교 id |
 | `createdAt` | 액션 시각 |
 
-`SchoolAdminPage`의 "활동 로그" 탭에서 학교 스코프로 필터링해 표시. DeptAdminPage/FacultyAdminPage에는 로그 탭 없음 (out of scope).
+**활동 로그 표시 위치:** SuperAdminPage "활동 로그" 탭에서 전체 시스템 로그(최대 200건) 표시. SchoolAdminPage/DeptAdminPage/FacultyAdminPage에는 로그 탭 없음.
 
-### 14.8 시드 데이터 / 마이그레이션
+### 14.8 게시글/공지 숨김 기능 (2026-05-30 추가)
+
+관리자가 게시글/공지를 숨기면 일반 유저에게 보이지 않지만 복원 가능합니다.
+
+**데이터 모델**
+- `POSTS.hidden` / `NOTICES.hidden` — nullable boolean 컬럼 (Oracle 호환. `NULL`은 `false`로 해석)
+
+**동작 방식**
+
+| 대상 | 동작 |
+|------|------|
+| 일반 유저 조회 | Repository 쿼리에 `(hidden IS NULL OR hidden = false)` 조건 — 숨긴 글 미노출 |
+| 관리자 대시보드 | 전체 목록 조회 (숨긴 글 포함) + 숨김 배지 + 투명도 처리 |
+| 관리자 상세 페이지 | 게시글/공지 상세 페이지 상단에 관리자 바 노출 (숨김 처리 / 표시 복원 / 삭제) |
+
+**API 엔드포인트**
+
+| 메서드 | 경로 | 설명 |
+|--------|------|------|
+| `PUT` | `/api/admin/school/posts/{id}/hidden` | 학교 스코프 게시글 숨김 토글 |
+| `PUT` | `/api/admin/school/notices/{id}/hidden` | 학교 스코프 공지 숨김 토글 |
+| `PUT` | `/api/admin/dept/posts/{id}/hidden` | 학과 스코프 게시글 숨김 토글 |
+| `PUT` | `/api/admin/dept/notices/{id}/hidden` | 학과 스코프 공지 숨김 토글 |
+| `PUT` | `/api/admin/faculty/posts/{id}/hidden` | 학부 스코프 게시글 숨김 토글 |
+| `PUT` | `/api/admin/faculty/notices/{id}/hidden` | 학부 스코프 공지 숨김 토글 |
+| `PUT` | `/api/posts/{id}/hidden` | 상세 페이지 직접 숨김 (adminRole 있으면 허용) |
+| `PUT` | `/api/notices/{id}/hidden` | 상세 페이지 직접 숨김 |
+
+요청 body: `{ "hidden": true }`
+
+### 14.10 시드 데이터 / 마이그레이션
 
 - `AdminUserInitializer` (`@Order(2)`) — 앱 시작 시 SUPER_ADMIN 시드 계정 자동 생성 (없으면)
 - `StatusMigrationRunner` (`@Order(3)`) — 구버전 `APPROVED BOOLEAN` 컬럼을 기준으로 신규 `STATUS` 컬럼 백필. 후속 실행에서는 `ALTER TABLE APP_USERS MODIFY (APPROVED NULL)`을 PL/SQL EXCEPTION 블록으로 idempotent하게 실행해 NOT NULL 제약 제거 (회원가입 시 INSERT에 APPROVED 누락돼도 통과)
 
-### 14.9 관련 설계 문서
+### 14.11 관련 설계 문서
 
 - `docs/superpowers/specs/2026-05-22-school-admin-v2-design.md` — 학교 관리자 v2 (status 시스템, 가입 승인, 활동 로그)
 - `docs/superpowers/specs/2026-05-22-dept-faculty-admin-design.md` — Dept/Faculty 관리자 대시보드 설계
