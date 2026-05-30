@@ -11,10 +11,10 @@ import SchoolManagementTab from './SchoolManagementTab'
 import {
   fetchSuperStats, fetchSuperSchools, fetchSuperVisitors,
   fetchSuperInfra, fetchSuperUsers, updateUserRole, approveUser,
-  fetchPendingAdmins, approveAdmin,
+  fetchPendingAdmins, approveAdmin, fetchAllAdminLogs,
 } from '../../api/adminSuper'
 import type {
-  SuperStats, School, VisitorPoint, InfraStats, AdminUser, PendingAdmin,
+  SuperStats, School, VisitorPoint, InfraStats, AdminUser, PendingAdmin, AdminLog,
 } from '../../api/adminSuper'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler)
@@ -27,25 +27,32 @@ export default function SuperAdminPage() {
   const [infra, setInfra]     = useState<InfraStats | null>(null)
   const [users, setUsers]     = useState<AdminUser[]>([])
   const [pending, setPending] = useState<PendingAdmin[]>([])
-  // Role chosen per pending row before clicking 승인. Default SCHOOL_ADMIN.
+  const [logs, setLogs]       = useState<AdminLog[]>([])
   const [pendingRoles, setPendingRoles] = useState<Record<number, string>>({})
   const [loading, setLoading] = useState(true)
 
-  type Tab = '개요' | '학교 관리'
+  type Tab = '개요' | '학교 관리' | '활동 로그'
   const [tab, setTab] = useState<Tab>('개요')
 
   const loadAll = () =>
     Promise.all([
-      fetchSuperStats(),
-      fetchSuperSchools(),
-      fetchSuperVisitors(),
-      fetchSuperInfra(),
-      fetchSuperUsers(),
-      fetchPendingAdmins(),
-    ]).then(([s, sch, v, i, u, p]) => {
-      setStats(s); setSchools(sch); setVisitors(v); setInfra(i); setUsers(u); setPending(p)
+      fetchSuperStats().catch(() => null),
+      fetchSuperSchools().catch(() => []),
+      fetchSuperVisitors().catch(() => []),
+      fetchSuperInfra().catch(() => null),
+      fetchSuperUsers().catch(() => []),
+      fetchPendingAdmins().catch(() => []),
+      fetchAllAdminLogs().catch(() => []),
+    ]).then(([s, sch, v, i, u, p, lg]) => {
+      if (s)   setStats(s)
+      setSchools(sch as School[])
+      setVisitors(v as VisitorPoint[])
+      if (i)   setInfra(i)
+      setUsers(u as AdminUser[])
+      setPending(p as PendingAdmin[])
+      setLogs(lg as AdminLog[])
       setLoading(false)
-    }).catch(() => setLoading(false))
+    })
 
   useEffect(() => { loadAll() }, [])
 
@@ -140,7 +147,7 @@ export default function SuperAdminPage() {
       {/* 탭 헤더 */}
       <div className="border-b-2 border-black">
         <div className="max-w-7xl mx-auto px-4 flex">
-          {(['개요', '학교 관리'] as Tab[]).map(t => (
+          {(['개요', '학교 관리', '활동 로그'] as Tab[]).map(t => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -361,6 +368,41 @@ export default function SuperAdminPage() {
           <SchoolManagementTab />
         </main>
       )}
+
+      {tab === '활동 로그' && (
+        <main className="max-w-7xl mx-auto px-4 py-8">
+          <div className="border-2 border-black p-6">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">전체 관리자 활동 로그</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b-2 border-black text-xs uppercase tracking-wide text-gray-500">
+                    <th className="text-left pb-3 pr-4">액션</th>
+                    <th className="text-left pb-3 pr-4">처리자</th>
+                    <th className="text-left pb-3 pr-4">대상</th>
+                    <th className="text-left pb-3 pr-4">내용</th>
+                    <th className="text-left pb-3">시각</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {logs.map((log, i) => (
+                    <tr key={log.id} className={`border-b border-gray-100 ${i % 2 === 0 ? 'bg-gray-50/50' : ''}`}>
+                      <td className="py-3 pr-4"><ActionBadge action={log.actionType} /></td>
+                      <td className="py-3 pr-4 text-gray-500">{log.actorUsername}</td>
+                      <td className="py-3 pr-4 text-gray-500">{log.targetUsername ?? '-'}</td>
+                      <td className="py-3 pr-4 text-gray-400 text-xs max-w-xs truncate">{log.detail ?? '-'}</td>
+                      <td className="py-3 text-gray-400 text-xs whitespace-nowrap">{relativeTime(log.createdAt)}</td>
+                    </tr>
+                  ))}
+                  {logs.length === 0 && (
+                    <tr><td colSpan={5} className="py-8 text-center text-gray-400 text-sm">활동 로그가 없습니다.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </main>
+      )}
     </div>
   )
 }
@@ -382,4 +424,31 @@ function InfraRow({ label, value }: { label: string; value: string }) {
       <span className="text-sm font-medium">{value}</span>
     </div>
   )
+}
+
+function ActionBadge({ action }: { action: string }) {
+  const map: Record<string, string> = {
+    APPROVE:     'bg-green-100 text-green-700',
+    REJECT:      'bg-red-100 text-red-700',
+    SUSPEND:     'bg-orange-100 text-orange-700',
+    UNSUSPEND:   'bg-blue-100 text-blue-700',
+    DELETE:      'bg-red-100 text-red-700',
+    ROLE_GRANT:  'bg-indigo-100 text-indigo-700',
+    ROLE_REVOKE: 'bg-gray-100 text-gray-600',
+  }
+  return (
+    <span className={`text-xs px-2 py-0.5 font-mono font-medium ${map[action] ?? 'bg-gray-100 text-gray-600'}`}>
+      {action}
+    </span>
+  )
+}
+
+function relativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime()
+  const mins = Math.floor(diff / 60_000)
+  if (mins < 1) return '방금 전'
+  if (mins < 60) return `${mins}분 전`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}시간 전`
+  return `${Math.floor(hrs / 24)}일 전`
 }

@@ -12,8 +12,8 @@ import { DeptEditProvider } from '../../context/DeptEditContext'
 import { useDept } from '../../context/DeptContext'
 import {
   fetchDeptStats, fetchDeptVisitors, fetchDeptMonthlyStats,
-  fetchDeptPosts, deleteDeptPost,
-  fetchDeptNotices, deleteDeptNotice,
+  fetchDeptPosts, deleteDeptPost, hideDeptPost,
+  fetchDeptNotices, deleteDeptNotice, hideDeptNotice,
   fetchDeptUsers, updateDeptUserStatus,
   fetchDeptPendingUsers,
   fetchDeptProfessors, fetchDeptUnivProfessors, fetchDeptCourses, fetchDeptAssignments,
@@ -104,10 +104,20 @@ export default function DeptAdminPage() {
     fetchDeptPosts(postPage, deptId).then(d => { setPosts(d.posts); setPostTotalPages(d.totalPages) })
   }
 
+  const handleHidePost = async (postId: number, hidden: boolean) => {
+    await hideDeptPost(postId, hidden, deptId)
+    setPosts(prev => prev.map(p => p.id === postId ? { ...p, hidden } : p))
+  }
+
   const handleDeleteNotice = async (noticeId: number) => {
     if (!window.confirm('공지를 삭제하시겠습니까?')) return
     await deleteDeptNotice(noticeId, deptId)
     fetchDeptNotices(noticePage, deptId).then(d => { setNotices(d.notices); setNoticeTotalPages(d.totalPages) })
+  }
+
+  const handleHideNotice = async (noticeId: number, hidden: boolean) => {
+    await hideDeptNotice(noticeId, hidden, deptId)
+    setNotices(prev => prev.map(n => n.id === noticeId ? { ...n, hidden } : n))
   }
 
   const handleStatusChange = async (userId: number, newStatus: string) => {
@@ -280,7 +290,7 @@ export default function DeptAdminPage() {
         {tab === '게시글 관리' && (
           <div className="border-2 border-black p-6">
             <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">학과 게시글</h2>
-            <PostTable items={posts} onDelete={handleDeletePost} />
+            <PostTable items={posts} onDelete={handleDeletePost} onHide={handleHidePost} />
             <Pagination page={postPage} totalPages={postTotalPages} onChange={setPostPage} />
           </div>
         )}
@@ -288,7 +298,7 @@ export default function DeptAdminPage() {
         {tab === '공지 관리' && (
           <div className="border-2 border-black p-6">
             <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">학과 공지</h2>
-            <NoticeTable items={notices} onDelete={handleDeleteNotice} />
+            <NoticeTable items={notices} onDelete={handleDeleteNotice} onHide={handleHideNotice} />
             <Pagination page={noticePage} totalPages={noticeTotalPages} onChange={setNoticePage} />
           </div>
         )}
@@ -496,7 +506,7 @@ function StatusBadge({ status }: { status: string }) {
   )
 }
 
-function PostTable({ items, onDelete }: { items: PostItem[]; onDelete: (id: number) => void }) {
+function PostTable({ items, onDelete, onHide }: { items: PostItem[]; onDelete: (id: number) => void; onHide: (id: number, hidden: boolean) => void }) {
   return (
     <table className="w-full text-sm">
       <thead>
@@ -506,18 +516,25 @@ function PostTable({ items, onDelete }: { items: PostItem[]; onDelete: (id: numb
           <th className="text-left pb-3 pr-4">분류</th>
           <th className="text-left pb-3 pr-4">조회수</th>
           <th className="text-left pb-3 pr-4">작성일</th>
-          <th className="text-left pb-3">삭제</th>
+          <th className="text-left pb-3">관리</th>
         </tr>
       </thead>
       <tbody>
         {items.map((p, i) => (
-          <tr key={p.id} className={`border-b border-gray-100 ${i % 2 === 0 ? 'bg-gray-50/50' : ''}`}>
-            <td className="py-3 pr-4 font-medium truncate max-w-xs">{p.title}</td>
+          <tr key={p.id} className={`border-b border-gray-100 ${p.hidden ? 'opacity-50' : ''} ${i % 2 === 0 ? 'bg-gray-50/50' : ''}`}>
+            <td className="py-3 pr-4 font-medium truncate max-w-xs">
+              {p.hidden && <span className="mr-1.5 text-xs bg-gray-400 text-white px-1.5 py-0.5">숨김</span>}
+              <a href={`/post/${p.id}`} target="_blank" rel="noreferrer" className="hover:underline">{p.title}</a>
+            </td>
             <td className="py-3 pr-4 text-gray-500">{p.author}</td>
             <td className="py-3 pr-4 text-gray-400 text-xs">{p.category}</td>
             <td className="py-3 pr-4 text-gray-400">{p.viewCount}</td>
             <td className="py-3 pr-4 text-gray-400 text-xs">{p.createdDate?.slice(0, 10)}</td>
-            <td className="py-3">
+            <td className="py-3 flex gap-1.5">
+              <button onClick={() => onHide(p.id, !p.hidden)}
+                className={`text-xs border px-3 py-1 transition ${p.hidden ? 'border-blue-300 text-blue-500 hover:bg-blue-50' : 'border-gray-400 text-gray-600 hover:bg-gray-50'}`}>
+                {p.hidden ? '표시' : '숨김'}
+              </button>
               <button onClick={() => onDelete(p.id)}
                 className="text-xs border border-red-300 text-red-500 px-3 py-1 hover:bg-red-50 transition">
                 삭제
@@ -533,7 +550,7 @@ function PostTable({ items, onDelete }: { items: PostItem[]; onDelete: (id: numb
   )
 }
 
-function NoticeTable({ items, onDelete }: { items: NoticeItem[]; onDelete: (id: number) => void }) {
+function NoticeTable({ items, onDelete, onHide }: { items: NoticeItem[]; onDelete: (id: number) => void; onHide: (id: number, hidden: boolean) => void }) {
   return (
     <table className="w-full text-sm">
       <thead>
@@ -543,21 +560,26 @@ function NoticeTable({ items, onDelete }: { items: NoticeItem[]; onDelete: (id: 
           <th className="text-left pb-3 pr-4">분류</th>
           <th className="text-left pb-3 pr-4">조회수</th>
           <th className="text-left pb-3 pr-4">작성일</th>
-          <th className="text-left pb-3">삭제</th>
+          <th className="text-left pb-3">관리</th>
         </tr>
       </thead>
       <tbody>
         {items.map((n, i) => (
-          <tr key={n.id} className={`border-b border-gray-100 ${i % 2 === 0 ? 'bg-gray-50/50' : ''}`}>
+          <tr key={n.id} className={`border-b border-gray-100 ${n.hidden ? 'opacity-50' : ''} ${i % 2 === 0 ? 'bg-gray-50/50' : ''}`}>
             <td className="py-3 pr-4 font-medium truncate max-w-xs">
-              {n.featured && <span className="mr-2 text-xs bg-black text-white px-1.5 py-0.5">고정</span>}
-              {n.title}
+              {n.featured && <span className="mr-1.5 text-xs bg-black text-white px-1.5 py-0.5">고정</span>}
+              {n.hidden && <span className="mr-1.5 text-xs bg-gray-400 text-white px-1.5 py-0.5">숨김</span>}
+              <a href={`/notice/${n.id}`} target="_blank" rel="noreferrer" className="hover:underline">{n.title}</a>
             </td>
             <td className="py-3 pr-4 text-gray-500">{n.author}</td>
             <td className="py-3 pr-4 text-gray-400 text-xs">{n.category}</td>
             <td className="py-3 pr-4 text-gray-400">{n.viewCount}</td>
             <td className="py-3 pr-4 text-gray-400 text-xs">{n.createdDate?.slice(0, 10)}</td>
-            <td className="py-3">
+            <td className="py-3 flex gap-1.5">
+              <button onClick={() => onHide(n.id, !n.hidden)}
+                className={`text-xs border px-3 py-1 transition ${n.hidden ? 'border-blue-300 text-blue-500 hover:bg-blue-50' : 'border-gray-400 text-gray-600 hover:bg-gray-50'}`}>
+                {n.hidden ? '표시' : '숨김'}
+              </button>
               <button onClick={() => onDelete(n.id)}
                 className="text-xs border border-red-300 text-red-500 px-3 py-1 hover:bg-red-50 transition">
                 삭제

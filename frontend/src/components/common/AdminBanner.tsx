@@ -3,7 +3,7 @@ import { useAdminRole } from '../../hooks/useAdminRole'
 import type { AdminRole } from '../../hooks/useAdminRole'
 import { getAuthItem } from '../../utils/authStorage'
 
-export type AdminBannerScope = 'selection' | 'school' | 'dept'
+export type AdminBannerScope = 'selection' | 'school' | 'faculty' | 'dept'
 
 interface AdminBannerProps {
   scope: AdminBannerScope
@@ -13,6 +13,7 @@ interface AdminBannerProps {
 const ALLOWED: Record<AdminBannerScope, AdminRole[]> = {
   selection: ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'DEPT_ADMIN'],
   school:    ['SUPER_ADMIN', 'SCHOOL_ADMIN'],
+  faculty:   ['SUPER_ADMIN', 'SCHOOL_ADMIN'],
   dept:      ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'DEPT_ADMIN'],
 }
 
@@ -37,7 +38,7 @@ function isBannerVisible(role: NonNullable<AdminRole>, scope: AdminBannerScope, 
   if (scope === 'selection')  return false
 
   if (role === 'SCHOOL_ADMIN') {
-    if (scope === 'dept') return true
+    if (scope === 'dept' || scope === 'faculty') return true
     const myUnivId = getAuthItem('universityId')
     return myUnivId != null && targetId === Number(myUnivId)
   }
@@ -54,9 +55,13 @@ export default function AdminBanner({ scope, targetId }: AdminBannerProps) {
   if (!role || !ALLOWED[scope].includes(role)) return null
   if (!isBannerVisible(role, scope, targetId)) return null
 
-  // school / dept scope: single button
+  // school / faculty / dept scope: single button
   if (scope !== 'selection') {
-    const url = scope === 'school' ? `/admin/school/${targetId ?? ''}` : `/admin/dept/${targetId ?? ''}`
+    const url = scope === 'school'
+      ? `/admin/school/${targetId ?? ''}`
+      : scope === 'faculty'
+        ? `/admin/faculty/${targetId ?? ''}`
+        : `/admin/dept/${targetId ?? ''}`
     return (
       <section className="max-w-6xl mx-auto px-4 py-3">
         <div className="border border-gray-300 bg-gray-50 px-5 py-3 flex items-center justify-between gap-4">

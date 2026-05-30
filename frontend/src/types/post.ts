@@ -26,4 +26,5 @@ export interface PostDto {
   attachments?: PostAttachmentDto[]
   scopeType?: string
   scopeId?: number
+  hidden?: boolean
 }

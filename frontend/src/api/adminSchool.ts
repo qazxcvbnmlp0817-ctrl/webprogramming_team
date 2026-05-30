@@ -37,6 +37,7 @@ export interface PostItem {
   category: string
   viewCount: number
   createdDate: string
+  hidden: boolean
 }
 
 export interface PostPage {
@@ -148,6 +149,55 @@ export async function fetchSchoolMonthlyStats(univId?: number): Promise<MonthlyS
   const res = await fetch('/api/admin/school/monthly-stats' + qs(univParam(univId)), { headers: headers() })
   handle403(res)
   return res.json()
+}
+
+export interface NoticeItem {
+  id: number
+  title: string
+  author: string
+  category: string
+  viewCount: number
+  featured: boolean
+  createdDate: string
+  hidden: boolean
+}
+
+export interface NoticePage {
+  notices: NoticeItem[]
+  totalPages: number
+  totalElements: number
+}
+
+export async function fetchSchoolAdminNotices(page: number, univId?: number): Promise<NoticePage> {
+  const res = await fetch('/api/admin/school/notices' + qs(`page=${page}`, univParam(univId)), { headers: headers() })
+  handle403(res)
+  return res.json()
+}
+
+export async function deleteSchoolAdminNotice(noticeId: number, univId?: number): Promise<void> {
+  const res = await fetch('/api/admin/school/notices/' + noticeId + qs(univParam(univId)), {
+    method: 'DELETE',
+    headers: headers(),
+  })
+  handle403(res)
+}
+
+export async function hideSchoolPost(postId: number, hidden: boolean, univId?: number): Promise<void> {
+  const res = await fetch('/api/admin/school/posts/' + postId + '/hidden' + qs(univParam(univId)), {
+    method: 'PUT',
+    headers: headers(),
+    body: JSON.stringify({ hidden }),
+  })
+  handle403(res)
+}
+
+export async function hideSchoolNotice(noticeId: number, hidden: boolean, univId?: number): Promise<void> {
+  const res = await fetch('/api/admin/school/notices/' + noticeId + '/hidden' + qs(univParam(univId)), {
+    method: 'PUT',
+    headers: headers(),
+    body: JSON.stringify({ hidden }),
+  })
+  handle403(res)
 }
 
 export interface DeptItem {

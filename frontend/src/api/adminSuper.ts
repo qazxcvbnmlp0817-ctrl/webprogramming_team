@@ -53,6 +53,21 @@ export interface AdminUser {
 
 export type PendingAdmin = AdminUser
 
+export interface AdminLog {
+  id: number
+  actionType: string
+  actorUsername: string
+  targetUsername: string | null
+  detail: string | null
+  createdAt: string
+}
+
+export async function fetchAllAdminLogs(): Promise<AdminLog[]> {
+  const res = await fetch('/api/admin/super/logs', { headers: headers() })
+  handle403(res)
+  return res.json()
+}
+
 export async function fetchSuperStats(): Promise<SuperStats> {
   const res = await fetch('/api/admin/super/stats', { headers: headers() })
   handle403(res)

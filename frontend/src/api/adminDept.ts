@@ -37,6 +37,7 @@ export interface PostItem {
   category: string
   viewCount: number
   createdDate: string
+  hidden: boolean
 }
 
 export interface PostPage {
@@ -53,6 +54,7 @@ export interface NoticeItem {
   viewCount: number
   featured: boolean
   createdDate: string
+  hidden: boolean
 }
 
 export interface NoticePage {
@@ -116,6 +118,24 @@ export async function deleteDeptNotice(noticeId: number, deptId?: number): Promi
   const res = await fetch('/api/admin/dept/notices/' + noticeId + qs(deptParam(deptId)), {
     method: 'DELETE',
     headers: headers(),
+  })
+  handle403(res)
+}
+
+export async function hideDeptPost(postId: number, hidden: boolean, deptId?: number): Promise<void> {
+  const res = await fetch('/api/admin/dept/posts/' + postId + '/hidden' + qs(deptParam(deptId)), {
+    method: 'PUT',
+    headers: headers(),
+    body: JSON.stringify({ hidden }),
+  })
+  handle403(res)
+}
+
+export async function hideDeptNotice(noticeId: number, hidden: boolean, deptId?: number): Promise<void> {
+  const res = await fetch('/api/admin/dept/notices/' + noticeId + '/hidden' + qs(deptParam(deptId)), {
+    method: 'PUT',
+    headers: headers(),
+    body: JSON.stringify({ hidden }),
   })
   handle403(res)
 }

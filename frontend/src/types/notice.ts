@@ -16,4 +16,5 @@ export interface NoticeDto {
   isPublicToOutsiders?: boolean
   scopeType?: string
   scopeId?: number
+  hidden?: boolean
 }

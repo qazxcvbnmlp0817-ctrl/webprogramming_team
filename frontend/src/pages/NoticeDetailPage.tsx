@@ -21,6 +21,7 @@ interface NoticeDetail {
   isPublicToOutsiders?: boolean
   scopeType?: string
   scopeId?: number
+  hidden?: boolean
 }
 
 interface NoticeCommentDto {
@@ -148,6 +149,23 @@ export default function NoticeDetailPage() {
     if (res.ok) navigate(-1)
   }
 
+  async function handleAdminHide() {
+    if (!notice) return
+    const newHidden = !notice.hidden
+    const res = await fetch(`/api/notices/${id}/hidden`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Username': username },
+      body: JSON.stringify({ hidden: newHidden }),
+    })
+    if (res.ok) setNotice(prev => prev ? { ...prev, hidden: newHidden } : prev)
+  }
+
+  async function handleAdminDelete() {
+    if (!confirm('공지사항을 삭제하시겠습니까?')) return
+    const res = await fetch(`/api/notices/${id}`, { method: 'DELETE' })
+    if (res.ok) navigate(-1)
+  }
+
   if (loading) {
     return (
       <div className="bg-white text-black font-sans min-h-screen">
@@ -176,6 +194,8 @@ export default function NoticeDetailPage() {
 
   const isAuthor  = username === notice.authorUsername || myName === notice.author
   const canDelete = isAuthor || memberType === 'admin'
+  const adminRole = sessionStorage.getItem('adminRole')
+  const isAdmin   = !!adminRole
 
   const gradeLabel = notice.targetGrades.length < 4
     ? notice.targetGrades.map(g => `${g}학년`).join('·')
@@ -185,6 +205,28 @@ export default function NoticeDetailPage() {
     <div className="bg-white text-black font-sans min-h-screen">
       <Navbar />
       <div className="pt-14" />
+
+      {isAdmin && (
+        <div className="max-w-3xl mx-auto px-4 pt-4">
+          <div className="border border-gray-300 bg-gray-50 px-4 py-2.5 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <i className="fas fa-shield-halved" />
+              <span>관리자 모드</span>
+              {notice.hidden && <span className="bg-gray-400 text-white px-1.5 py-0.5 text-xs">숨김 중</span>}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleAdminHide}
+                className={`text-xs border px-3 py-1 transition ${notice.hidden ? 'border-blue-400 text-blue-600 hover:bg-blue-50' : 'border-gray-400 text-gray-600 hover:bg-gray-100'}`}
+              >{notice.hidden ? '표시 복원' : '숨김 처리'}</button>
+              <button
+                onClick={handleAdminDelete}
+                className="text-xs border border-red-400 text-red-500 px-3 py-1 hover:bg-red-50 transition"
+              >삭제</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="max-w-3xl mx-auto px-4 py-8">
         <button
