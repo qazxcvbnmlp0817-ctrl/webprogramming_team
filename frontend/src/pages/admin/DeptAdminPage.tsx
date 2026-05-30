@@ -15,7 +15,8 @@ import {
   fetchDeptPosts, deleteDeptPost,
   fetchDeptNotices, deleteDeptNotice,
   fetchDeptUsers, updateDeptUserStatus,
-  fetchDeptProfessors, fetchDeptCourses, fetchDeptAssignments,
+  fetchDeptPendingUsers,
+  fetchDeptProfessors, fetchDeptUnivProfessors, fetchDeptCourses, fetchDeptAssignments,
   createDeptAssignment, deleteDeptAssignment,
 } from '../../api/adminDept'
 import type {
@@ -28,8 +29,8 @@ ChartJS.register(
   BarElement, ArcElement, Title, Tooltip, Legend, Filler,
 )
 
-type Tab = '개요' | '학과 페이지' | '게시글 관리' | '공지 관리' | '사용자' | '통계' | '교수 배정'
-const TABS: Tab[] = ['개요', '학과 페이지', '게시글 관리', '공지 관리', '사용자', '통계', '교수 배정']
+type Tab = '개요' | '학과 페이지' | '게시글 관리' | '공지 관리' | '사용자' | '가입 승인' | '통계' | '교수 배정'
+const TABS: Tab[] = ['개요', '학과 페이지', '게시글 관리', '공지 관리', '사용자', '가입 승인', '통계', '교수 배정']
 
 export default function DeptAdminPage() {
   const navigate = useNavigate()
@@ -50,6 +51,7 @@ export default function DeptAdminPage() {
   const [noticePage, setNoticePage] = useState(0)
   const [noticeTotalPages, setNoticeTotalPages] = useState(1)
   const [users, setUsers]           = useState<AdminUser[]>([])
+  const [pending, setPending]       = useState<AdminUser[]>([])
   const [loading, setLoading]       = useState(true)
   const [professors, setProfessors]   = useState<ProfessorItem[]>([])
   const [courses, setCourses]         = useState<CourseItem[]>([])
@@ -58,6 +60,9 @@ export default function DeptAdminPage() {
   const [selCourseId, setSelCourseId] = useState<number | ''>('')
   const [assignError, setAssignError] = useState<string | null>(null)
   const [refreshKey, setRefreshKey]   = useState(0)
+  const [showExtProf, setShowExtProf]   = useState(false)
+  const [extProfSearch, setExtProfSearch] = useState('')
+  const [univProfessors, setUnivProfessors] = useState<ProfessorItem[]>([])
 
   useEffect(() => {
     Promise.all([
@@ -65,8 +70,9 @@ export default function DeptAdminPage() {
       fetchDeptVisitors(deptId),
       fetchDeptMonthlyStats(deptId),
       fetchDeptUsers(deptId),
-    ]).then(([s, v, m, u]) => {
-      setStats(s); setVisitors(v); setMonthly(m); setUsers(u)
+      fetchDeptPendingUsers(deptId),
+    ]).then(([s, v, m, u, p]) => {
+      setStats(s); setVisitors(v); setMonthly(m); setUsers(u); setPending(p)
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [])
@@ -75,13 +81,13 @@ export default function DeptAdminPage() {
     fetchDeptPosts(postPage, deptId).then(d => {
       setPosts(d.posts); setPostTotalPages(d.totalPages)
     })
-  }, [postPage])
+  }, [postPage, deptId])
 
   useEffect(() => {
     fetchDeptNotices(noticePage, deptId).then(d => {
       setNotices(d.notices); setNoticeTotalPages(d.totalPages)
     })
-  }, [noticePage])
+  }, [noticePage, deptId])
 
   useEffect(() => {
     if (tab !== '교수 배정') return
@@ -108,6 +114,7 @@ export default function DeptAdminPage() {
     if (newStatus === 'DELETED' && !window.confirm('삭제는 되돌릴 수 없습니다. 계속하시겠습니까?')) return
     await updateDeptUserStatus(userId, newStatus, deptId)
     fetchDeptUsers(deptId).then(setUsers)
+    fetchDeptPendingUsers(deptId).then(setPending)
   }
 
   const handleCreateAssignment = async () => {
@@ -227,7 +234,9 @@ export default function DeptAdminPage() {
               className={`px-5 py-3 text-sm font-medium whitespace-nowrap transition relative ${
                 tab === t ? 'border-b-2 border-black text-black -mb-px' : 'text-gray-400 hover:text-black'
               }`}>
-              {t}
+              {t === '가입 승인' && pending.length > 0
+                ? `가입 승인 (${pending.length})`
+                : t}
             </button>
           ))}
         </div>
@@ -291,6 +300,49 @@ export default function DeptAdminPage() {
           </div>
         )}
 
+        {tab === '가입 승인' && (
+          <div className="border-2 border-black p-6">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">가입 승인 대기</h2>
+            {pending.length === 0 ? (
+              <p className="text-center text-gray-400 text-sm py-8">대기 중인 가입 요청이 없습니다.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b-2 border-black text-xs uppercase tracking-wide text-gray-500">
+                      <th className="text-left pb-3 pr-4">이름</th>
+                      <th className="text-left pb-3 pr-4">아이디</th>
+                      <th className="text-left pb-3 pr-4">유형</th>
+                      <th className="text-left pb-3 pr-4">학과</th>
+                      <th className="text-left pb-3 pr-4">가입일</th>
+                      <th className="text-left pb-3">처리</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pending.map((u, i) => (
+                      <tr key={u.id} className={`border-b border-gray-100 ${i % 2 === 0 ? 'bg-gray-50/50' : ''}`}>
+                        <td className="py-3 pr-4 font-medium">{u.name}</td>
+                        <td className="py-3 pr-4 text-gray-500">{u.username}</td>
+                        <td className="py-3 pr-4">
+                          <span className="border border-gray-300 px-2 py-0.5 text-xs">{u.memberType}</span>
+                        </td>
+                        <td className="py-3 pr-4 text-gray-500">{u.department ?? '-'}</td>
+                        <td className="py-3 pr-4 text-gray-400 text-xs">{u.createdDate?.slice(0, 10)}</td>
+                        <td className="py-3 flex gap-2">
+                          <button onClick={() => handleStatusChange(u.id, 'ACTIVE')}
+                            className="text-xs border border-green-400 text-green-600 px-3 py-1 hover:bg-green-50 transition">승인</button>
+                          <button onClick={() => handleStatusChange(u.id, 'DELETED')}
+                            className="text-xs border border-red-300 text-red-500 px-3 py-1 hover:bg-red-50 transition">거절</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
         {tab === '통계' && (
           <div className="border-2 border-black p-6">
             <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">6개월 월간 통계</h2>
@@ -305,16 +357,58 @@ export default function DeptAdminPage() {
               <div className="flex flex-wrap gap-3 items-end">
                 <div className="flex flex-col gap-1">
                   <label className="text-xs text-gray-500">교수 선택</label>
-                  <select
-                    value={selProfId}
-                    onChange={e => setSelProfId(e.target.value === '' ? '' : Number(e.target.value))}
-                    className="border border-gray-300 text-sm px-3 py-2 focus:outline-none focus:border-black min-w-48"
-                  >
-                    <option value="">-- 교수 선택 --</option>
-                    {professors.map(p => (
-                      <option key={p.id} value={p.id}>{p.name}{p.specialty ? ` (${p.specialty})` : ''}</option>
-                    ))}
-                  </select>
+                  <div className="flex gap-2 items-center">
+                    <select
+                      value={selProfId}
+                      onChange={e => setSelProfId(e.target.value === '' ? '' : Number(e.target.value))}
+                      className="border border-gray-300 text-sm px-3 py-2 focus:outline-none focus:border-black min-w-48"
+                    >
+                      <option value="">-- 교수 선택 --</option>
+                      {professors.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}{p.specialty ? ` (${p.specialty})` : ''}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={async () => {
+                        if (!showExtProf && univProfessors.length === 0) {
+                          const all = await fetchDeptUnivProfessors(deptId)
+                          setUnivProfessors(all)
+                        }
+                        setShowExtProf(v => !v)
+                        setExtProfSearch('')
+                      }}
+                      className="text-xs border border-gray-400 px-3 py-2 hover:bg-gray-50 transition whitespace-nowrap"
+                    >
+                      {showExtProf ? '닫기' : '다른 소속 교수'}
+                    </button>
+                  </div>
+                  {showExtProf && (
+                    <div className="mt-2 border border-gray-300 rounded p-3 w-80 bg-white shadow-sm">
+                      <p className="text-xs text-gray-500 mb-2">학교 전체 교수 검색</p>
+                      <input
+                        value={extProfSearch}
+                        onChange={e => setExtProfSearch(e.target.value)}
+                        placeholder="교수명 검색"
+                        className="w-full border border-gray-300 text-sm px-2 py-1.5 mb-2 focus:outline-none focus:border-black"
+                      />
+                      <div className="max-h-48 overflow-y-auto flex flex-col gap-0.5">
+                        {univProfessors
+                          .filter(p => !extProfSearch || p.name.includes(extProfSearch))
+                          .map(p => (
+                            <button
+                              key={p.id}
+                              onClick={() => { setSelProfId(p.id); setShowExtProf(false) }}
+                              className={`text-left text-xs px-2 py-1.5 hover:bg-gray-100 transition rounded ${selProfId === p.id ? 'bg-black text-white' : ''}`}
+                            >
+                              {p.name}{p.specialty ? ` (${p.specialty})` : ''}
+                            </button>
+                          ))}
+                        {univProfessors.filter(p => !extProfSearch || p.name.includes(extProfSearch)).length === 0 && (
+                          <p className="text-xs text-gray-400 text-center py-2">검색 결과 없음</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs text-gray-500">강의 선택</label>

@@ -126,6 +126,12 @@ export async function fetchFacultyUsers(facultyId?: number): Promise<AdminUser[]
   return res.json()
 }
 
+export async function fetchFacultyPendingUsers(facultyId?: number): Promise<AdminUser[]> {
+  const res = await fetch('/api/admin/faculty/pending-users' + qs(facultyParam(facultyId)), { headers: headers() })
+  handle403(res)
+  return res.json()
+}
+
 export async function updateFacultyUserStatus(userId: number, status: string, facultyId?: number): Promise<void> {
   const res = await fetch('/api/admin/faculty/users/' + userId + '/status' + qs(facultyParam(facultyId)), {
     method: 'PUT',

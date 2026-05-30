@@ -118,7 +118,7 @@ public class AuthService {
         user.setPhone(request.getPhone());
         user.setGrade(request.getGrade());
         user.setEnrollmentStatus(request.getEnrollmentStatus());
-        user.setStatus(request.getMemberType().equals("admin") ? "PENDING_APPROVAL" : "ACTIVE");
+        user.setStatus("PENDING_APPROVAL");
         user.setCreatedDate(java.time.LocalDateTime.now());
 
         userRepository.save(user);

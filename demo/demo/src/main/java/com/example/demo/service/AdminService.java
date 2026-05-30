@@ -415,6 +415,30 @@ public class AdminService {
                 .stream().map(this::toUserMap).collect(Collectors.toList());
     }
 
+    public List<Map<String, Object>> getDeptPendingUsers(Long deptId) {
+        Department d = departmentRepository.findById(deptId)
+                .orElseThrow(() -> new RuntimeException("Department not found: " + deptId));
+        Long univId = deptToUnivId(deptId);
+        if (univId == null) return Collections.emptyList();
+        return userRepository.findByUniversityIdAndDepartmentAndStatus(
+                        String.valueOf(univId), d.getName(), "PENDING_APPROVAL")
+                .stream().map(this::toUserMap).collect(Collectors.toList());
+    }
+
+    public List<Map<String, Object>> getFacultyPendingUsers(Long facultyId) {
+        List<String> deptNames = departmentRepository.findByFacultyIdOrderByIdAsc(facultyId)
+                .stream().map(Department::getName).collect(Collectors.toList());
+        if (deptNames.isEmpty()) return Collections.emptyList();
+        Long univId = facultyToUnivId(facultyId);
+        if (univId == null) return Collections.emptyList();
+        String univStr = String.valueOf(univId);
+        return deptNames.stream()
+                .flatMap(n -> userRepository.findByUniversityIdAndDepartmentAndStatus(
+                        univStr, n, "PENDING_APPROVAL").stream())
+                .map(this::toUserMap)
+                .collect(Collectors.toList());
+    }
+
     public Map<String, Object> updateDeptUserStatus(Long userId, String status,
                                                       Long deptId, String actor) {
         return updateUserStatus(userId, status, actor, deptToUnivId(deptId));
@@ -639,10 +663,8 @@ public class AdminService {
         if (assignmentRepository.existsByProfessorIdAndCourseId(professorId, courseId)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 배정된 강의입니다");
         }
-        Professor prof = professorRepository.findById(professorId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "교수 없음"));
-        if (!prof.getDeptId().equals(deptId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "해당 범위의 교수가 아닙니다");
+        if (!professorRepository.existsById(professorId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "교수 없음");
         }
         CurriculumItem course = curriculumItemRepository.findById(courseId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "강의 없음"));

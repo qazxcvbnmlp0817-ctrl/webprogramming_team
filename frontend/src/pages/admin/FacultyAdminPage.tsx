@@ -13,6 +13,7 @@ import {
   fetchFacultyPosts, deleteFacultyPost,
   fetchFacultyNotices, deleteFacultyNotice,
   fetchFacultyUsers, updateFacultyUserStatus,
+  fetchFacultyPendingUsers,
 } from '../../api/adminFaculty'
 import type {
   FacultyStats, VisitorPoint, PostItem, NoticeItem, AdminUser, MonthlyStats,
@@ -23,8 +24,8 @@ ChartJS.register(
   BarElement, ArcElement, Title, Tooltip, Legend, Filler,
 )
 
-type Tab = '개요' | '학부 페이지' | '게시글 관리' | '공지 관리' | '사용자' | '통계'
-const TABS: Tab[] = ['개요', '학부 페이지', '게시글 관리', '공지 관리', '사용자', '통계']
+type Tab = '개요' | '학부 페이지' | '게시글 관리' | '공지 관리' | '사용자' | '가입 승인' | '통계'
+const TABS: Tab[] = ['개요', '학부 페이지', '게시글 관리', '공지 관리', '사용자', '가입 승인', '통계']
 
 export default function FacultyAdminPage() {
   const navigate = useNavigate()
@@ -45,6 +46,7 @@ export default function FacultyAdminPage() {
   const [noticePage, setNoticePage] = useState(0)
   const [noticeTotalPages, setNoticeTotalPages] = useState(1)
   const [users, setUsers]           = useState<AdminUser[]>([])
+  const [pending, setPending]       = useState<AdminUser[]>([])
   const [loading, setLoading]       = useState(true)
 
   useEffect(() => {
@@ -53,8 +55,9 @@ export default function FacultyAdminPage() {
       fetchFacultyVisitors(facultyId),
       fetchFacultyMonthlyStats(facultyId),
       fetchFacultyUsers(facultyId),
-    ]).then(([s, v, m, u]) => {
-      setStats(s); setVisitors(v); setMonthly(m); setUsers(u)
+      fetchFacultyPendingUsers(facultyId),
+    ]).then(([s, v, m, u, p]) => {
+      setStats(s); setVisitors(v); setMonthly(m); setUsers(u); setPending(p)
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [])
@@ -87,6 +90,7 @@ export default function FacultyAdminPage() {
     if (newStatus === 'DELETED' && !window.confirm('삭제는 되돌릴 수 없습니다. 계속하시겠습니까?')) return
     await updateFacultyUserStatus(userId, newStatus, facultyId)
     fetchFacultyUsers(facultyId).then(setUsers)
+    fetchFacultyPendingUsers(facultyId).then(setPending)
   }
 
   const lineData = {
@@ -171,7 +175,9 @@ export default function FacultyAdminPage() {
               className={`px-5 py-3 text-sm font-medium whitespace-nowrap transition relative ${
                 tab === t ? 'border-b-2 border-black text-black -mb-px' : 'text-gray-400 hover:text-black'
               }`}>
-              {t}
+              {t === '가입 승인' && pending.length > 0
+                ? `가입 승인 (${pending.length})`
+                : t}
             </button>
           ))}
         </div>
@@ -230,6 +236,49 @@ export default function FacultyAdminPage() {
           <div className="border-2 border-black p-6">
             <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">학부 사용자 (소속 학과 학생/교수 통합)</h2>
             <UserTable users={users} onStatusChange={handleStatusChange} />
+          </div>
+        )}
+
+        {tab === '가입 승인' && (
+          <div className="border-2 border-black p-6">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">가입 승인 대기</h2>
+            {pending.length === 0 ? (
+              <p className="text-center text-gray-400 text-sm py-8">대기 중인 가입 요청이 없습니다.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b-2 border-black text-xs uppercase tracking-wide text-gray-500">
+                      <th className="text-left pb-3 pr-4">이름</th>
+                      <th className="text-left pb-3 pr-4">아이디</th>
+                      <th className="text-left pb-3 pr-4">유형</th>
+                      <th className="text-left pb-3 pr-4">학과</th>
+                      <th className="text-left pb-3 pr-4">가입일</th>
+                      <th className="text-left pb-3">처리</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pending.map((u, i) => (
+                      <tr key={u.id} className={`border-b border-gray-100 ${i % 2 === 0 ? 'bg-gray-50/50' : ''}`}>
+                        <td className="py-3 pr-4 font-medium">{u.name}</td>
+                        <td className="py-3 pr-4 text-gray-500">{u.username}</td>
+                        <td className="py-3 pr-4">
+                          <span className="border border-gray-300 px-2 py-0.5 text-xs">{u.memberType}</span>
+                        </td>
+                        <td className="py-3 pr-4 text-gray-500">{u.department ?? '-'}</td>
+                        <td className="py-3 pr-4 text-gray-400 text-xs">{u.createdDate?.slice(0, 10)}</td>
+                        <td className="py-3 flex gap-2">
+                          <button onClick={() => handleStatusChange(u.id, 'ACTIVE')}
+                            className="text-xs border border-green-400 text-green-600 px-3 py-1 hover:bg-green-50 transition">승인</button>
+                          <button onClick={() => handleStatusChange(u.id, 'DELETED')}
+                            className="text-xs border border-red-300 text-red-500 px-3 py-1 hover:bg-red-50 transition">거절</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 

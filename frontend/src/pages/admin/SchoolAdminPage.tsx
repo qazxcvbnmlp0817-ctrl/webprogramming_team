@@ -57,6 +57,8 @@ export default function SchoolAdminPage() {
   const [selDeptId, setSelDeptId]         = useState<number | ''>('')
   const [assignError, setAssignError]     = useState<string | null>(null)
   const [roleModalUser, setRoleModalUser] = useState<AdminUser | null>(null)
+  const [showExtProf, setShowExtProf]     = useState(false)
+  const [extProfSearch, setExtProfSearch] = useState('')
 
   useEffect(() => {
     Promise.all([
@@ -488,18 +490,53 @@ export default function SchoolAdminPage() {
                   </div>
                   <div className="flex flex-col gap-1">
                     <label className="text-xs text-gray-500">교수 선택</label>
-                    <select
-                      value={selProfId}
-                      onChange={e => setSelProfId(e.target.value === '' ? '' : Number(e.target.value))}
-                      className="border border-gray-300 text-sm px-3 py-2 focus:outline-none focus:border-black min-w-48"
-                    >
-                      <option value="">-- 교수 --</option>
-                      {professors
-                        .filter(p => selDeptId === '' || p.deptId === selDeptId)
-                        .map(p => (
-                          <option key={p.id} value={p.id}>{p.name}{p.specialty ? ` (${p.specialty})` : ''}</option>
-                        ))}
-                    </select>
+                    <div className="flex gap-2 items-center">
+                      <select
+                        value={selProfId}
+                        onChange={e => setSelProfId(e.target.value === '' ? '' : Number(e.target.value))}
+                        className="border border-gray-300 text-sm px-3 py-2 focus:outline-none focus:border-black min-w-48"
+                      >
+                        <option value="">-- 교수 --</option>
+                        {professors
+                          .filter(p => selDeptId === '' || p.deptId === selDeptId)
+                          .map(p => (
+                            <option key={p.id} value={p.id}>{p.name}{p.specialty ? ` (${p.specialty})` : ''}</option>
+                          ))}
+                      </select>
+                      <button
+                        onClick={() => { setShowExtProf(v => !v); setExtProfSearch('') }}
+                        className="text-xs border border-gray-400 px-3 py-2 hover:bg-gray-50 transition whitespace-nowrap"
+                      >
+                        {showExtProf ? '닫기' : '다른 소속 교수'}
+                      </button>
+                    </div>
+                    {showExtProf && (
+                      <div className="mt-2 border border-gray-300 rounded p-3 w-80 bg-white shadow-sm">
+                        <p className="text-xs text-gray-500 mb-2">학교 전체 교수 검색 (소속 무관)</p>
+                        <input
+                          value={extProfSearch}
+                          onChange={e => setExtProfSearch(e.target.value)}
+                          placeholder="교수명 검색"
+                          className="w-full border border-gray-300 text-sm px-2 py-1.5 mb-2 focus:outline-none focus:border-black"
+                        />
+                        <div className="max-h-48 overflow-y-auto flex flex-col gap-0.5">
+                          {professors
+                            .filter(p => !extProfSearch || p.name.includes(extProfSearch))
+                            .map(p => (
+                              <button
+                                key={p.id}
+                                onClick={() => { setSelProfId(p.id); setShowExtProf(false) }}
+                                className={`text-left text-xs px-2 py-1.5 hover:bg-gray-100 transition rounded ${selProfId === p.id ? 'bg-black text-white' : ''}`}
+                              >
+                                {p.name}{p.specialty ? ` (${p.specialty})` : ''}
+                              </button>
+                            ))}
+                          {professors.filter(p => !extProfSearch || p.name.includes(extProfSearch)).length === 0 && (
+                            <p className="text-xs text-gray-400 text-center py-2">검색 결과 없음</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div className="flex flex-col gap-1">
                     <label className="text-xs text-gray-500">강의 선택</label>

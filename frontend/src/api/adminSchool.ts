@@ -214,8 +214,9 @@ export async function createSchoolAssignment(
     body: JSON.stringify({ professorId, courseId, deptId }),
   })
   if (!res.ok) {
-    handle403(res)
-    throw new Error(await res.text())
+    // 배정 실패는 비즈니스 오류 — 리다이렉트 없이 메시지만 throw
+    const text = await res.text()
+    throw new Error(text || '배정 추가에 실패했습니다.')
   }
   return res.json()
 }

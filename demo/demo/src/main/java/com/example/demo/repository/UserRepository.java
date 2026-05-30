@@ -32,6 +32,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
                                                             String status,
                                                             String memberType);
 
+    // Dept/Faculty admin: pending users filtered by department name
+    List<User> findByUniversityIdAndDepartmentAndStatus(String universityId,
+                                                         String department,
+                                                         String status);
+
     // Super admin: pending admin signups across all schools
     List<User> findByStatusAndMemberType(String status, String memberType);
 

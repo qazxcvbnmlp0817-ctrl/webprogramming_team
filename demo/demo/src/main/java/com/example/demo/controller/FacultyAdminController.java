@@ -127,6 +127,13 @@ public class FacultyAdminController {
         return ResponseEntity.ok(adminService.getFacultyUsers(resolveFacultyId(username, facultyId)));
     }
 
+    @GetMapping("/pending-users")
+    public ResponseEntity<List<Map<String, Object>>> getPendingUsers(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @RequestParam(required = false) Long facultyId) {
+        return ResponseEntity.ok(adminService.getFacultyPendingUsers(resolveFacultyId(username, facultyId)));
+    }
+
     @PutMapping("/users/{userId}/status")
     public ResponseEntity<Map<String, Object>> updateStatus(
             @RequestHeader(value = "X-Username", required = false) String username,

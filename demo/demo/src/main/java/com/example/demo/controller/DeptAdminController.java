@@ -86,6 +86,13 @@ public class DeptAdminController {
         return ResponseEntity.ok(adminService.getDeptUsers(resolveDeptId(username, deptId)));
     }
 
+    @GetMapping("/pending-users")
+    public ResponseEntity<List<Map<String, Object>>> getPendingUsers(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @RequestParam(required = false) Long deptId) {
+        return ResponseEntity.ok(adminService.getDeptPendingUsers(resolveDeptId(username, deptId)));
+    }
+
     @PutMapping("/users/{userId}/status")
     public ResponseEntity<Map<String, Object>> updateStatus(
             @RequestHeader(value = "X-Username", required = false) String username,
@@ -112,6 +119,16 @@ public class DeptAdminController {
             @RequestParam(required = false) Long deptId) {
         Long id = resolveDeptId(username, deptId);
         return ResponseEntity.ok(adminService.getProfessorsByDept(id));
+    }
+
+    @GetMapping("/univ-professors")
+    public ResponseEntity<List<Map<String, Object>>> getUnivProfessors(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @RequestParam(required = false) Long deptId) {
+        Long id = resolveDeptId(username, deptId);
+        Long univId = adminService.deptToUnivId(id);
+        if (univId == null) return ResponseEntity.ok(java.util.List.of());
+        return ResponseEntity.ok(adminService.getProfessorsByUniv(univId));
     }
 
     @GetMapping("/courses")

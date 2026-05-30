@@ -126,6 +126,12 @@ export async function fetchDeptUsers(deptId?: number): Promise<AdminUser[]> {
   return res.json()
 }
 
+export async function fetchDeptPendingUsers(deptId?: number): Promise<AdminUser[]> {
+  const res = await fetch('/api/admin/dept/pending-users' + qs(deptParam(deptId)), { headers: headers() })
+  handle403(res)
+  return res.json()
+}
+
 export async function updateDeptUserStatus(userId: number, status: string, deptId?: number): Promise<void> {
   const res = await fetch('/api/admin/dept/users/' + userId + '/status' + qs(deptParam(deptId)), {
     method: 'PUT',
@@ -171,6 +177,12 @@ export async function fetchDeptProfessors(deptId?: number): Promise<ProfessorIte
   return res.json()
 }
 
+export async function fetchDeptUnivProfessors(deptId?: number): Promise<ProfessorItem[]> {
+  const res = await fetch('/api/admin/dept/univ-professors' + qs(deptParam(deptId)), { headers: headers() })
+  handle403(res)
+  return res.json()
+}
+
 export async function fetchDeptCourses(deptId?: number): Promise<CourseItem[]> {
   const res = await fetch('/api/admin/dept/courses' + qs(deptParam(deptId)), { headers: headers() })
   handle403(res)
@@ -192,8 +204,9 @@ export async function createDeptAssignment(
     body: JSON.stringify({ professorId, courseId }),
   })
   if (!res.ok) {
-    handle403(res)
-    throw new Error(await res.text())
+    // 배정 실패는 비즈니스 오류 — 리다이렉트 없이 메시지만 throw
+    const text = await res.text()
+    throw new Error(text || '배정 추가에 실패했습니다.')
   }
   return res.json()
 }
