@@ -33,16 +33,20 @@ export default function FacultyPage({ embedded = false, facultyIdOverride }: Fac
 
   useEffect(() => {
     if (!facultyIdNum) return
+    let cancelled = false
     setLoading(true)
     fetchFacultyMainData(facultyIdNum)
       .then(data => {
-        setNotices(data.notices)
-        setPosts(data.posts)
-        setSchedules(data.schedules)
-        setToday(data.today)
+        if (!cancelled) {
+          setNotices(data.notices)
+          setPosts(data.posts)
+          setSchedules(data.schedules)
+          setToday(data.today)
+        }
       })
       .catch(() => {})
-      .finally(() => setLoading(false))
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
   }, [facultyIdNum])
 
   const school  = univ?.schools.find(s => s.faculties.some(f => f.id === facultyIdNum))

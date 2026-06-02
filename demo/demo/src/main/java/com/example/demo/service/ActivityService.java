@@ -75,10 +75,9 @@ public class ActivityService {
                 return Collections.emptyList();
         }
 
-        // Normalize: prevent division by zero with orElse(1)
-        long maxV = result.stream().mapToLong(ActivityDto::getWeeklyVisitors).max().orElse(1);
-        long maxP = result.stream().mapToLong(ActivityDto::getNewPosts).max().orElse(1);
-        long maxC = result.stream().mapToLong(ActivityDto::getNewComments).max().orElse(1);
+        long maxV = Math.max(1, result.stream().mapToLong(ActivityDto::getWeeklyVisitors).max().orElse(0));
+        long maxP = Math.max(1, result.stream().mapToLong(ActivityDto::getNewPosts).max().orElse(0));
+        long maxC = Math.max(1, result.stream().mapToLong(ActivityDto::getNewComments).max().orElse(0));
 
         result.forEach(d -> {
             double score = 20.0 * d.getWeeklyVisitors() / maxV

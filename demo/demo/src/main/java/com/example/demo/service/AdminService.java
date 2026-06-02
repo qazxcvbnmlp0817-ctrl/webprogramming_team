@@ -285,6 +285,8 @@ public class AdminService {
 
     public List<Map<String, Object>> getSchoolMonthlyStats(Long univId) {
         String univIdStr = String.valueOf(univId);
+        List<Long> facultyIds = getFacultyIds(univId);
+        List<Long> deptIds    = getDeptIds(facultyIds);
         List<Map<String, Object>> result = new ArrayList<>();
         YearMonth now = YearMonth.now();
         for (int i = 5; i >= 0; i--) {
@@ -293,8 +295,18 @@ public class AdminService {
             LocalDateTime end   = ym.atEndOfMonth().atTime(23, 59, 59);
 
             long signups  = userRepository.countByUniversityIdAndCreatedDateBetween(univIdStr, start, end);
-            long posts    = postRepository.countByScopeTypeAndScopeIdAndCreatedDateBetween("univ", univId, start, end);
+
+            long posts = postRepository.countByScopeTypeAndScopeIdAndCreatedDateBetween("univ", univId, start, end);
+            if (!facultyIds.isEmpty())
+                posts += postRepository.countByScopeTypeAndScopeIdInAndCreatedDateBetween("faculty", facultyIds, start, end);
+            if (!deptIds.isEmpty())
+                posts += postRepository.countByScopeTypeAndScopeIdInAndCreatedDateBetween("dept", deptIds, start, end);
+
             long visitors = pageVisitRepository.countByScopeTypeAndScopeIdAndVisitedAtBetween("univ", univId, start, end);
+            if (!facultyIds.isEmpty())
+                visitors += pageVisitRepository.countByScopeTypeAndScopeIdInAndVisitedAtBetween("faculty", facultyIds, start, end);
+            if (!deptIds.isEmpty())
+                visitors += pageVisitRepository.countByScopeTypeAndScopeIdInAndVisitedAtBetween("dept", deptIds, start, end);
 
             Map<String, Object> m = new HashMap<>();
             m.put("month",    ym.toString());
@@ -495,14 +507,17 @@ public class AdminService {
 
     public List<Map<String, Object>> getDeptMonthlyStats(Long deptId) {
         Long univ = deptToUnivId(deptId);
+        String deptName = departmentRepository.findById(deptId).map(d -> d.getName()).orElse(null);
         List<Map<String, Object>> result = new ArrayList<>();
         YearMonth now = YearMonth.now();
         for (int i = 5; i >= 0; i--) {
             YearMonth ym = now.minusMonths(i);
             LocalDateTime start = ym.atDay(1).atStartOfDay();
             LocalDateTime end   = ym.atEndOfMonth().atTime(23, 59, 59);
-            long signups  = univ != null ? userRepository
-                .countByUniversityIdAndCreatedDateBetween(String.valueOf(univ), start, end) : 0;
+            long signups = (univ != null && deptName != null)
+                ? userRepository.countByUniversityIdAndDepartmentAndCreatedDateBetween(
+                    String.valueOf(univ), deptName, start, end)
+                : 0;
             long posts    = postRepository.countByScopeTypeAndScopeIdAndCreatedDateBetween("dept", deptId, start, end);
             long visitors = pageVisitRepository.countByScopeTypeAndScopeIdAndVisitedAtBetween("dept", deptId, start, end);
             Map<String, Object> m = new HashMap<>();
@@ -595,14 +610,21 @@ public class AdminService {
 
     public List<Map<String, Object>> getFacultyMonthlyStats(Long facultyId) {
         Long univ = facultyToUnivId(facultyId);
+        List<String> deptNames = departmentRepository.findByFacultyIdOrderByIdAsc(facultyId)
+                .stream().map(d -> d.getName()).collect(Collectors.toList());
         List<Map<String, Object>> result = new ArrayList<>();
         YearMonth now = YearMonth.now();
         for (int i = 5; i >= 0; i--) {
             YearMonth ym = now.minusMonths(i);
             LocalDateTime start = ym.atDay(1).atStartOfDay();
             LocalDateTime end   = ym.atEndOfMonth().atTime(23, 59, 59);
-            long signups  = univ != null ? userRepository
-                .countByUniversityIdAndCreatedDateBetween(String.valueOf(univ), start, end) : 0;
+            long signups = 0;
+            if (univ != null && !deptNames.isEmpty()) {
+                for (String deptName : deptNames) {
+                    signups += userRepository.countByUniversityIdAndDepartmentAndCreatedDateBetween(
+                        String.valueOf(univ), deptName, start, end);
+                }
+            }
             long posts    = postRepository.countByScopeTypeAndScopeIdAndCreatedDateBetween("faculty", facultyId, start, end);
             long visitors = pageVisitRepository.countByScopeTypeAndScopeIdAndVisitedAtBetween("faculty", facultyId, start, end);
             Map<String, Object> m = new HashMap<>();

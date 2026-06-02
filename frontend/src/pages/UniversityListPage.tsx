@@ -19,10 +19,12 @@ export default function UniversityListPage() {
   const navigate                          = useNavigate()
 
   useEffect(() => {
-    fetchUniversities().then(setUniversities)
-    fetchActivityRanking('univ').then(list =>
-      setActivityMap(new Map(list.map(a => [a.scopeId, a])))
-    )
+    let cancelled = false
+    fetchUniversities().then(data => { if (!cancelled) setUniversities(data) })
+    fetchActivityRanking('univ').then(list => {
+      if (!cancelled) setActivityMap(new Map(list.map(a => [a.scopeId, a])))
+    })
+    return () => { cancelled = true }
   }, [])
 
   const filtered = useMemo(() => {

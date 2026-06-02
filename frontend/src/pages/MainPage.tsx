@@ -63,19 +63,24 @@ export default function MainPage() {
 
   useEffect(() => {
     if (!selectedDeptId) return
+    let cancelled = false
     fetchMainData(selectedDeptId)
       .then(data => {
-        setNotices(data.notices)
-        setPosts(data.posts)
-        setDeptSchedules(data.schedules)
-        setToday(data.today)
+        if (!cancelled) {
+          setNotices(data.notices)
+          setPosts(data.posts)
+          setDeptSchedules(data.schedules)
+          setToday(data.today)
+        }
       })
       .catch(() => {})
+    return () => { cancelled = true }
   }, [selectedDeptId])
 
   // 로그인 시 개인 일정 + 소속 학교·학부·학과 일정 로드
   useEffect(() => {
     if (!loggedIn) return
+    let cancelled = false
     setPersonalSchedules(loadSchedules())
 
     const deptId    = getAuthItem('deptId')
@@ -107,15 +112,18 @@ export default function MainPage() {
 
     Promise.all(fetches)
       .then(results => {
-        const seen = new Set<string>()
-        const merged: ScheduleDto[] = []
-        results.flat().forEach(s => {
-          const key = `${s.title}|${s.date}`
-          if (!seen.has(key)) { seen.add(key); merged.push(s) }
-        })
-        setAffiliatedSchedules(merged)
+        if (!cancelled) {
+          const seen = new Set<string>()
+          const merged: ScheduleDto[] = []
+          results.flat().forEach(s => {
+            const key = `${s.title}|${s.date}`
+            if (!seen.has(key)) { seen.add(key); merged.push(s) }
+          })
+          setAffiliatedSchedules(merged)
+        }
       })
       .catch(() => {})
+    return () => { cancelled = true }
   }, [loggedIn, selectedDeptId])
 
   const handleFilterChange = (tab: string) => {

@@ -54,9 +54,11 @@ export default function SchoolDepartmentsPage() {
   const [deptActivityMap, setDeptActivityMap] = useState<Map<number, ActivityData>>(new Map())
 
   useEffect(() => {
-    fetchActivityRanking('dept').then(list =>
-      setDeptActivityMap(new Map(list.map(a => [a.scopeId, a])))
-    )
+    let cancelled = false
+    fetchActivityRanking('dept').then(list => {
+      if (!cancelled) setDeptActivityMap(new Map(list.map(a => [a.scopeId, a])))
+    })
+    return () => { cancelled = true }
   }, [])
 
   const handleDeptClick = useCallback((
