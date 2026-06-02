@@ -1,6 +1,6 @@
 # Admin Dashboard RBAC Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Implement fully isolated Super Admin and School Admin dashboards with strict RBAC, real visitor tracking via PAGE_VISITS table, and Chart.js visualizations.
 
@@ -47,7 +47,7 @@
 - Modify: `demo/demo/src/main/java/com/example/demo/entity/User.java`
 - Modify: `demo/demo/src/main/java/com/example/demo/service/AuthService.java`
 
-- [ ] **Step 1: Add `createdDate` field to `User.java`**
+- [x] **Step 1: Add `createdDate` field to `User.java`**
 
 Add the field and getter/setter after the `adminRole` field (line 35):
 
@@ -97,7 +97,7 @@ The full updated section of `User.java` (lines 35–63) becomes:
     public void setCreatedDate(java.time.LocalDateTime createdDate) { this.createdDate = createdDate; }
 ```
 
-- [ ] **Step 2: Set `createdDate` on signup in `AuthService.java`**
+- [x] **Step 2: Set `createdDate` on signup in `AuthService.java`**
 
 In the `signup` method, after `user.setApproved(...)` (line 87), add:
 
@@ -106,7 +106,7 @@ In the `signup` method, after `user.setApproved(...)` (line 87), add:
         user.setCreatedDate(java.time.LocalDateTime.now());
 ```
 
-- [ ] **Step 3: Return `universityId` in login response in `AuthService.java`**
+- [x] **Step 3: Return `universityId` in login response in `AuthService.java`**
 
 In the `login` method, after `response.put("adminRole", user.getAdminRole())` (line 63), add:
 
@@ -115,7 +115,7 @@ In the `login` method, after `response.put("adminRole", user.getAdminRole())` (l
         response.put("universityId", user.getUniversityId());
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add demo/demo/src/main/java/com/example/demo/entity/User.java
@@ -131,7 +131,7 @@ git commit -m "feat: add createdDate to User, return universityId on login"
 - Create: `demo/demo/src/main/java/com/example/demo/entity/PageVisit.java`
 - Create: `demo/demo/src/main/java/com/example/demo/repository/PageVisitRepository.java`
 
-- [ ] **Step 1: Create `PageVisit.java`**
+- [x] **Step 1: Create `PageVisit.java`**
 
 ```java
 package com.example.demo.entity;
@@ -171,7 +171,7 @@ public class PageVisit {
 }
 ```
 
-- [ ] **Step 2: Create `PageVisitRepository.java`**
+- [x] **Step 2: Create `PageVisitRepository.java`**
 
 ```java
 package com.example.demo.repository;
@@ -189,7 +189,7 @@ public interface PageVisitRepository extends JpaRepository<PageVisit, Long> {
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add demo/demo/src/main/java/com/example/demo/entity/PageVisit.java
@@ -205,7 +205,7 @@ git commit -m "feat: add PageVisit entity and repository for visitor tracking"
 - Create: `demo/demo/src/main/java/com/example/demo/interceptor/VisitInterceptor.java`
 - Modify: `demo/demo/src/main/java/com/example/demo/WebConfig.java`
 
-- [ ] **Step 1: Create `VisitInterceptor.java`**
+- [x] **Step 1: Create `VisitInterceptor.java`**
 
 Create the directory first: `demo/demo/src/main/java/com/example/demo/interceptor/`
 
@@ -267,7 +267,7 @@ public class VisitInterceptor implements HandlerInterceptor {
 }
 ```
 
-- [ ] **Step 2: Update `WebConfig.java` to register the interceptor**
+- [x] **Step 2: Update `WebConfig.java` to register the interceptor**
 
 Replace the entire `WebConfig.java`:
 
@@ -314,7 +314,7 @@ public class WebConfig implements WebMvcConfigurer {
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add demo/demo/src/main/java/com/example/demo/interceptor/VisitInterceptor.java
@@ -332,7 +332,7 @@ git commit -m "feat: add VisitInterceptor to track page visits in PAGE_VISITS"
 - Modify: `demo/demo/src/main/java/com/example/demo/repository/NoticeRepository.java`
 - Modify: `demo/demo/src/main/java/com/example/demo/util/AdminUserInitializer.java`
 
-- [ ] **Step 1: Update `UserRepository.java`**
+- [x] **Step 1: Update `UserRepository.java`**
 
 Replace entire file:
 
@@ -358,7 +358,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 }
 ```
 
-- [ ] **Step 2: Update `PostRepository.java`**
+- [x] **Step 2: Update `PostRepository.java`**
 
 Replace entire file:
 
@@ -379,7 +379,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 }
 ```
 
-- [ ] **Step 3: Update `NoticeRepository.java`**
+- [x] **Step 3: Update `NoticeRepository.java`**
 
 Replace entire file:
 
@@ -397,7 +397,7 @@ public interface NoticeRepository extends JpaRepository<Notice, Long> {
 }
 ```
 
-- [ ] **Step 4: Update `AdminUserInitializer.java`** to wire universityId and fix existing accounts
+- [x] **Step 4: Update `AdminUserInitializer.java`** to wire universityId and fix existing accounts
 
 Replace entire file:
 
@@ -468,7 +468,7 @@ public class AdminUserInitializer implements CommandLineRunner {
 }
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add demo/demo/src/main/java/com/example/demo/repository/UserRepository.java
@@ -485,7 +485,7 @@ git commit -m "feat: add admin queries to repositories, fix seed data university
 **Files:**
 - Create: `demo/demo/src/main/java/com/example/demo/service/AdminService.java`
 
-- [ ] **Step 1: Create `AdminService.java`**
+- [x] **Step 1: Create `AdminService.java`**
 
 ```java
 package com.example.demo.service;
@@ -665,7 +665,7 @@ public class AdminService {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add demo/demo/src/main/java/com/example/demo/service/AdminService.java
@@ -679,7 +679,7 @@ git commit -m "feat: add AdminService with super/school admin business logic"
 **Files:**
 - Create: `demo/demo/src/main/java/com/example/demo/controller/SuperAdminController.java`
 
-- [ ] **Step 1: Create `SuperAdminController.java`**
+- [x] **Step 1: Create `SuperAdminController.java`**
 
 ```java
 package com.example.demo.controller;
@@ -785,7 +785,7 @@ public class SuperAdminController {
 }
 ```
 
-- [ ] **Step 2: Verify backend compiles**
+- [x] **Step 2: Verify backend compiles**
 
 ```bash
 cd demo/demo && ./mvnw compile -q
@@ -793,7 +793,7 @@ cd demo/demo && ./mvnw compile -q
 
 Expected: BUILD SUCCESS (no errors)
 
-- [ ] **Step 3: Start server and test the stats endpoint**
+- [x] **Step 3: Start server and test the stats endpoint**
 
 Start the backend, then:
 
@@ -809,7 +809,7 @@ curl -s -H "X-Username: schooladmin" http://localhost:8080/api/admin/super/stats
 
 Expected: HTTP 403
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add demo/demo/src/main/java/com/example/demo/controller/SuperAdminController.java
@@ -823,7 +823,7 @@ git commit -m "feat: add SuperAdminController with RBAC for /api/admin/super/**"
 **Files:**
 - Create: `demo/demo/src/main/java/com/example/demo/controller/SchoolAdminController.java`
 
-- [ ] **Step 1: Create `SchoolAdminController.java`**
+- [x] **Step 1: Create `SchoolAdminController.java`**
 
 ```java
 package com.example.demo.controller;
@@ -941,7 +941,7 @@ public class SchoolAdminController {
 }
 ```
 
-- [ ] **Step 2: Verify backend compiles and test**
+- [x] **Step 2: Verify backend compiles and test**
 
 ```bash
 cd demo/demo && ./mvnw compile -q
@@ -961,7 +961,7 @@ curl -s -H "X-Username: superadmin" http://localhost:8080/api/admin/school/stats
 
 Expected: HTTP 403
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add demo/demo/src/main/java/com/example/demo/controller/SchoolAdminController.java
@@ -976,7 +976,7 @@ git commit -m "feat: add SchoolAdminController with RBAC for /api/admin/school/*
 - Modify: `frontend/src/App.tsx`
 - Modify: `frontend/src/pages/LoginPage.tsx`
 
-- [ ] **Step 1: Replace `ProtectedAdmin` in `App.tsx` with role-specific guards**
+- [x] **Step 1: Replace `ProtectedAdmin` in `App.tsx` with role-specific guards**
 
 Replace the `ProtectedAdmin` function (lines 52–56):
 
@@ -1013,7 +1013,7 @@ function ProtectedAdmin({ children }: { children: ReactNode }) {
 }
 ```
 
-- [ ] **Step 2: Save `universityId` to sessionStorage on login in `LoginPage.tsx`**
+- [x] **Step 2: Save `universityId` to sessionStorage on login in `LoginPage.tsx`**
 
 In `LoginPage.tsx`, inside the `if (result.success)` block, after the `adminRole` line (line 34), add:
 
@@ -1024,7 +1024,7 @@ In `LoginPage.tsx`, inside the `if (result.success)` block, after the `adminRole
 
 (Replace the existing `sessionStorage.setItem('adminRole', result.adminRole ?? '')` with both lines.)
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add frontend/src/App.tsx frontend/src/pages/LoginPage.tsx
@@ -1039,7 +1039,7 @@ git commit -m "feat: separate ProtectedSuperAdmin/ProtectedSchoolAdmin route gua
 - Create: `frontend/src/api/adminSuper.ts`
 - Create: `frontend/src/api/adminSchool.ts`
 
-- [ ] **Step 1: Create `adminSuper.ts`**
+- [x] **Step 1: Create `adminSuper.ts`**
 
 ```typescript
 const headers = (): HeadersInit => ({
@@ -1138,7 +1138,7 @@ export async function approveUser(userId: number, approved: boolean): Promise<vo
 }
 ```
 
-- [ ] **Step 2: Create `adminSchool.ts`**
+- [x] **Step 2: Create `adminSchool.ts`**
 
 ```typescript
 const headers = (): HeadersInit => ({
@@ -1238,7 +1238,7 @@ export async function approveSchoolUser(userId: number, approved: boolean): Prom
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add frontend/src/api/adminSuper.ts frontend/src/api/adminSchool.ts
@@ -1252,7 +1252,7 @@ git commit -m "feat: add adminSuper and adminSchool API client functions"
 **Files:**
 - Modify: `frontend/package.json` (via npm install)
 
-- [ ] **Step 1: Install dependencies**
+- [x] **Step 1: Install dependencies**
 
 ```bash
 cd frontend && npm install chart.js react-chartjs-2
@@ -1260,7 +1260,7 @@ cd frontend && npm install chart.js react-chartjs-2
 
 Expected: packages added successfully, no peer-dep errors.
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add frontend/package.json frontend/package-lock.json
@@ -1274,7 +1274,7 @@ git commit -m "chore: add chart.js and react-chartjs-2"
 **Files:**
 - Modify: `frontend/src/pages/admin/SuperAdminPage.tsx`
 
-- [ ] **Step 1: Replace `SuperAdminPage.tsx` with full dashboard**
+- [x] **Step 1: Replace `SuperAdminPage.tsx` with full dashboard**
 
 ```tsx
 import { useEffect, useState } from 'react'
@@ -1546,7 +1546,7 @@ function InfraRow({ label, value }: { label: string; value: string }) {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add frontend/src/pages/admin/SuperAdminPage.tsx
@@ -1560,7 +1560,7 @@ git commit -m "feat: implement SuperAdminPage dashboard with charts and role man
 **Files:**
 - Modify: `frontend/src/pages/admin/SchoolAdminPage.tsx`
 
-- [ ] **Step 1: Replace `SchoolAdminPage.tsx` with full dashboard**
+- [x] **Step 1: Replace `SchoolAdminPage.tsx` with full dashboard**
 
 ```tsx
 import { useEffect, useState } from 'react'
@@ -1848,7 +1848,7 @@ function StatCard({ icon, label, value }: { icon: string; label: string; value: 
 }
 ```
 
-- [ ] **Step 2: Verify frontend builds without errors**
+- [x] **Step 2: Verify frontend builds without errors**
 
 ```bash
 cd frontend && npm run build 2>&1 | tail -20
@@ -1856,7 +1856,7 @@ cd frontend && npm run build 2>&1 | tail -20
 
 Expected: `✓ built in` (no TypeScript or build errors)
 
-- [ ] **Step 3: End-to-end smoke test**
+- [x] **Step 3: End-to-end smoke test**
 
 1. Start backend: `cd demo/demo && ./mvnw spring-boot:run`
 2. Start frontend dev server: `cd frontend && npm run dev`
@@ -1868,7 +1868,7 @@ Expected: `✓ built in` (no TypeScript or build errors)
 8. Navigate to `/admin/school/1` → should reach School Admin dashboard
 9. Try navigating to `/admin/super` while logged in as schooladmin → should redirect to `/universities`
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add frontend/src/pages/admin/SchoolAdminPage.tsx

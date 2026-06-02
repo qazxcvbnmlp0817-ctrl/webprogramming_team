@@ -8,7 +8,4 @@ import java.util.List;
 public interface DepartmentRepository extends JpaRepository<Department, Long> {
     List<Department> findByFacultyIdOrderByIdAsc(Long facultyId);
     List<Department> findByFacultyId(Long facultyId);
-    List<Department> findByFacultyIdIn(List<Long> facultyIds);
-    List<Department> findByName(String name);
-    List<Department> findByNameContainingIgnoreCase(String name);
 }

@@ -39,22 +39,19 @@ public class NoticeService {
     }
 
     public List<NoticeDto> getNoticesByDept(Long deptId) {
-        List<Notice> notices = noticeRepository
-                .findByScopeTypeAndScopeIdOrderByCreatedDateDesc("dept", deptId);
+        List<Notice> notices = noticeRepository.findVisibleByScopeTypeAndScopeId("dept", deptId);
         if (notices.isEmpty()) return DummyDataHelper.getNoticesByDept(deptId);
         return notices.stream().map(this::toDto).collect(Collectors.toList());
     }
 
     public List<NoticeDto> getNoticesByFaculty(Long facultyId) {
-        List<Notice> notices = noticeRepository
-                .findByScopeTypeAndScopeIdOrderByCreatedDateDesc("faculty", facultyId);
+        List<Notice> notices = noticeRepository.findVisibleByScopeTypeAndScopeId("faculty", facultyId);
         if (notices.isEmpty()) return DummyDataHelper.getNoticesByFaculty(facultyId);
         return notices.stream().map(this::toDto).collect(Collectors.toList());
     }
 
     public List<NoticeDto> getNoticesByUniv(Long univId) {
-        List<Notice> notices = noticeRepository
-                .findByScopeTypeAndScopeIdOrderByCreatedDateDesc("univ", univId);
+        List<Notice> notices = noticeRepository.findVisibleByScopeTypeAndScopeId("univ", univId);
         if (notices.isEmpty()) return DummyDataHelper.getUniversityNotices(univId);
         return notices.stream().map(this::toDto).collect(Collectors.toList());
     }
@@ -81,6 +78,7 @@ public class NoticeService {
         notice.setFeatured(false);
         notice.setCreatedDate(LocalDateTime.now());
         notice.setAuthorUsername(req.getAuthorUsername());
+        notice.setIsPublicToOutsiders(Boolean.TRUE.equals(req.getIsPublicToOutsiders()));
         Notice saved = noticeRepository.save(notice);
 
         if (req.getAttachments() != null) {
@@ -122,7 +120,11 @@ public class NoticeService {
                 null,
                 fetchAttachments(n.getId()),
                 n.getAuthorUsername(),
-                n.getCommentCount()
+                n.getCommentCount(),
+                n.isPublicToOutsiders(),
+                n.getScopeType(),
+                n.getScopeId(),
+                n.isHidden()
         );
     }
 
@@ -139,7 +141,11 @@ public class NoticeService {
                 n.getContent(),
                 fetchAttachments(n.getId()),
                 n.getAuthorUsername(),
-                n.getCommentCount()
+                n.getCommentCount(),
+                n.isPublicToOutsiders(),
+                n.getScopeType(),
+                n.getScopeId(),
+                n.isHidden()
         );
     }
 

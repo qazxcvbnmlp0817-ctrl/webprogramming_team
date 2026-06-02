@@ -16,13 +16,13 @@
 - Modify: `demo/demo/src/main/java/com/example/demo/service/AdminService.java`
 - Modify: `demo/demo/src/main/java/com/example/demo/repository/UserRepository.java`
 
-- [ ] **Step 1:** In `UserRepository` add the query used by `getDeptUsers`:
+- [x] **Step 1:** In `UserRepository` add the query used by `getDeptUsers`:
 
 ```java
 List<User> findByUniversityIdAndDepartment(String universityId, String department);
 ```
 
-- [ ] **Step 2:** In `AdminService` add a "Dept Admin" section with these public methods. Place after the "School Admin" section, before "Shared". Use existing repos (`postRepository`, `noticeRepository`, `pageVisitRepository`, `userRepository`, `departmentRepository`):
+- [x] **Step 2:** In `AdminService` add a "Dept Admin" section with these public methods. Place after the "School Admin" section, before "Shared". Use existing repos (`postRepository`, `noticeRepository`, `pageVisitRepository`, `userRepository`, `departmentRepository`):
 
 ```java
 // ── Dept Admin ─────────────────────────────────────────────────────────
@@ -123,16 +123,16 @@ public Long deptToUnivId(Long deptId) {
 }
 ```
 
-- [ ] **Step 3:** Refactor existing `getSchoolPosts(univId, page)` and the analogous notice method into scope-agnostic private helpers `getSchoolPostsImpl(scopeType, scopeId, page)` and `getSchoolNoticesImpl(...)`. The existing `getSchoolPosts` becomes a thin wrapper: `return getSchoolPostsImpl("univ", univId, page);`. New dept methods reuse the helper.
+- [x] **Step 3:** Refactor existing `getSchoolPosts(univId, page)` and the analogous notice method into scope-agnostic private helpers `getSchoolPostsImpl(scopeType, scopeId, page)` and `getSchoolNoticesImpl(...)`. The existing `getSchoolPosts` becomes a thin wrapper: `return getSchoolPostsImpl("univ", univId, page);`. New dept methods reuse the helper.
 
-- [ ] **Step 4:** Build the project to verify compilation:
+- [x] **Step 4:** Build the project to verify compilation:
 
 ```bash
 cd demo/demo && ./mvnw.cmd compile -q
 ```
 Expected: BUILD SUCCESS.
 
-- [ ] **Step 5:** Commit.
+- [x] **Step 5:** Commit.
 
 ```bash
 git add demo/demo/src/main/java/com/example/demo/service/AdminService.java \
@@ -147,7 +147,7 @@ git commit -m "feat: AdminService dept-scope methods (stats, posts, notices, use
 **Files:**
 - Create: `demo/demo/src/main/java/com/example/demo/controller/DeptAdminController.java`
 
-- [ ] **Step 1:** Create the controller. Use `SchoolAdminController` as the structural reference. Key points:
+- [x] **Step 1:** Create the controller. Use `SchoolAdminController` as the structural reference. Key points:
   - Path prefix `/api/admin/dept`.
   - Inject `AdminService`, `UserRepository`, `DepartmentRepository`, `FacultyGroupRepository`, `CollegeSchoolRepository`.
   - `resolveDeptId(username, deptIdParam)` follows spec section 4. SUPER_ADMIN: requires deptIdParam. SCHOOL_ADMIN: requires deptIdParam AND the dept must belong to the user's university (walk dept→faculty→school). DEPT_ADMIN: derive from user.universityId + user.department via the dept-name walk.
@@ -168,13 +168,13 @@ git commit -m "feat: AdminService dept-scope methods (stats, posts, notices, use
 
 Each accepts `@RequestParam(required=false) Long deptId` and calls `resolveDeptId(username, deptId)` to get the actual id.
 
-- [ ] **Step 2:** Compile.
+- [x] **Step 2:** Compile.
 
 ```bash
 cd demo/demo && ./mvnw.cmd compile -q
 ```
 
-- [ ] **Step 3:** Commit.
+- [x] **Step 3:** Commit.
 
 ```bash
 git add demo/demo/src/main/java/com/example/demo/controller/DeptAdminController.java
@@ -188,7 +188,7 @@ git commit -m "feat: DeptAdminController with role-based deptId resolution"
 **Files:**
 - Modify: `demo/demo/src/main/java/com/example/demo/service/AdminService.java`
 
-- [ ] **Step 1:** Add a faculty section paralleling Dept (`getFacultyStats`, `getFacultyVisitorTrend`, `getFacultyPosts`, `deleteFacultyPost`, `getFacultyNotices`, `deleteFacultyNotice`, `getFacultyUsers`, `updateFacultyUserStatus`, `getFacultyMonthlyStats`). `getFacultyUsers` aggregates users across all depts in the faculty (their `department` matches one of the dept names belonging to the faculty).
+- [x] **Step 1:** Add a faculty section paralleling Dept (`getFacultyStats`, `getFacultyVisitorTrend`, `getFacultyPosts`, `deleteFacultyPost`, `getFacultyNotices`, `deleteFacultyNotice`, `getFacultyUsers`, `updateFacultyUserStatus`, `getFacultyMonthlyStats`). `getFacultyUsers` aggregates users across all depts in the faculty (their `department` matches one of the dept names belonging to the faculty).
 
 Helper:
 ```java
@@ -216,13 +216,13 @@ public List<Map<String, Object>> getFacultyUsers(Long facultyId) {
 }
 ```
 
-- [ ] **Step 2:** Compile.
+- [x] **Step 2:** Compile.
 
 ```bash
 cd demo/demo && ./mvnw.cmd compile -q
 ```
 
-- [ ] **Step 3:** Commit.
+- [x] **Step 3:** Commit.
 
 ```bash
 git add demo/demo/src/main/java/com/example/demo/service/AdminService.java
@@ -236,7 +236,7 @@ git commit -m "feat: AdminService faculty-scope methods"
 **Files:**
 - Create: `demo/demo/src/main/java/com/example/demo/controller/FacultyAdminController.java`
 
-- [ ] **Step 1:** Mirror `DeptAdminController` with path `/api/admin/faculty`. `resolveFacultyId(username, facultyIdParam)`:
+- [x] **Step 1:** Mirror `DeptAdminController` with path `/api/admin/faculty`. `resolveFacultyId(username, facultyIdParam)`:
   - SUPER_ADMIN: deptIdParam → facultyIdParam, no university check.
   - SCHOOL_ADMIN: required, walk faculty→school and verify school's universityId matches user.
   - DEPT_ADMIN: **403** (DEPT_ADMIN is below faculty).
@@ -244,7 +244,7 @@ git commit -m "feat: AdminService faculty-scope methods"
 
 Endpoints same set as Dept (9 endpoints), each calling the corresponding `getFaculty*` service method.
 
-- [ ] **Step 2:** Compile + commit.
+- [x] **Step 2:** Compile + commit.
 
 ```bash
 cd demo/demo && ./mvnw.cmd compile -q
@@ -260,7 +260,7 @@ git commit -m "feat: FacultyAdminController (no DEPT_ADMIN access)"
 - Create: `frontend/src/api/adminDept.ts`
 - Create: `frontend/src/api/adminFaculty.ts`
 
-- [ ] **Step 1:** Clone `frontend/src/api/adminSchool.ts` to `adminDept.ts`. Replace every `univId` with `deptId`, change paths from `/api/admin/school/` to `/api/admin/dept/`. Keep `AdminUser`, `AdminLog`, `MonthlyStats`, `VisitorPoint`, `SchoolStats`, `PostItem`, `PostPage` interface shapes — rename `SchoolStats` → `DeptStats`. Remove pending/all-users/admin-log functions (those are not in dept scope; spec section 7).
+- [x] **Step 1:** Clone `frontend/src/api/adminSchool.ts` to `adminDept.ts`. Replace every `univId` with `deptId`, change paths from `/api/admin/school/` to `/api/admin/dept/`. Keep `AdminUser`, `AdminLog`, `MonthlyStats`, `VisitorPoint`, `SchoolStats`, `PostItem`, `PostPage` interface shapes — rename `SchoolStats` → `DeptStats`. Remove pending/all-users/admin-log functions (those are not in dept scope; spec section 7).
 
   Final function list:
   - `fetchDeptStats(deptId?)`
@@ -273,16 +273,16 @@ git commit -m "feat: FacultyAdminController (no DEPT_ADMIN access)"
   - `updateDeptUserStatus(userId, status, deptId?)`
   - `fetchDeptMonthlyStats(deptId?)`
 
-- [ ] **Step 2:** Do the same for `adminFaculty.ts` — substitute `facultyId` and `/api/admin/faculty/`.
+- [x] **Step 2:** Do the same for `adminFaculty.ts` — substitute `facultyId` and `/api/admin/faculty/`.
 
-- [ ] **Step 3:** Run typecheck:
+- [x] **Step 3:** Run typecheck:
 
 ```bash
 cd frontend && npx tsc --noEmit
 ```
 Expected: clean.
 
-- [ ] **Step 4:** Commit.
+- [x] **Step 4:** Commit.
 
 ```bash
 git add frontend/src/api/adminDept.ts frontend/src/api/adminFaculty.ts
@@ -296,7 +296,7 @@ git commit -m "feat: add adminDept/adminFaculty API clients"
 **Files:**
 - Modify: `frontend/src/pages/DepartmentPage.tsx`
 
-- [ ] **Step 1:** Add optional prop `embedded?: boolean` (defaults to false). When `embedded`:
+- [x] **Step 1:** Add optional prop `embedded?: boolean` (defaults to false). When `embedded`:
   - Drop the outer `<div className="bg-white text-black font-sans min-h-screen">` wrapper (return a fragment).
   - Skip `<Navbar />` and the `<div className="pt-14" />` spacer.
   - Skip `<AdminBanner />`.
@@ -305,13 +305,13 @@ git commit -m "feat: add adminDept/adminFaculty API clients"
 
 Use a single boolean conditional, do not duplicate the JSX.
 
-- [ ] **Step 2:** Typecheck.
+- [x] **Step 2:** Typecheck.
 
 ```bash
 cd frontend && npx tsc --noEmit
 ```
 
-- [ ] **Step 3:** Commit.
+- [x] **Step 3:** Commit.
 
 ```bash
 git add frontend/src/pages/DepartmentPage.tsx
@@ -325,7 +325,7 @@ git commit -m "feat: DepartmentPage embedded prop for admin preview"
 **Files:**
 - Modify: `frontend/src/pages/admin/DeptAdminPage.tsx` (replace placeholder)
 
-- [ ] **Step 1:** Replace the file entirely with a 6-tab dashboard. Use `frontend/src/pages/admin/SchoolAdminPage.tsx` as the structural template. Differences:
+- [x] **Step 1:** Replace the file entirely with a 6-tab dashboard. Use `frontend/src/pages/admin/SchoolAdminPage.tsx` as the structural template. Differences:
 
   - Page title: "학과 관리자 대시보드"
   - Tabs: `['개요', '학과 페이지', '게시글 관리', '공지 관리', '사용자', '통계']`
@@ -343,14 +343,14 @@ git commit -m "feat: DepartmentPage embedded prop for admin preview"
   - No "활동 로그" tab (out of scope).
   - No "관리자 계정" tab (DEPT_ADMIN can't grant roles).
 
-- [ ] **Step 2:** Build the frontend:
+- [x] **Step 2:** Build the frontend:
 
 ```bash
 cd frontend && npm run build
 ```
 Expected: built in N seconds, no errors.
 
-- [ ] **Step 3:** Commit.
+- [x] **Step 3:** Commit.
 
 ```bash
 git add frontend/src/pages/admin/DeptAdminPage.tsx \
@@ -366,20 +366,20 @@ git commit -m "feat: DeptAdminPage full 6-tab dashboard"
 **Files:**
 - Create: `frontend/src/pages/admin/FacultyAdminPage.tsx`
 
-- [ ] **Step 1:** Same structure as DeptAdminPage but for faculty scope. Tabs:
+- [x] **Step 1:** Same structure as DeptAdminPage but for faculty scope. Tabs:
   `['개요', '학부 페이지', '게시글 관리', '공지 관리', '사용자', '통계']`
 
   학부 페이지 tab: render `<FacultyPage embedded />`. (Faculty page may need the same `embedded` prop — see Step 2.)
 
-- [ ] **Step 2:** Add `embedded` prop to `frontend/src/pages/FacultyPage.tsx` with the same semantics as DepartmentPage's. Open the file, identify Navbar/AdminBanner/Hero structure, gate them on `!embedded`.
+- [x] **Step 2:** Add `embedded` prop to `frontend/src/pages/FacultyPage.tsx` with the same semantics as DepartmentPage's. Open the file, identify Navbar/AdminBanner/Hero structure, gate them on `!embedded`.
 
-- [ ] **Step 3:** Build.
+- [x] **Step 3:** Build.
 
 ```bash
 cd frontend && npm run build
 ```
 
-- [ ] **Step 4:** Commit.
+- [x] **Step 4:** Commit.
 
 ```bash
 git add frontend/src/pages/admin/FacultyAdminPage.tsx \
@@ -398,7 +398,7 @@ git commit -m "feat: FacultyAdminPage + FacultyPage embedded prop"
 - Modify: `frontend/src/components/common/AdminBanner.tsx`
 - Modify: `frontend/src/pages/LoginPage.tsx`
 
-- [ ] **Step 1:** App.tsx — import `FacultyAdminPage`, add new guard, add route:
+- [x] **Step 1:** App.tsx — import `FacultyAdminPage`, add new guard, add route:
 
 ```tsx
 function ProtectedFacultyAdmin({ children }: { children: ReactNode }) {
@@ -412,7 +412,7 @@ function ProtectedFacultyAdmin({ children }: { children: ReactNode }) {
 
 Note: DEPT_ADMIN is intentionally blocked from `/admin/faculty/:id` (spec section 4).
 
-- [ ] **Step 2:** AdminBanner.tsx — when `scope === 'selection'` and `role === 'DEPT_ADMIN'`, look up `sessionStorage.getItem('deptId')`; if present, navigate to `/admin/dept/${deptId}`. (Currently AdminBanner falls back to `/admin/school/...` for DEPT_ADMIN — switch to dept URL.)
+- [x] **Step 2:** AdminBanner.tsx — when `scope === 'selection'` and `role === 'DEPT_ADMIN'`, look up `sessionStorage.getItem('deptId')`; if present, navigate to `/admin/dept/${deptId}`. (Currently AdminBanner falls back to `/admin/school/...` for DEPT_ADMIN — switch to dept URL.)
 
 ```tsx
 if (scope === 'selection') {
@@ -429,7 +429,7 @@ if (scope === 'selection') {
 }
 ```
 
-- [ ] **Step 3:** LoginPage.tsx — on successful login, if response includes `deptId` (numeric) persist to sessionStorage:
+- [x] **Step 3:** LoginPage.tsx — on successful login, if response includes `deptId` (numeric) persist to sessionStorage:
 
 ```tsx
 if (data.deptId != null) sessionStorage.setItem('deptId', String(data.deptId))
@@ -437,7 +437,7 @@ if (data.deptId != null) sessionStorage.setItem('deptId', String(data.deptId))
 
 If `deptId` is not in the login response, persist nothing (DEPT_ADMIN can still navigate to `/admin/dept/{id}` via direct URL — they just won't get the banner shortcut). The backend derives deptId from user.department for the admin pages.
 
-- [ ] **Step 4:** AuthService login response — augment to include `deptId` when user is DEPT_ADMIN by walking `dept→faculty→school` (use the same `deptToUnivId`-style walk to resolve the user's dept id from their department name). When user is not DEPT_ADMIN, leave deptId off.
+- [x] **Step 4:** AuthService login response — augment to include `deptId` when user is DEPT_ADMIN by walking `dept→faculty→school` (use the same `deptToUnivId`-style walk to resolve the user's dept id from their department name). When user is not DEPT_ADMIN, leave deptId off.
 
   Modify: `demo/demo/src/main/java/com/example/demo/service/AuthService.java` — inside `login()` after the existing role/universityId putters, add:
 
@@ -450,7 +450,7 @@ if ("DEPT_ADMIN".equals(user.getAdminRole())
 }
 ```
 
-- [ ] **Step 5:** Extract the dept-name walk used in DeptAdminController into a reusable public method on `AdminService`:
+- [x] **Step 5:** Extract the dept-name walk used in DeptAdminController into a reusable public method on `AdminService`:
 
 ```java
 public Long resolveDeptIdByName(Long universityId, String deptName) {
@@ -465,16 +465,16 @@ public Long resolveDeptIdByName(Long universityId, String deptName) {
 
 `DeptAdminController#resolveDeptId` for the DEPT_ADMIN branch should use this helper.
 
-- [ ] **Step 6:** Inject `AdminService` into `AuthService` constructor. Add `private final AdminService adminService;` and update the constructor.
+- [x] **Step 6:** Inject `AdminService` into `AuthService` constructor. Add `private final AdminService adminService;` and update the constructor.
 
-- [ ] **Step 7:** Compile + typecheck + build.
+- [x] **Step 7:** Compile + typecheck + build.
 
 ```bash
 cd demo/demo && ./mvnw.cmd compile -q
 cd ../../frontend && npx tsc --noEmit && npm run build
 ```
 
-- [ ] **Step 8:** Commit.
+- [x] **Step 8:** Commit.
 
 ```bash
 git add frontend/src/App.tsx frontend/src/components/common/AdminBanner.tsx \
@@ -491,14 +491,14 @@ git commit -m "feat: /admin/faculty route + DEPT_ADMIN deptId persisted on login
 
 ### Task 10: Smoke test
 
-- [ ] **Step 1:** Stop any running Spring Boot, restart:
+- [x] **Step 1:** Stop any running Spring Boot, restart:
 
 ```bash
 cd demo/demo && ./mvnw.cmd spring-boot:run
 ```
 Wait for "Started DemoApplication".
 
-- [ ] **Step 2:** Quick HTTP probes (unauthenticated → 403):
+- [x] **Step 2:** Quick HTTP probes (unauthenticated → 403):
 
 ```bash
 curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/api/admin/dept/stats
@@ -506,13 +506,13 @@ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/api/admin/faculty
 ```
 Expected: 403 for both.
 
-- [ ] **Step 3:** Browser checks:
+- [x] **Step 3:** Browser checks:
   - SUPER_ADMIN: open `/admin/dept/5?deptId=5` → all tabs load.
   - SCHOOL_ADMIN of universityId=1: open `/admin/dept/5` (a dept under their univ) → loads; `/admin/dept/{other-univ-dept}` → bounces to `/universities`.
   - DEPT_ADMIN: log in → sessionStorage has deptId → `/universities` shows admin banner pointing at `/admin/dept/{their id}` → page loads.
   - `/admin/faculty/:id` blocks DEPT_ADMIN at the route guard.
 
-- [ ] **Step 4:** No commit (no code changes).
+- [x] **Step 4:** No commit (no code changes).
 
 ---
 

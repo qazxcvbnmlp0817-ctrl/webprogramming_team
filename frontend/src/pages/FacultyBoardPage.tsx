@@ -8,6 +8,8 @@ import { fetchFacultyPosts } from '../api/school'
 import { useDept } from '../context/DeptContext'
 import { useDeptFetch } from '../hooks/useDeptFetch'
 import type { UniversityDto } from '../types/university'
+import AccessDenied from '../components/common/AccessDenied'
+import { isLoggedIn, isSameFaculty } from '../utils/accessCheck'
 
 const BOARD_TABS   = ['전체', '자유게시판', '질문', '스터디', '취업후기']
 const GRADE_TABS   = ['전체', '1학년', '2학년', '3학년', '4학년']
@@ -32,6 +34,9 @@ export default function FacultyBoardPage() {
   const PER_PAGE = 10
 
   useEffect(() => { setPage(1) }, [active, gradeFilter, sort, search, searchType])
+
+  const memberType = sessionStorage.getItem('memberType') ?? ''
+  const isAdmin = memberType === 'admin'
 
   const school  = univ?.schools.find(s => s.faculties.some(f => f.id === facultyIdNum))
   const faculty = school?.faculties.find(f => f.id === facultyIdNum)
@@ -104,7 +109,7 @@ export default function FacultyBoardPage() {
               <p className="text-gray-400 text-sm mt-1">소속 학과 {faculty.depts.length}개</p>
             )}
           </div>
-          {sessionStorage.getItem('isLoggedIn') === 'true' && (
+          {isLoggedIn() && (isAdmin || isSameFaculty(facultyIdNum, faculty?.name)) && (
             <button
               onClick={() => navigate(`/school/faculty/${facultyId}/board/write`)}
               className="px-4 py-2 text-sm bg-white text-black font-medium hover:bg-gray-200 transition flex items-center gap-1.5"
@@ -132,7 +137,9 @@ export default function FacultyBoardPage() {
       </section>
 
       <main className="max-w-6xl mx-auto px-4 py-8">
-        {loading ? (
+        {!isAdmin && (!isLoggedIn() || !isSameFaculty(facultyIdNum, faculty?.name)) ? (
+          <AccessDenied message={!isLoggedIn() ? '로그인이 필요합니다.' : '소속 학부 구성원만 이용할 수 있습니다.'} />
+        ) : loading ? (
           <div className="py-16 text-center text-gray-400">
             <i className="fas fa-spinner fa-spin text-3xl mb-3 block" />불러오는 중...
           </div>

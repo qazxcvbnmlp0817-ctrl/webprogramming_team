@@ -7,18 +7,15 @@ type StaffRole = 'professor' | 'employee' | 'assistant' | ''
 
 const STEP_LABELS = ['대학교 선택', '회원 유형 선택', '정보 입력', '가입 완료']
 
-const COLLEGES: Record<string, string[]> = {
-  mokpo: ['공과대학', '인문사회과학대학', '자연과학대학', '경영대학'],
-  suncheon: ['공과대학', '인문예술대학', '자연과학대학', '농업생명과학대학'],
+interface UnivOption {
+  id: number
+  name: string
 }
 
-const DEPARTMENTS: Record<string, string[]> = {
-  공과대학: ['컴퓨터공학과', '전기공학과', '기계공학과', '건축학과'],
-  인문사회과학대학: ['국어국문학과', '영어영문학과', '사회학과', '행정학과'],
-  자연과학대학: ['수학과', '물리학과', '화학과', '생물학과'],
-  경영대학: ['경영학과', '회계학과', '국제통상학과'],
-  인문예술대학: ['국어국문학과', '미술학과', '음악학과'],
-  농업생명과학대학: ['식물산업과학과', '동물자원과학과'],
+interface UnivDetail {
+  id: number
+  name: string
+  schools: { id: number; name: string; faculties: { id: number; name: string; depts: { id: number; name: string }[] }[] }[]
 }
 
 const EMPLOYEE_OFFICES = [
@@ -29,7 +26,9 @@ const EMPLOYEE_OFFICES = [
 export default function SignupPage() {
   const navigate = useNavigate()
   const [step, setStep] = useState(1)
-  const [selectedUniv, setSelectedUniv] = useState('')
+  const [univList, setUnivList]         = useState<UnivOption[]>([])
+  const [univDetail, setUnivDetail]     = useState<UnivDetail | null>(null)
+  const [selectedUnivId, setSelectedUnivId] = useState<number | null>(null)
   const [memberType, setMemberType] = useState<MemberType | ''>('')
   const [staffRole, setStaffRole] = useState<StaffRole>('')
   const [userId, setUserId] = useState('')
@@ -49,6 +48,24 @@ export default function SignupPage() {
   const isAdmin    = memberType === 'admin'
   const isEmployee = memberType === 'staff' && staffRole === 'employee'
 
+  // 대학 목록 로드
+  useEffect(() => {
+    fetch('/api/universities')
+      .then(r => r.json())
+      .then((data: UnivOption[]) => setUnivList(data))
+      .catch(() => {})
+  }, [])
+
+  // 대학 선택 시 상세(단과대·학과) 로드
+  useEffect(() => {
+    if (!selectedUnivId) { setUnivDetail(null); return }
+    fetch(`/api/universities/${selectedUnivId}`)
+      .then(r => r.json())
+      .then((data: UnivDetail) => setUnivDetail(data))
+      .catch(() => {})
+    setCollege(''); setDepartment('')
+  }, [selectedUnivId])
+
   useEffect(() => {
     setEmployeeId(''); setEmployeeOffice('')
     setStudentId(''); setCollege(''); setDepartment('')
@@ -61,6 +78,14 @@ export default function SignupPage() {
     setStudentId(''); setCollege(''); setDepartment('')
   }, [staffRole])
 
+  // 단과대 목록: 대학 상세에서 schools 이름 추출
+  const collegeOptions = univDetail?.schools.map(s => s.name) ?? []
+  // 학과 목록: 선택한 단과대의 모든 faculty depts 합산
+  const deptOptions = college
+    ? (univDetail?.schools.find(s => s.name === college)?.faculties
+        .flatMap(f => f.depts.map(d => d.name)) ?? [])
+    : []
+
   useEffect(() => {
     if (enrollmentStatus === 'graduated') setGrade('')
   }, [enrollmentStatus])
@@ -71,9 +96,20 @@ export default function SignupPage() {
     return true
   }
 
+  const pwError = (): string | null => {
+    if (!pw) return null
+    if (pw.length < 8) return '비밀번호는 8자 이상이어야 합니다.'
+    if (!/[a-zA-Z]/.test(pw)) return '영문자를 포함해야 합니다.'
+    if (!/[0-9]/.test(pw)) return '숫자를 포함해야 합니다.'
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pw))
+      return '특수문자(!@#$% 등)를 포함해야 합니다.'
+    return null
+  }
+
   const step3Valid = () => {
     if (!userId || !idChecked) return false
     if (!pw || pw !== pwConfirm) return false
+    if (pwError() !== null) return false
     if (!inputName) return false
     if (isEmployee) {
       if (!employeeId || !employeeOffice) return false
@@ -86,7 +122,7 @@ export default function SignupPage() {
   }
 
   const canNext = () => {
-    if (step === 1) return selectedUniv !== ''
+    if (step === 1) return selectedUnivId !== null
     if (step === 2) return step2Valid()
     if (step === 3) return step3Valid()
     return true
@@ -109,7 +145,7 @@ export default function SignupPage() {
       const payload = {
         username: userId, password: pw, name: inputName,
         memberType: apiMemberType,
-        universityId: selectedUniv,
+        universityId: String(selectedUnivId),   // 숫자 ID를 문자열로 저장
         college:      isEmployee || isAdmin ? null : college,
         department:   isEmployee ? employeeOffice : (isAdmin ? null : department),
         studentId:    isEmployee ? employeeId : (isAdmin ? null : studentId),
@@ -162,20 +198,24 @@ export default function SignupPage() {
               <div className="flex flex-col gap-4">
                 <h2 className="text-lg font-bold">01. 대학교 선택</h2>
                 <p className="text-sm text-gray-500 -mt-2">소속 대학교를 선택해주세요.</p>
-                <div className="grid grid-cols-2 gap-4">
-                  {[{ id: 'mokpo', name: '국립목포대학교' }, { id: 'suncheon', name: '국립순천대학교' }].map(u => (
-                    <div key={u.id} onClick={() => setSelectedUniv(u.id)}
-                      className={`border-2 p-6 flex flex-col items-center gap-3 cursor-pointer transition-all
-                        ${selectedUniv === u.id ? 'border-black bg-gray-50' : 'border-gray-200 hover:border-gray-400'}`}>
-                      <div className="w-14 h-14 rounded-full border-2 border-gray-300 flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 14l9-5-9-5-9 5 9 5zM12 14v7M5 12v5a7 7 0 0014 0v-5" />
-                        </svg>
+                {univList.length === 0 ? (
+                  <p className="text-sm text-gray-400 text-center py-4">대학교 목록을 불러오는 중...</p>
+                ) : (
+                  <div className="grid grid-cols-2 gap-4">
+                    {univList.map(u => (
+                      <div key={u.id} onClick={() => setSelectedUnivId(u.id)}
+                        className={`border-2 p-6 flex flex-col items-center gap-3 cursor-pointer transition-all
+                          ${selectedUnivId === u.id ? 'border-black bg-gray-50' : 'border-gray-200 hover:border-gray-400'}`}>
+                        <div className="w-14 h-14 rounded-full border-2 border-gray-300 flex items-center justify-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 14l9-5-9-5-9 5 9 5zM12 14v7M5 12v5a7 7 0 0014 0v-5" />
+                          </svg>
+                        </div>
+                        <span className="text-sm font-bold text-center">{u.name}</span>
                       </div>
-                      <span className="text-sm font-bold text-center">{u.name}</span>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -240,8 +280,10 @@ export default function SignupPage() {
                 {/* 공통: 비밀번호 */}
                 <div>
                   <label className="block text-sm font-medium mb-1">비밀번호</label>
-                  <input type="password" placeholder="비밀번호 입력" value={pw} onChange={e => setPw(e.target.value)}
+                  <input type="password" placeholder="8자 이상, 영문+숫자+특수문자 필수" value={pw} onChange={e => setPw(e.target.value)}
                     className="w-full border-2 border-black px-3 py-2 text-sm outline-none focus:bg-gray-50" />
+                  {pw && pwError() && <p className="text-xs text-red-600 mt-1">{pwError()}</p>}
+                  {pw && !pwError() && <p className="text-xs text-green-600 mt-1">✅ 사용 가능한 비밀번호입니다.</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">비밀번호 확인</label>
@@ -289,7 +331,7 @@ export default function SignupPage() {
                       <select value={college} onChange={e => { setCollege(e.target.value); setDepartment('') }}
                         className="w-full border-2 border-black px-3 py-2 text-sm outline-none bg-white">
                         <option value="">선택해주세요</option>
-                        {selectedUniv && COLLEGES[selectedUniv]?.map(c => <option key={c} value={c}>{c}</option>)}
+                        {collegeOptions.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
                     </div>
                     <div>
@@ -297,7 +339,7 @@ export default function SignupPage() {
                       <select value={department} onChange={e => setDepartment(e.target.value)} disabled={!college}
                         className="w-full border-2 border-black px-3 py-2 text-sm outline-none bg-white disabled:opacity-40">
                         <option value="">선택해주세요</option>
-                        {college && DEPARTMENTS[college]?.map(d => <option key={d} value={d}>{d}</option>)}
+                        {deptOptions.map(d => <option key={d} value={d}>{d}</option>)}
                       </select>
                     </div>
                   </>

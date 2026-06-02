@@ -12,13 +12,15 @@ import {
   fetchSchoolStats, fetchSchoolVisitors, fetchSchoolPosts,
   deleteSchoolPost, updateSchoolUserRole,
   fetchSchoolAllUsers, fetchSchoolPendingUsers, updateUserStatus,
-  fetchAdminLogs, fetchSchoolMonthlyStats,
+  fetchSchoolMonthlyStats,
   fetchSchoolProfessors, fetchSchoolCourses, fetchSchoolAssignments,
-  createSchoolAssignment, deleteSchoolAssignment,
+  createSchoolAssignment, deleteSchoolAssignment, fetchSchoolDepts,
+  fetchSchoolAdminNotices, deleteSchoolAdminNotice,
+  hideSchoolPost, hideSchoolNotice,
 } from '../../api/adminSchool'
 import type {
-  SchoolStats, VisitorPoint, PostItem, AdminUser, AdminLog, MonthlyStats,
-  ProfessorItem, CourseItem, AssignmentItem,
+  SchoolStats, VisitorPoint, PostItem, NoticeItem, AdminUser, MonthlyStats,
+  ProfessorItem, CourseItem, AssignmentItem, DeptItem,
 } from '../../api/adminSchool'
 
 ChartJS.register(
@@ -26,8 +28,8 @@ ChartJS.register(
   BarElement, ArcElement, Title, Tooltip, Legend, Filler
 )
 
-type Tab = '개요' | '게시글 관리' | '전체 사용자' | '가입 승인' | '활동 로그' | '교수 배정'
-const TABS: Tab[] = ['개요', '게시글 관리', '전체 사용자', '가입 승인', '활동 로그', '교수 배정']
+type Tab = '개요' | '게시글 관리' | '공지 관리' | '전체 사용자' | '가입 승인' | '교수 배정'
+const TABS: Tab[] = ['개요', '게시글 관리', '공지 관리', '전체 사용자', '가입 승인', '교수 배정']
 
 export default function SchoolAdminPage() {
   const navigate = useNavigate()
@@ -41,9 +43,11 @@ export default function SchoolAdminPage() {
   const [visitors, setVisitors]     = useState<VisitorPoint[]>([])
   const [monthly, setMonthly]       = useState<MonthlyStats[]>([])
   const [posts, setPosts]           = useState<PostItem[]>([])
+  const [notices, setNotices]       = useState<NoticeItem[]>([])
+  const [noticePage, setNoticePage] = useState(0)
+  const [noticeTotalPages, setNoticeTotalPages] = useState(1)
   const [allUsers, setAllUsers]     = useState<AdminUser[]>([])
   const [pending, setPending]       = useState<AdminUser[]>([])
-  const [logs, setLogs]             = useState<AdminLog[]>([])
   const [page, setPage]             = useState(0)
   const [totalPages, setTotalPages] = useState(1)
   const [loading, setLoading]       = useState(true)
@@ -51,11 +55,14 @@ export default function SchoolAdminPage() {
   const [professors, setProfessors]   = useState<ProfessorItem[]>([])
   const [courses, setCourses]         = useState<CourseItem[]>([])
   const [assignments, setAssignments] = useState<AssignmentItem[]>([])
+  const [depts, setDepts]             = useState<DeptItem[]>([])
   const [selProfId, setSelProfId]         = useState<number | ''>('')
   const [selCourseId, setSelCourseId]     = useState<number | ''>('')
   const [selDeptId, setSelDeptId]         = useState<number | ''>('')
   const [assignError, setAssignError]     = useState<string | null>(null)
   const [roleModalUser, setRoleModalUser] = useState<AdminUser | null>(null)
+  const [showExtProf, setShowExtProf]     = useState(false)
+  const [extProfSearch, setExtProfSearch] = useState('')
 
   useEffect(() => {
     Promise.all([
@@ -64,10 +71,9 @@ export default function SchoolAdminPage() {
       fetchSchoolMonthlyStats(univId),
       fetchSchoolAllUsers(univId),
       fetchSchoolPendingUsers(univId),
-      fetchAdminLogs(univId),
-    ]).then(([s, v, m, au, pu, lg]) => {
+    ]).then(([s, v, m, au, pu]) => {
       setStats(s); setVisitors(v); setMonthly(m)
-      setAllUsers(au); setPending(pu); setLogs(lg)
+      setAllUsers(au); setPending(pu)
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [])
@@ -80,12 +86,20 @@ export default function SchoolAdminPage() {
   }, [page])
 
   useEffect(() => {
+    fetchSchoolAdminNotices(noticePage, univId).then(data => {
+      setNotices(data.notices)
+      setNoticeTotalPages(data.totalPages)
+    })
+  }, [noticePage])
+
+  useEffect(() => {
     if (tab !== '교수 배정') return
     Promise.all([
       fetchSchoolProfessors(univId),
       fetchSchoolCourses(univId),
       fetchSchoolAssignments(univId),
-    ]).then(([p, c, a]) => { setProfessors(p); setCourses(c); setAssignments(a) })
+      fetchSchoolDepts(univId),
+    ]).then(([p, c, a, d]) => { setProfessors(p); setCourses(c); setAssignments(a); setDepts(d) })
   }, [tab, univId])
 
   const handleDeletePost = async (postId: number) => {
@@ -94,12 +108,27 @@ export default function SchoolAdminPage() {
     fetchSchoolPosts(page, univId).then(d => { setPosts(d.posts); setTotalPages(d.totalPages) })
   }
 
+  const handleHidePost = async (postId: number, hidden: boolean) => {
+    await hideSchoolPost(postId, hidden, univId)
+    setPosts(prev => prev.map(p => p.id === postId ? { ...p, hidden } : p))
+  }
+
+  const handleDeleteNotice = async (noticeId: number) => {
+    if (!window.confirm('공지사항을 삭제하시겠습니까?')) return
+    await deleteSchoolAdminNotice(noticeId, univId)
+    fetchSchoolAdminNotices(noticePage, univId).then(d => { setNotices(d.notices); setNoticeTotalPages(d.totalPages) })
+  }
+
+  const handleHideNotice = async (noticeId: number, hidden: boolean) => {
+    await hideSchoolNotice(noticeId, hidden, univId)
+    setNotices(prev => prev.map(n => n.id === noticeId ? { ...n, hidden } : n))
+  }
+
   const handleStatusChange = async (userId: number, newStatus: string) => {
     if (newStatus === 'DELETED' && !window.confirm('삭제는 되돌릴 수 없습니다. 계속하시겠습니까?')) return
     await updateUserStatus(userId, newStatus, univId)
     const [au, pu] = await Promise.all([fetchSchoolAllUsers(univId), fetchSchoolPendingUsers(univId)])
     setAllUsers(au); setPending(pu)
-    fetchAdminLogs(univId).then(setLogs)
   }
 
   const handleSaveRole = async (userId: number, newRole: string) => {
@@ -277,8 +306,9 @@ export default function SchoolAdminPage() {
                 </thead>
                 <tbody>
                   {posts.map((p, i) => (
-                    <tr key={p.id} className={`border-b border-gray-100 ${i % 2 === 0 ? 'bg-gray-50/50' : ''}`}>
+                    <tr key={p.id} className={`border-b border-gray-100 ${p.hidden ? 'opacity-50' : ''} ${i % 2 === 0 ? 'bg-gray-50/50' : ''}`}>
                       <td className="py-3 pr-4 max-w-xs truncate">
+                        {p.hidden && <span className="mr-1.5 text-xs bg-gray-400 text-white px-1.5 py-0.5">숨김</span>}
                         <a href={`/post/${p.id}`} target="_blank" rel="noreferrer" className="hover:underline">{p.title}</a>
                       </td>
                       <td className="py-3 pr-4 text-gray-500">{p.author}</td>
@@ -287,7 +317,11 @@ export default function SchoolAdminPage() {
                       </td>
                       <td className="py-3 pr-4 text-gray-400">{p.viewCount}</td>
                       <td className="py-3 pr-4 text-gray-400 text-xs">{p.createdDate?.slice(0, 10)}</td>
-                      <td className="py-3">
+                      <td className="py-3 flex gap-1.5">
+                        <button
+                          onClick={() => handleHidePost(p.id, !p.hidden)}
+                          className={`text-xs border px-3 py-1 transition ${p.hidden ? 'border-blue-300 text-blue-500 hover:bg-blue-50' : 'border-gray-400 text-gray-600 hover:bg-gray-50'}`}
+                        >{p.hidden ? '표시' : '숨김'}</button>
                         <button
                           onClick={() => handleDeletePost(p.id)}
                           className="text-xs border border-red-300 text-red-500 px-3 py-1 hover:bg-red-50 transition"
@@ -308,6 +342,68 @@ export default function SchoolAdminPage() {
                     key={i} onClick={() => setPage(i)}
                     className={`w-8 h-8 text-xs border transition ${
                       page === i ? 'bg-black text-white border-black' : 'border-gray-300 hover:border-black'
+                    }`}
+                  >{i + 1}</button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {tab === '공지 관리' && (
+          <div className="border-2 border-black p-6">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">공지사항 관리</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b-2 border-black text-xs uppercase tracking-wide text-gray-500">
+                    <th className="text-left pb-3 pr-4">제목</th>
+                    <th className="text-left pb-3 pr-4">작성자</th>
+                    <th className="text-left pb-3 pr-4">카테고리</th>
+                    <th className="text-left pb-3 pr-4">조회수</th>
+                    <th className="text-left pb-3 pr-4">작성일</th>
+                    <th className="text-left pb-3">관리</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {notices.map((n, i) => (
+                    <tr key={n.id} className={`border-b border-gray-100 ${n.hidden ? 'opacity-50' : ''} ${i % 2 === 0 ? 'bg-gray-50/50' : ''}`}>
+                      <td className="py-3 pr-4 max-w-xs truncate">
+                        {n.featured && <span className="mr-1.5 text-xs bg-black text-white px-1.5 py-0.5">고정</span>}
+                        {n.hidden && <span className="mr-1.5 text-xs bg-gray-400 text-white px-1.5 py-0.5">숨김</span>}
+                        <a href={`/notice/${n.id}`} target="_blank" rel="noreferrer" className="hover:underline">{n.title}</a>
+                      </td>
+                      <td className="py-3 pr-4 text-gray-500">{n.author}</td>
+                      <td className="py-3 pr-4">
+                        <span className="border border-gray-300 px-2 py-0.5 text-xs">{n.category}</span>
+                      </td>
+                      <td className="py-3 pr-4 text-gray-400">{n.viewCount}</td>
+                      <td className="py-3 pr-4 text-gray-400 text-xs">{n.createdDate?.slice(0, 10)}</td>
+                      <td className="py-3 flex gap-1.5">
+                        <button
+                          onClick={() => handleHideNotice(n.id, !n.hidden)}
+                          className={`text-xs border px-3 py-1 transition ${n.hidden ? 'border-blue-300 text-blue-500 hover:bg-blue-50' : 'border-gray-400 text-gray-600 hover:bg-gray-50'}`}
+                        >{n.hidden ? '표시' : '숨김'}</button>
+                        <button
+                          onClick={() => handleDeleteNotice(n.id)}
+                          className="text-xs border border-red-300 text-red-500 px-3 py-1 hover:bg-red-50 transition"
+                        >삭제</button>
+                      </td>
+                    </tr>
+                  ))}
+                  {notices.length === 0 && (
+                    <tr><td colSpan={6} className="py-8 text-center text-gray-400 text-sm">공지사항이 없습니다.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            {noticeTotalPages > 1 && (
+              <div className="flex gap-1.5 mt-5 justify-center">
+                {Array.from({ length: noticeTotalPages }, (_, i) => (
+                  <button
+                    key={i} onClick={() => setNoticePage(i)}
+                    className={`w-8 h-8 text-xs border transition ${
+                      noticePage === i ? 'bg-black text-white border-black' : 'border-gray-300 hover:border-black'
                     }`}
                   >{i + 1}</button>
                 ))}
@@ -428,41 +524,8 @@ export default function SchoolAdminPage() {
           </div>
         )}
 
-        {tab === '활동 로그' && (
-          <div className="border-2 border-black p-6">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">관리자 활동 로그</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b-2 border-black text-xs uppercase tracking-wide text-gray-500">
-                    <th className="text-left pb-3 pr-4">액션</th>
-                    <th className="text-left pb-3 pr-4">처리자</th>
-                    <th className="text-left pb-3 pr-4">대상</th>
-                    <th className="text-left pb-3 pr-4">내용</th>
-                    <th className="text-left pb-3">시각</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {logs.map((log, i) => (
-                    <tr key={log.id} className={`border-b border-gray-100 ${i % 2 === 0 ? 'bg-gray-50/50' : ''}`}>
-                      <td className="py-3 pr-4"><ActionBadge action={log.actionType} /></td>
-                      <td className="py-3 pr-4 text-gray-500">{log.actorUsername}</td>
-                      <td className="py-3 pr-4 text-gray-500">{log.targetUsername ?? '-'}</td>
-                      <td className="py-3 pr-4 text-gray-400 text-xs max-w-xs truncate">{log.detail ?? '-'}</td>
-                      <td className="py-3 text-gray-400 text-xs whitespace-nowrap">{relativeTime(log.createdAt)}</td>
-                    </tr>
-                  ))}
-                  {logs.length === 0 && (
-                    <tr><td colSpan={5} className="py-8 text-center text-gray-400 text-sm">활동 로그가 없습니다.</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
 
         {tab === '교수 배정' && (() => {
-          const uniqueDeptIds = [...new Set(professors.map(p => p.deptId))]
           return (
             <div className="space-y-6">
               <div className="border-2 border-black p-6">
@@ -480,25 +543,60 @@ export default function SchoolAdminPage() {
                       className="border border-gray-300 text-sm px-3 py-2 focus:outline-none focus:border-black min-w-40"
                     >
                       <option value="">-- 학과 --</option>
-                      {uniqueDeptIds.map(did => (
-                        <option key={did} value={did}>학과 #{did}</option>
+                      {depts.map(dept => (
+                        <option key={dept.id} value={dept.id}>{dept.name}</option>
                       ))}
                     </select>
                   </div>
                   <div className="flex flex-col gap-1">
                     <label className="text-xs text-gray-500">교수 선택</label>
-                    <select
-                      value={selProfId}
-                      onChange={e => setSelProfId(e.target.value === '' ? '' : Number(e.target.value))}
-                      className="border border-gray-300 text-sm px-3 py-2 focus:outline-none focus:border-black min-w-48"
-                    >
-                      <option value="">-- 교수 --</option>
-                      {professors
-                        .filter(p => selDeptId === '' || p.deptId === selDeptId)
-                        .map(p => (
-                          <option key={p.id} value={p.id}>{p.name}{p.specialty ? ` (${p.specialty})` : ''}</option>
-                        ))}
-                    </select>
+                    <div className="flex gap-2 items-center">
+                      <select
+                        value={selProfId}
+                        onChange={e => setSelProfId(e.target.value === '' ? '' : Number(e.target.value))}
+                        className="border border-gray-300 text-sm px-3 py-2 focus:outline-none focus:border-black min-w-48"
+                      >
+                        <option value="">-- 교수 --</option>
+                        {professors
+                          .filter(p => selDeptId === '' || p.deptId === selDeptId)
+                          .map(p => (
+                            <option key={p.id} value={p.id}>{p.name}{p.specialty ? ` (${p.specialty})` : ''}</option>
+                          ))}
+                      </select>
+                      <button
+                        onClick={() => { setShowExtProf(v => !v); setExtProfSearch('') }}
+                        className="text-xs border border-gray-400 px-3 py-2 hover:bg-gray-50 transition whitespace-nowrap"
+                      >
+                        {showExtProf ? '닫기' : '다른 소속 교수'}
+                      </button>
+                    </div>
+                    {showExtProf && (
+                      <div className="mt-2 border border-gray-300 rounded p-3 w-80 bg-white shadow-sm">
+                        <p className="text-xs text-gray-500 mb-2">학교 전체 교수 검색 (소속 무관)</p>
+                        <input
+                          value={extProfSearch}
+                          onChange={e => setExtProfSearch(e.target.value)}
+                          placeholder="교수명 검색"
+                          className="w-full border border-gray-300 text-sm px-2 py-1.5 mb-2 focus:outline-none focus:border-black"
+                        />
+                        <div className="max-h-48 overflow-y-auto flex flex-col gap-0.5">
+                          {professors
+                            .filter(p => !extProfSearch || p.name.includes(extProfSearch))
+                            .map(p => (
+                              <button
+                                key={p.id}
+                                onClick={() => { setSelProfId(p.id); setShowExtProf(false) }}
+                                className={`text-left text-xs px-2 py-1.5 hover:bg-gray-100 transition rounded ${selProfId === p.id ? 'bg-black text-white' : ''}`}
+                              >
+                                {p.name}{p.specialty ? ` (${p.specialty})` : ''}
+                              </button>
+                            ))}
+                          {professors.filter(p => !extProfSearch || p.name.includes(extProfSearch)).length === 0 && (
+                            <p className="text-xs text-gray-400 text-center py-2">검색 결과 없음</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div className="flex flex-col gap-1">
                     <label className="text-xs text-gray-500">강의 선택</label>
@@ -601,28 +699,3 @@ function StatusBadge({ status }: { status: string }) {
   )
 }
 
-function ActionBadge({ action }: { action: string }) {
-  const map: Record<string, string> = {
-    APPROVE:     'bg-green-100 text-green-700',
-    REJECT:      'bg-red-100 text-red-700',
-    SUSPEND:     'bg-orange-100 text-orange-700',
-    UNSUSPEND:   'bg-blue-100 text-blue-700',
-    DELETE:      'bg-red-100 text-red-700',
-    ROLE_GRANT:  'bg-indigo-100 text-indigo-700',
-    ROLE_REVOKE: 'bg-gray-100 text-gray-600',
-  }
-  const cls = map[action] ?? 'bg-gray-100 text-gray-600'
-  return (
-    <span className={`text-xs px-2 py-0.5 font-mono font-medium ${cls}`}>{action}</span>
-  )
-}
-
-function relativeTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime()
-  const mins = Math.floor(diff / 60_000)
-  if (mins < 1) return '방금 전'
-  if (mins < 60) return `${mins}분 전`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}시간 전`
-  return `${Math.floor(hrs / 24)}일 전`
-}

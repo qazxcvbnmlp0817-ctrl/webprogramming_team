@@ -120,11 +120,40 @@ public class FacultyAdminController {
         return ResponseEntity.ok(adminService.deleteFacultyNotice(noticeId, id, resolveActor(username)));
     }
 
+    @PutMapping("/posts/{postId}/hidden")
+    public ResponseEntity<Map<String, Object>> setPostHidden(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @PathVariable Long postId,
+            @RequestParam(required = false) Long facultyId,
+            @RequestBody Map<String, Boolean> body) {
+        resolveFacultyId(username, facultyId);
+        boolean hidden = Boolean.TRUE.equals(body.get("hidden"));
+        return ResponseEntity.ok(adminService.setPostHidden(postId, hidden, resolveActor(username)));
+    }
+
+    @PutMapping("/notices/{noticeId}/hidden")
+    public ResponseEntity<Map<String, Object>> setNoticeHidden(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @PathVariable Long noticeId,
+            @RequestParam(required = false) Long facultyId,
+            @RequestBody Map<String, Boolean> body) {
+        resolveFacultyId(username, facultyId);
+        boolean hidden = Boolean.TRUE.equals(body.get("hidden"));
+        return ResponseEntity.ok(adminService.setNoticeHidden(noticeId, hidden, resolveActor(username)));
+    }
+
     @GetMapping("/users")
     public ResponseEntity<List<Map<String, Object>>> getUsers(
             @RequestHeader(value = "X-Username", required = false) String username,
             @RequestParam(required = false) Long facultyId) {
         return ResponseEntity.ok(adminService.getFacultyUsers(resolveFacultyId(username, facultyId)));
+    }
+
+    @GetMapping("/pending-users")
+    public ResponseEntity<List<Map<String, Object>>> getPendingUsers(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @RequestParam(required = false) Long facultyId) {
+        return ResponseEntity.ok(adminService.getFacultyPendingUsers(resolveFacultyId(username, facultyId)));
     }
 
     @PutMapping("/users/{userId}/status")

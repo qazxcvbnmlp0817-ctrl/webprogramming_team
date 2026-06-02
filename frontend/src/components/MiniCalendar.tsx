@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react'
-import type { ScheduleDto } from '../types/schedule'
 
 const DAYS = ['일', '월', '화', '수', '목', '금', '토']
 
@@ -12,7 +11,14 @@ export function buildCalendarGrid(year: number, month: number): (number | null)[
   return Array.from({ length: 6 }, (_, i) => cells.slice(i * 7, i * 7 + 7))
 }
 
-export function getEventsForDate(schedules: ScheduleDto[], dateStr: string): ScheduleDto[] {
+export interface CalItem {
+  id: string | number
+  title: string
+  date: string
+  category?: string
+}
+
+export function getEventsForDate(schedules: CalItem[], dateStr: string): CalItem[] {
   return schedules.filter(s => {
     if (isNaN(new Date(s.date).getTime())) return false
     return s.date === dateStr
@@ -22,7 +28,7 @@ export function getEventsForDate(schedules: ScheduleDto[], dateStr: string): Sch
 function pad(n: number) { return String(n).padStart(2, '0') }
 function toDateStr(y: number, m: number, d: number) { return `${y}-${pad(m)}-${pad(d)}` }
 
-interface Props { schedules: ScheduleDto[] }
+interface Props { schedules: CalItem[] }
 
 export default function MiniCalendar({ schedules }: Props) {
   const now = new Date()
@@ -55,7 +61,7 @@ export default function MiniCalendar({ schedules }: Props) {
   }
 
   const eventsByDate = useMemo(() => {
-    const map = new Map<string, ScheduleDto[]>()
+    const map = new Map<string, CalItem[]>()
     schedules.forEach(s => {
       if (isNaN(new Date(s.date).getTime())) return
       const arr = map.get(s.date) ?? []

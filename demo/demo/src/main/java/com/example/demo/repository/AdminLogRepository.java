@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface AdminLogRepository extends JpaRepository<AdminLog, Long> {
     List<AdminLog> findTop50ByUniversityIdOrderByCreatedAtDesc(Long universityId);
+    List<AdminLog> findTop200ByOrderByCreatedAtDesc();
 }

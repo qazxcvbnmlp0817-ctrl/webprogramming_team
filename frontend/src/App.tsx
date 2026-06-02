@@ -43,6 +43,23 @@ import SchoolAdminPage  from './pages/admin/SchoolAdminPage'
 import DeptAdminPage    from './pages/admin/DeptAdminPage'
 import FacultyAdminPage from './pages/admin/FacultyAdminPage'
 import CalendarPage from './pages/CalendarPage'
+import TimetablePage from './pages/TimetablePage'
+import { isLoggedIn as checkLoggedIn } from './utils/accessCheck'
+import { useEffect } from 'react'
+
+function CalendarRouter() {
+  const [loggedIn, setLoggedIn] = useState(() => checkLoggedIn())
+  useEffect(() => {
+    const sync = () => setLoggedIn(checkLoggedIn())
+    window.addEventListener('loginChanged', sync)
+    window.addEventListener('storage', sync)
+    return () => {
+      window.removeEventListener('loginChanged', sync)
+      window.removeEventListener('storage', sync)
+    }
+  }, [])
+  return loggedIn ? <CalendarPage /> : <SchedulePage />
+}
 
 function ProtectedSchool({ children }: { children: ReactNode }) {
   const { selectedUniversityId } = useDept()
@@ -85,20 +102,10 @@ export default function App() {
     () => !!sessionStorage.getItem('intro_shown')
   )
 
-  if (!introShown) {
-    return (
-      <IntroAnimation
-        onComplete={() => {
-          sessionStorage.setItem('intro_shown', '1')
-          setIntroShown(true)
-        }}
-      />
-    )
-  }
-
   return (
     <DeptProvider>
       <BrowserRouter>
+        {/* 인트로가 끝나기 전에도 실제 페이지를 미리 렌더링 — 번쩍임 방지 */}
         <div className="min-h-screen flex flex-col">
           <div className="flex-1">
             <Routes>
@@ -132,12 +139,14 @@ export default function App() {
           <Route path="/dept/board"       element={<ProtectedDept><BoardPage /></ProtectedDept>} />
           <Route path="/dept/board/write" element={<ProtectedDept><WritePostPage /></ProtectedDept>} />
           <Route path="/dept/schedule"   element={<ProtectedDept><SchedulePage /></ProtectedDept>} />
+          <Route path="/dept/timetable"  element={<ProtectedDept><TimetablePage /></ProtectedDept>} />
           <Route path="/dept/department" element={<ProtectedDept><DepartmentPage /></ProtectedDept>} />
 
           {/* 이전 경로 호환성 리다이렉트 */}
           <Route path="/notice"     element={<Navigate to="/dept/notice"     replace />} />
           <Route path="/board"      element={<Navigate to="/dept/board"      replace />} />
           <Route path="/schedule"   element={<Navigate to="/dept/schedule"   replace />} />
+          <Route path="/timetable"  element={<TimetablePage />} />
           <Route path="/department" element={<Navigate to="/dept/department" replace />} />
           <Route path="/universities/:univId/notices"  element={<Navigate to="/school/notice"   replace />} />
           <Route path="/universities/:univId/board"    element={<Navigate to="/school/board"    replace />} />
@@ -149,7 +158,7 @@ export default function App() {
           <Route path="/mypage"        element={<MyPage />} />
           <Route path="/find-id"       element={<FindIdPage />} />
           <Route path="/find-password" element={<FindPasswordPage />} />
-          <Route path="/calendar"      element={<CalendarPage />} />
+          <Route path="/calendar"      element={<CalendarRouter />} />
 
           {/* 어드민 페이지 */}
           <Route path="/admin/super"      element={<ProtectedSuperAdmin><SuperAdminPage /></ProtectedSuperAdmin>} />
@@ -169,6 +178,15 @@ export default function App() {
           <Footer />
         </div>
       </BrowserRouter>
+      {/* 인트로 오버레이 — fixed로 페이지 위에 덮고, 끝나면 언마운트 */}
+      {!introShown && (
+        <IntroAnimation
+          onComplete={() => {
+            sessionStorage.setItem('intro_shown', '1')
+            setIntroShown(true)
+          }}
+        />
+      )}
     </DeptProvider>
   )
 }

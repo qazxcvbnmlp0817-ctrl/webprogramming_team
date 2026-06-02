@@ -23,6 +23,7 @@ public class SpaController {
         "/school/board",
         "/school/board/write",
         "/school/schedule",
+        "/school/timetable",
         "/school/info",
         // 학부(faculty) 범위
         "/school/faculty/{facultyId:[0-9]+}",
@@ -31,6 +32,7 @@ public class SpaController {
         "/school/faculty/{facultyId:[0-9]+}/board",
         "/school/faculty/{facultyId:[0-9]+}/board/write",
         "/school/faculty/{facultyId:[0-9]+}/schedule",
+        "/school/faculty/{facultyId:[0-9]+}/timetable",
         // 학과(dept) 범위
         "/dept/home",
         "/dept/notice",
@@ -38,23 +40,34 @@ public class SpaController {
         "/dept/board",
         "/dept/board/write",
         "/dept/schedule",
+        "/dept/timetable",
         "/dept/department",
         // 레거시 리다이렉트 경로
         "/notice",
         "/board",
         "/schedule",
+        "/timetable",
         "/department",
         // 게시글 상세 / 수정
         "/post/{postId:[0-9]+}",
         "/post/{postId:[0-9]+}/edit",
+        // 공지사항 상세 / 수정
+        "/notice/{noticeId:[0-9]+}",
+        "/notice/{noticeId:[0-9]+}/edit",
         // 인증
         "/login",
         "/signup",
         "/mypage",
         "/find-id",
         "/find-password",
-        // 개인 캘린더 (localStorage 기반)
-        "/calendar"
+        // 개인 캘린더
+        "/calendar",
+        "/timetable",
+        // 관리자 페이지
+        "/admin/super",
+        "/admin/school/{id:[0-9]+}",
+        "/admin/dept/{id:[0-9]+}",
+        "/admin/faculty/{id:[0-9]+}"
     })
     public String forward() {
         return "forward:/index.html";

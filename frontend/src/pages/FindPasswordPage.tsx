@@ -1,13 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 
 const STEP_LABELS = ['본인 확인', '새 비밀번호 설정', '완료']
-
-const COLLEGES: Record<string, string[]> = {
-  mokpo: ['공과대학', '인문사회과학대학', '자연과학대학', '경영대학'],
-  suncheon: ['공과대학', '인문예술대학', '자연과학대학', '농업생명과학대학'],
-}
 
 const EMPLOYEE_OFFICES = [
   '교무처', '학생취업처', '기획처', '산학연구처', '입학처',
@@ -19,25 +14,58 @@ export default function FindPasswordPage() {
   const [step, setStep] = useState(1)
   const [memberType, setMemberType] = useState<'student' | 'staff' | 'admin'>('student')
   const [staffRole, setStaffRole] = useState<'professor' | 'employee' | 'assistant' | ''>('')
-  const [username, setUsername] = useState('')
-  const [name, setName] = useState('')
-  const [univ, setUniv] = useState('')
-  const [college, setCollege] = useState('')
+  interface UnivOption { id: number; name: string }
+  interface UnivDetail {
+    id: number; name: string
+    schools: { id: number; name: string; faculties: { id: number; name: string; depts: { id: number; name: string }[] }[] }[]
+  }
+
+  const [username, setUsername]   = useState('')
+  const [name, setName]           = useState('')
   const [studentId, setStudentId] = useState('')
-  const [employeeId, setEmployeeId] = useState('')
+  const [employeeId, setEmployeeId]     = useState('')
   const [employeeOffice, setEmployeeOffice] = useState('')
-  const [newPw, setNewPw] = useState('')
+  const [newPw, setNewPw]         = useState('')
   const [newPwConfirm, setNewPwConfirm] = useState('')
-  const [showPw, setShowPw] = useState(false)
+  const [showPw, setShowPw]       = useState(false)
   const [showPwConfirm, setShowPwConfirm] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError]         = useState('')
+
+  // 대학→단과대→학과 계단식
+  const [univList, setUnivList]         = useState<UnivOption[]>([])
+  const [univDetail, setUnivDetail]     = useState<UnivDetail | null>(null)
+  const [selectedUnivId, setSelectedUnivId] = useState<number | null>(null)
+  const [college, setCollege]           = useState('')
+  const [department, setDepartment]     = useState('')
+
+  useEffect(() => {
+    fetch('/api/universities')
+      .then(r => r.ok ? r.json() : [])
+      .then((data: UnivOption[]) => setUnivList(data))
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    if (!selectedUnivId) { setUnivDetail(null); return }
+    fetch(`/api/universities/${selectedUnivId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then((data: UnivDetail | null) => setUnivDetail(data))
+      .catch(() => {})
+    setCollege(''); setDepartment('')
+  }, [selectedUnivId])
+
+  const collegeOptions = univDetail?.schools.map(s => s.name) ?? []
+  const deptOptions = college
+    ? (univDetail?.schools.find(s => s.name === college)?.faculties
+        .flatMap(f => f.depts.map(d => d.name)) ?? [])
+    : []
 
   const isAdmin    = memberType === 'admin'
   const isEmployee = memberType === 'staff' && staffRole === 'employee'
   const isStaffNonEmployee = memberType === 'staff' && (staffRole === 'professor' || staffRole === 'assistant')
 
   const reset = () => {
-    setStaffRole(''); setUniv(''); setCollege('')
+    setStaffRole(''); setSelectedUnivId(null); setCollege(''); setDepartment('')
     setStudentId(''); setEmployeeId(''); setEmployeeOffice(''); setError('')
   }
 
@@ -45,17 +73,19 @@ export default function FindPasswordPage() {
     if (!username || !name) { setError('아이디와 이름을 입력해주세요.'); return }
     if (memberType === 'staff' && !staffRole) { setError('교직원 구분을 선택해주세요.'); return }
     if (isEmployee && (!employeeId || !employeeOffice)) { setError('교번과 소속 부서를 입력해주세요.'); return }
-    if (!isAdmin && !isEmployee && (!univ || !college || !studentId)) { setError('소속 대학, 단과대, 학번/교번을 모두 입력해주세요.'); return }
+    if (!isAdmin && !isEmployee && !studentId) { setError('학번/교번을 입력해주세요.'); return }
 
     try {
       const res = await fetch('/api/auth/find-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          username, name,
-          universityId: isAdmin || isEmployee ? null : univ,
-          college: isAdmin || isEmployee ? null : college,
-          studentId: isEmployee ? employeeId : (isAdmin ? null : studentId),
+          username,
+          name,
+          universityId: isAdmin || isEmployee ? null : (selectedUnivId ? String(selectedUnivId) : null),
+          college:      isAdmin || isEmployee ? null : (college || null),
+          department:   isAdmin || isEmployee ? null : (department || null),
+          studentId:    isEmployee ? employeeId : (isAdmin ? null : studentId),
         }),
       })
       const result = await res.json()
@@ -64,10 +94,19 @@ export default function FindPasswordPage() {
     } catch { setError('서버 연결에 실패했습니다.') }
   }
 
+  const pwValidError = (pw: string): string | null => {
+    if (pw.length < 8) return '비밀번호는 8자 이상이어야 합니다.'
+    if (!/[a-zA-Z]/.test(pw)) return '영문자를 포함해야 합니다.'
+    if (!/[0-9]/.test(pw)) return '숫자를 포함해야 합니다.'
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pw)) return '특수문자(!@#$% 등)를 포함해야 합니다.'
+    return null
+  }
+
   const handleStep2 = async () => {
     if (!newPw || !newPwConfirm) { setError('비밀번호를 입력해주세요.'); return }
     if (newPw !== newPwConfirm) { setError('비밀번호가 일치하지 않습니다.'); return }
-    if (newPw.length < 8) { setError('비밀번호는 8자 이상이어야 합니다.'); return }
+    const pwErr = pwValidError(newPw)
+    if (pwErr) { setError(pwErr); return }
     try {
       const res = await fetch('/api/auth/change-password', {
         method: 'POST',
@@ -172,29 +211,52 @@ export default function FindPasswordPage() {
                     className="w-full border-2 border-black px-3 py-2 text-sm outline-none focus:bg-gray-50" />
                 </div>
 
-                {/* 학생 / 교수 / 조교: 소속 대학, 단과대, 학번 */}
+                {/* 학생 / 교수 / 조교: 소속 대학→단과대→학과 계단식 */}
                 {(memberType === 'student' || isStaffNonEmployee) && (
                   <>
+                    {/* 소속 대학 */}
                     <div>
                       <label className="block text-sm font-medium mb-1">소속 대학</label>
-                      <select value={univ} onChange={e => { setUniv(e.target.value); setCollege(''); setError('') }}
+                      <select value={selectedUnivId ?? ''}
+                        onChange={e => { setSelectedUnivId(e.target.value ? Number(e.target.value) : null); setError('') }}
                         className="w-full border-2 border-black px-3 py-2 text-sm outline-none bg-white">
                         <option value="">선택해주세요</option>
-                        <option value="mokpo">국립목포대학교</option>
-                        <option value="suncheon">국립순천대학교</option>
+                        {univList.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                       </select>
                     </div>
+
+                    {/* 소속 단과대 / 학부 */}
                     <div>
                       <label className="block text-sm font-medium mb-1">소속 단과대 / 학부</label>
-                      <select value={college} onChange={e => { setCollege(e.target.value); setError('') }} disabled={!univ}
+                      <select value={college}
+                        onChange={e => { setCollege(e.target.value); setDepartment(''); setError('') }}
+                        disabled={!selectedUnivId}
                         className="w-full border-2 border-black px-3 py-2 text-sm outline-none bg-white disabled:opacity-40">
                         <option value="">선택해주세요</option>
-                        {univ && COLLEGES[univ]?.map(c => <option key={c} value={c}>{c}</option>)}
+                        {collegeOptions.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
                     </div>
+
+                    {/* 소속 학과 */}
                     <div>
-                      <label className="block text-sm font-medium mb-1">학번 / 교번</label>
-                      <input type="text" placeholder="학번 또는 교번 입력" value={studentId}
+                      <label className="block text-sm font-medium mb-1">소속 학과</label>
+                      <select value={department}
+                        onChange={e => { setDepartment(e.target.value); setError('') }}
+                        disabled={!college}
+                        className="w-full border-2 border-black px-3 py-2 text-sm outline-none bg-white disabled:opacity-40">
+                        <option value="">선택해주세요</option>
+                        {deptOptions.map(d => <option key={d} value={d}>{d}</option>)}
+                      </select>
+                    </div>
+
+                    {/* 학번 / 교번 */}
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        {memberType === 'student' ? '학번' : '교번'} <span className="text-red-500">*</span>
+                      </label>
+                      <input type="text"
+                        placeholder={memberType === 'student' ? '학번 입력' : '교번 입력'}
+                        value={studentId}
                         onChange={e => { setStudentId(e.target.value); setError('') }}
                         className="w-full border-2 border-black px-3 py-2 text-sm outline-none focus:bg-gray-50" />
                     </div>
@@ -235,7 +297,8 @@ export default function FindPasswordPage() {
                 <div>
                   <label className="block text-sm font-medium mb-1">새 비밀번호</label>
                   <div className="relative">
-                    <input type={showPw ? 'text' : 'password'} placeholder="비밀번호 입력" value={newPw}
+                    <input type={showPw ? 'text' : 'password'}
+                      placeholder="8자 이상, 영문+숫자+특수문자 필수" value={newPw}
                       onChange={e => { setNewPw(e.target.value); setError('') }}
                       className="w-full border-2 border-black px-3 py-2 pr-10 text-sm outline-none focus:bg-gray-50" />
                     <button type="button" onClick={() => setShowPw(!showPw)}
@@ -243,6 +306,12 @@ export default function FindPasswordPage() {
                       {showPw ? eyeOn : eyeOff}
                     </button>
                   </div>
+                  {newPw && pwValidError(newPw) && (
+                    <p className="text-xs text-red-600 mt-1">{pwValidError(newPw)}</p>
+                  )}
+                  {newPw && !pwValidError(newPw) && (
+                    <p className="text-xs text-green-600 mt-1">✅ 사용 가능한 비밀번호입니다.</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">새 비밀번호 확인</label>
@@ -260,10 +329,12 @@ export default function FindPasswordPage() {
                   )}
                 </div>
                 <div className="bg-gray-50 border border-gray-200 px-4 py-3 text-xs text-gray-500">
-                  <p className="font-medium text-gray-700 mb-1">비밀번호 안내</p>
+                  <p className="font-medium text-gray-700 mb-1">비밀번호 조건 (필수)</p>
                   <ul className="list-disc list-inside space-y-1">
-                    <li>8자 이상 16자 이하</li>
-                    <li>영문, 숫자, 특수문자를 포함하는 것을 권장합니다.</li>
+                    <li>8자 이상</li>
+                    <li>영문자 포함</li>
+                    <li>숫자 포함</li>
+                    <li>특수문자 포함 (!@#$%^&* 등)</li>
                   </ul>
                 </div>
                 {error && <p className="text-xs text-red-600 bg-red-50 border border-red-200 px-3 py-2">{error}</p>}

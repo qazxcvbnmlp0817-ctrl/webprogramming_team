@@ -13,4 +13,8 @@ export interface NoticeDto {
   attachments?: PostAttachmentDto[] | null
   authorUsername?: string | null
   commentCount?: number
+  isPublicToOutsiders?: boolean
+  scopeType?: string
+  scopeId?: number
+  hidden?: boolean
 }

@@ -1,6 +1,6 @@
 # React SPA 마이그레이션 구현 계획서
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Spring Boot + Thymeleaf 프로젝트를 Vite + React + TypeScript SPA로 전환하고, Spring Boot는 JSON REST API 서버로 전환한다.
 
@@ -74,7 +74,7 @@ demo/demo/src/main/java/com/example/demo/controller/
 **Files:**
 - Create: `frontend/` (프로젝트 전체)
 
-- [ ] **Step 1: Vite 프로젝트 생성 및 의존성 설치**
+- [x] **Step 1: Vite 프로젝트 생성 및 의존성 설치**
 
 프로젝트 루트(`webprogramming_team-main/`)에서 실행:
 
@@ -88,7 +88,7 @@ npx tailwindcss init -p
 npm install -D vitest @testing-library/react @testing-library/jest-dom @testing-library/user-event jsdom
 ```
 
-- [ ] **Step 2: `frontend/tailwind.config.js` 수정**
+- [x] **Step 2: `frontend/tailwind.config.js` 수정**
 
 ```js
 /** @type {import('tailwindcss').Config} */
@@ -99,7 +99,7 @@ export default {
 }
 ```
 
-- [ ] **Step 3: `frontend/src/index.css` 전체 교체**
+- [x] **Step 3: `frontend/src/index.css` 전체 교체**
 
 ```css
 @tailwind base;
@@ -111,7 +111,7 @@ body {
 }
 ```
 
-- [ ] **Step 4: `frontend/vite.config.ts` 전체 교체**
+- [x] **Step 4: `frontend/vite.config.ts` 전체 교체**
 
 ```ts
 /// <reference types="vitest" />
@@ -133,13 +133,13 @@ export default defineConfig({
 })
 ```
 
-- [ ] **Step 5: `frontend/src/test-setup.ts` 생성**
+- [x] **Step 5: `frontend/src/test-setup.ts` 생성**
 
 ```ts
 import '@testing-library/jest-dom'
 ```
 
-- [ ] **Step 6: `frontend/index.html` 전체 교체**
+- [x] **Step 6: `frontend/index.html` 전체 교체**
 
 ```html
 <!doctype html>
@@ -164,7 +164,7 @@ import '@testing-library/jest-dom'
 </html>
 ```
 
-- [ ] **Step 7: 빌드 확인**
+- [x] **Step 7: 빌드 확인**
 
 ```bash
 cd frontend && npm run build
@@ -172,7 +172,7 @@ cd frontend && npm run build
 
 Expected: `dist/` 생성, 에러 없음
 
-- [ ] **Step 8: 커밋**
+- [x] **Step 8: 커밋**
 
 ```bash
 cd .. && git add frontend/ && git commit -m "feat: initialize Vite React TS frontend project"
@@ -188,7 +188,7 @@ cd .. && git add frontend/ && git commit -m "feat: initialize Vite React TS fron
 - Create: `frontend/src/types/schedule.ts`
 - Create: `frontend/src/types/university.ts`
 
-- [ ] **Step 1: `frontend/src/types/notice.ts` 생성**
+- [x] **Step 1: `frontend/src/types/notice.ts` 생성**
 
 ```ts
 export interface NoticeDto {
@@ -202,7 +202,7 @@ export interface NoticeDto {
 }
 ```
 
-- [ ] **Step 2: `frontend/src/types/post.ts` 생성**
+- [x] **Step 2: `frontend/src/types/post.ts` 생성**
 
 ```ts
 export interface PostDto {
@@ -218,7 +218,7 @@ export interface PostDto {
 }
 ```
 
-- [ ] **Step 3: `frontend/src/types/schedule.ts` 생성**
+- [x] **Step 3: `frontend/src/types/schedule.ts` 생성**
 
 ```ts
 export interface ScheduleDto {
@@ -230,7 +230,7 @@ export interface ScheduleDto {
 }
 ```
 
-- [ ] **Step 4: `frontend/src/types/university.ts` 생성**
+- [x] **Step 4: `frontend/src/types/university.ts` 생성**
 
 ```ts
 export interface DeptSelectionDto {
@@ -262,7 +262,7 @@ export interface UniversityDto {
 }
 ```
 
-- [ ] **Step 5: TypeScript 타입 체크**
+- [x] **Step 5: TypeScript 타입 체크**
 
 ```bash
 cd frontend && npx tsc --noEmit
@@ -270,7 +270,7 @@ cd frontend && npx tsc --noEmit
 
 Expected: 에러 없음
 
-- [ ] **Step 6: 커밋**
+- [x] **Step 6: 커밋**
 
 ```bash
 cd .. && git add frontend/src/types/ && git commit -m "feat: add TypeScript DTO types"
@@ -285,7 +285,7 @@ cd .. && git add frontend/src/types/ && git commit -m "feat: add TypeScript DTO 
 
 Spring Boot 세션의 `selectedDeptName`, `selectedDeptId`, `selectedUniversityId`, `selectedUniversityName`, `selectedSchoolName`을 Context + localStorage로 대체한다.
 
-- [ ] **Step 1: `frontend/src/context/DeptContext.tsx` 생성**
+- [x] **Step 1: `frontend/src/context/DeptContext.tsx` 생성**
 
 ```tsx
 import { createContext, useContext, useState, ReactNode } from 'react'
@@ -353,7 +353,7 @@ export function useDept(): DeptContextType {
 }
 ```
 
-- [ ] **Step 2: TypeScript 체크**
+- [x] **Step 2: TypeScript 체크**
 
 ```bash
 cd frontend && npx tsc --noEmit
@@ -361,7 +361,7 @@ cd frontend && npx tsc --noEmit
 
 Expected: 에러 없음
 
-- [ ] **Step 3: 커밋**
+- [x] **Step 3: 커밋**
 
 ```bash
 cd .. && git add frontend/src/context/ && git commit -m "feat: add DeptContext for global dept selection state"
@@ -377,7 +377,7 @@ cd .. && git add frontend/src/context/ && git commit -m "feat: add DeptContext f
 - Create: `frontend/src/api/schedules.ts`
 - Create: `frontend/src/api/universities.ts`
 
-- [ ] **Step 1: `frontend/src/api/notices.ts` 생성**
+- [x] **Step 1: `frontend/src/api/notices.ts` 생성**
 
 ```ts
 import { NoticeDto } from '../types/notice'
@@ -389,7 +389,7 @@ export async function fetchNotices(): Promise<{ featured: NoticeDto; notices: No
 }
 ```
 
-- [ ] **Step 2: `frontend/src/api/posts.ts` 생성**
+- [x] **Step 2: `frontend/src/api/posts.ts` 생성**
 
 ```ts
 import { PostDto } from '../types/post'
@@ -401,7 +401,7 @@ export async function fetchPosts(): Promise<{ featured: PostDto; posts: PostDto[
 }
 ```
 
-- [ ] **Step 3: `frontend/src/api/schedules.ts` 생성**
+- [x] **Step 3: `frontend/src/api/schedules.ts` 생성**
 
 ```ts
 import { ScheduleDto } from '../types/schedule'
@@ -413,7 +413,7 @@ export async function fetchSchedules(): Promise<ScheduleDto[]> {
 }
 ```
 
-- [ ] **Step 4: `frontend/src/api/universities.ts` 생성**
+- [x] **Step 4: `frontend/src/api/universities.ts` 생성**
 
 ```ts
 import { UniversityDto } from '../types/university'
@@ -442,7 +442,7 @@ export async function fetchMainData(deptName: string): Promise<{
 }
 ```
 
-- [ ] **Step 5: TypeScript 체크**
+- [x] **Step 5: TypeScript 체크**
 
 ```bash
 cd frontend && npx tsc --noEmit
@@ -450,7 +450,7 @@ cd frontend && npx tsc --noEmit
 
 Expected: 에러 없음
 
-- [ ] **Step 6: 커밋**
+- [x] **Step 6: 커밋**
 
 ```bash
 cd .. && git add frontend/src/api/ && git commit -m "feat: add API fetch functions"
@@ -463,7 +463,7 @@ cd .. && git add frontend/src/api/ && git commit -m "feat: add API fetch functio
 **Files:**
 - Create: `frontend/src/components/Navbar.tsx`
 
-- [ ] **Step 1: 테스트 작성 — `frontend/src/components/Navbar.test.tsx`**
+- [x] **Step 1: 테스트 작성 — `frontend/src/components/Navbar.test.tsx`**
 
 ```tsx
 import { render, screen, fireEvent } from '@testing-library/react'
@@ -506,7 +506,7 @@ test('햄버거 버튼 클릭 시 모바일 메뉴가 토글된다', () => {
 })
 ```
 
-- [ ] **Step 2: 테스트 실패 확인**
+- [x] **Step 2: 테스트 실패 확인**
 
 ```bash
 cd frontend && npx vitest run src/components/Navbar.test.tsx
@@ -514,7 +514,7 @@ cd frontend && npx vitest run src/components/Navbar.test.tsx
 
 Expected: FAIL (Navbar not found)
 
-- [ ] **Step 3: `frontend/src/components/Navbar.tsx` 구현**
+- [x] **Step 3: `frontend/src/components/Navbar.tsx` 구현**
 
 ```tsx
 import { useState } from 'react'
@@ -604,7 +604,7 @@ export default function Navbar() {
 }
 ```
 
-- [ ] **Step 4: 테스트 통과 확인**
+- [x] **Step 4: 테스트 통과 확인**
 
 ```bash
 cd frontend && npx vitest run src/components/Navbar.test.tsx
@@ -612,7 +612,7 @@ cd frontend && npx vitest run src/components/Navbar.test.tsx
 
 Expected: PASS
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 
 ```bash
 cd .. && git add frontend/src/components/Navbar.tsx frontend/src/components/Navbar.test.tsx
@@ -626,7 +626,7 @@ git commit -m "feat: add Navbar component with active link and mobile menu"
 **Files:**
 - Create: `frontend/src/components/FilterTabs.tsx`
 
-- [ ] **Step 1: 테스트 작성 — `frontend/src/components/FilterTabs.test.tsx`**
+- [x] **Step 1: 테스트 작성 — `frontend/src/components/FilterTabs.test.tsx`**
 
 ```tsx
 import { render, screen, fireEvent } from '@testing-library/react'
@@ -671,7 +671,7 @@ test('탭 클릭 시 onChange가 호출된다', () => {
 })
 ```
 
-- [ ] **Step 2: 테스트 실패 확인**
+- [x] **Step 2: 테스트 실패 확인**
 
 ```bash
 cd frontend && npx vitest run src/components/FilterTabs.test.tsx
@@ -679,7 +679,7 @@ cd frontend && npx vitest run src/components/FilterTabs.test.tsx
 
 Expected: FAIL
 
-- [ ] **Step 3: `frontend/src/components/FilterTabs.tsx` 구현**
+- [x] **Step 3: `frontend/src/components/FilterTabs.tsx` 구현**
 
 ```tsx
 interface FilterTabsProps {
@@ -707,7 +707,7 @@ export default function FilterTabs({ tabs, active, onChange }: FilterTabsProps) 
 }
 ```
 
-- [ ] **Step 4: 테스트 통과 확인**
+- [x] **Step 4: 테스트 통과 확인**
 
 ```bash
 cd frontend && npx vitest run src/components/FilterTabs.test.tsx
@@ -715,7 +715,7 @@ cd frontend && npx vitest run src/components/FilterTabs.test.tsx
 
 Expected: PASS
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 
 ```bash
 cd .. && git add frontend/src/components/FilterTabs.tsx frontend/src/components/FilterTabs.test.tsx
@@ -729,7 +729,7 @@ git commit -m "feat: add FilterTabs component"
 **Files:**
 - Create: `frontend/src/components/FeaturedCard.tsx`
 
-- [ ] **Step 1: `frontend/src/components/FeaturedCard.tsx` 생성**
+- [x] **Step 1: `frontend/src/components/FeaturedCard.tsx` 생성**
 
 (이 컴포넌트는 공지·게시판 페이지 상단 배너. UI only 컴포넌트이므로 테스트는 렌더링 확인으로 충분)
 
@@ -765,7 +765,7 @@ export default function FeaturedCard({ category, title, date, meta }: FeaturedCa
 }
 ```
 
-- [ ] **Step 2: 커밋**
+- [x] **Step 2: 커밋**
 
 ```bash
 cd .. && git add frontend/src/components/FeaturedCard.tsx
@@ -779,7 +779,7 @@ git commit -m "feat: add FeaturedCard component"
 **Files:**
 - Create: `frontend/src/components/Sidebar.tsx`
 
-- [ ] **Step 1: 테스트 작성 — `frontend/src/components/Sidebar.test.tsx`**
+- [x] **Step 1: 테스트 작성 — `frontend/src/components/Sidebar.test.tsx`**
 
 ```tsx
 import { render, screen } from '@testing-library/react'
@@ -806,7 +806,7 @@ test('위젯 제목이 렌더링된다', () => {
 })
 ```
 
-- [ ] **Step 2: 테스트 실패 확인**
+- [x] **Step 2: 테스트 실패 확인**
 
 ```bash
 cd frontend && npx vitest run src/components/Sidebar.test.tsx
@@ -814,7 +814,7 @@ cd frontend && npx vitest run src/components/Sidebar.test.tsx
 
 Expected: FAIL
 
-- [ ] **Step 3: `frontend/src/components/Sidebar.tsx` 구현**
+- [x] **Step 3: `frontend/src/components/Sidebar.tsx` 구현**
 
 ```tsx
 interface CategoryItem {
@@ -880,7 +880,7 @@ export default function Sidebar({ categoryWidget, recentWidget }: SidebarProps) 
 }
 ```
 
-- [ ] **Step 4: 테스트 통과 확인**
+- [x] **Step 4: 테스트 통과 확인**
 
 ```bash
 cd frontend && npx vitest run src/components/Sidebar.test.tsx
@@ -888,7 +888,7 @@ cd frontend && npx vitest run src/components/Sidebar.test.tsx
 
 Expected: PASS
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 
 ```bash
 cd .. && git add frontend/src/components/Sidebar.tsx frontend/src/components/Sidebar.test.tsx
@@ -902,7 +902,7 @@ git commit -m "feat: add Sidebar component"
 **Files:**
 - Create: `frontend/src/components/Pagination.tsx`
 
-- [ ] **Step 1: `frontend/src/components/Pagination.tsx` 생성**
+- [x] **Step 1: `frontend/src/components/Pagination.tsx` 생성**
 
 ```tsx
 interface PaginationProps {
@@ -932,7 +932,7 @@ export default function Pagination({ current, total, onChange }: PaginationProps
 }
 ```
 
-- [ ] **Step 2: 커밋**
+- [x] **Step 2: 커밋**
 
 ```bash
 cd .. && git add frontend/src/components/Pagination.tsx
@@ -947,7 +947,7 @@ git commit -m "feat: add Pagination component"
 - Modify: `frontend/src/App.tsx`
 - Modify: `frontend/src/main.tsx`
 
-- [ ] **Step 1: `frontend/src/main.tsx` 수정**
+- [x] **Step 1: `frontend/src/main.tsx` 수정**
 
 ```tsx
 import { StrictMode } from 'react'
@@ -962,7 +962,7 @@ createRoot(document.getElementById('root')!).render(
 )
 ```
 
-- [ ] **Step 2: `frontend/src/App.tsx` 전체 교체**
+- [x] **Step 2: `frontend/src/App.tsx` 전체 교체**
 
 ```tsx
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
@@ -1004,7 +1004,7 @@ export default function App() {
 }
 ```
 
-- [ ] **Step 3: 페이지 플레이스홀더 생성 (빌드 확인용)**
+- [x] **Step 3: 페이지 플레이스홀더 생성 (빌드 확인용)**
 
 아직 없는 페이지 파일을 임시로 생성한다:
 
@@ -1024,7 +1024,7 @@ foreach ($p in $pages) {
 }
 ```
 
-- [ ] **Step 4: 빌드 확인**
+- [x] **Step 4: 빌드 확인**
 
 ```bash
 cd frontend && npm run build
@@ -1032,7 +1032,7 @@ cd frontend && npm run build
 
 Expected: 에러 없음
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 
 ```bash
 cd .. && git add frontend/src/App.tsx frontend/src/main.tsx frontend/src/pages/
@@ -1050,7 +1050,7 @@ git commit -m "feat: add React Router routing in App.tsx"
 - Modify: `demo/demo/src/main/java/com/example/demo/controller/ScheduleController.java`
 - Modify: `demo/demo/src/main/java/com/example/demo/controller/UniversityController.java`
 
-- [ ] **Step 1: `MainController.java`에 `/api/main` 엔드포인트 추가**
+- [x] **Step 1: `MainController.java`에 `/api/main` 엔드포인트 추가**
 
 기존 `index()` 메서드 아래에 추가:
 
@@ -1095,7 +1095,7 @@ import java.util.HashMap;
 import java.util.Map;
 ```
 
-- [ ] **Step 2: `NoticeController.java`에 `/api/notices` 추가**
+- [x] **Step 2: `NoticeController.java`에 `/api/notices` 추가**
 
 기존 컨트롤러에 다음 메서드 추가:
 
@@ -1125,7 +1125,7 @@ import java.util.Map;
 import java.util.List;
 ```
 
-- [ ] **Step 3: `BoardController.java`에 `/api/posts` 추가**
+- [x] **Step 3: `BoardController.java`에 `/api/posts` 추가**
 
 ```java
 @GetMapping("/api/posts")
@@ -1154,7 +1154,7 @@ import java.util.Map;
 import java.util.List;
 ```
 
-- [ ] **Step 4: `ScheduleController.java`에 `/api/schedules` 추가**
+- [x] **Step 4: `ScheduleController.java`에 `/api/schedules` 추가**
 
 ```java
 @GetMapping("/api/schedules")
@@ -1179,7 +1179,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import java.util.List;
 ```
 
-- [ ] **Step 5: `UniversityController.java`에 REST 엔드포인트 추가**
+- [x] **Step 5: `UniversityController.java`에 REST 엔드포인트 추가**
 
 기존 컨트롤러에 추가:
 
@@ -1206,7 +1206,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import java.util.List;
 ```
 
-- [ ] **Step 6: Spring Boot 빌드 확인**
+- [x] **Step 6: Spring Boot 빌드 확인**
 
 ```bash
 cd demo/demo && ./mvnw compile
@@ -1214,7 +1214,7 @@ cd demo/demo && ./mvnw compile
 
 Expected: BUILD SUCCESS
 
-- [ ] **Step 7: API 동작 확인 (Spring Boot 실행 후)**
+- [x] **Step 7: API 동작 확인 (Spring Boot 실행 후)**
 
 ```bash
 # 터미널 1: Spring Boot 실행
@@ -1229,7 +1229,7 @@ curl http://localhost:8080/api/schedules
 
 Expected: 각 curl 명령에서 JSON 응답
 
-- [ ] **Step 8: 커밋**
+- [x] **Step 8: 커밋**
 
 ```bash
 git add demo/demo/src/main/java/com/example/demo/controller/
@@ -1243,7 +1243,7 @@ git commit -m "feat: add REST API endpoints to Spring Boot controllers"
 **Files:**
 - Modify: `frontend/src/pages/UniversityListPage.tsx`
 
-- [ ] **Step 1: `frontend/src/pages/UniversityListPage.tsx` 구현**
+- [x] **Step 1: `frontend/src/pages/UniversityListPage.tsx` 구현**
 
 ```tsx
 import { useEffect, useState } from 'react'
@@ -1332,7 +1332,7 @@ export default function UniversityListPage() {
 }
 ```
 
-- [ ] **Step 2: 커밋**
+- [x] **Step 2: 커밋**
 
 ```bash
 cd .. && git add frontend/src/pages/UniversityListPage.tsx
@@ -1346,7 +1346,7 @@ git commit -m "feat: implement UniversityListPage"
 **Files:**
 - Modify: `frontend/src/pages/UniversityShowPage.tsx`
 
-- [ ] **Step 1: `frontend/src/pages/UniversityShowPage.tsx` 구현**
+- [x] **Step 1: `frontend/src/pages/UniversityShowPage.tsx` 구현**
 
 ```tsx
 import { useEffect, useState } from 'react'
@@ -1498,7 +1498,7 @@ export default function UniversityShowPage() {
 }
 ```
 
-- [ ] **Step 2: 커밋**
+- [x] **Step 2: 커밋**
 
 ```bash
 git add frontend/src/pages/UniversityShowPage.tsx
@@ -1512,7 +1512,7 @@ git commit -m "feat: implement UniversityShowPage"
 **Files:**
 - Modify: `frontend/src/pages/SchoolSelectPage.tsx`
 
-- [ ] **Step 1: `frontend/src/pages/SchoolSelectPage.tsx` 구현**
+- [x] **Step 1: `frontend/src/pages/SchoolSelectPage.tsx` 구현**
 
 ```tsx
 import { useEffect, useState } from 'react'
@@ -1631,7 +1631,7 @@ export default function SchoolSelectPage() {
 }
 ```
 
-- [ ] **Step 2: 커밋**
+- [x] **Step 2: 커밋**
 
 ```bash
 git add frontend/src/pages/SchoolSelectPage.tsx
@@ -1645,7 +1645,7 @@ git commit -m "feat: implement SchoolSelectPage with Context dept selection"
 **Files:**
 - Modify: `frontend/src/pages/MainPage.tsx`
 
-- [ ] **Step 1: `frontend/src/pages/MainPage.tsx` 구현**
+- [x] **Step 1: `frontend/src/pages/MainPage.tsx` 구현**
 
 ```tsx
 import { useEffect, useState } from 'react'
@@ -1786,7 +1786,7 @@ export default function MainPage() {
 }
 ```
 
-- [ ] **Step 2: 커밋**
+- [x] **Step 2: 커밋**
 
 ```bash
 git add frontend/src/pages/MainPage.tsx
@@ -1800,7 +1800,7 @@ git commit -m "feat: implement MainPage dashboard"
 **Files:**
 - Modify: `frontend/src/pages/NoticePage.tsx`
 
-- [ ] **Step 1: 테스트 작성 — `frontend/src/pages/NoticePage.test.tsx`**
+- [x] **Step 1: 테스트 작성 — `frontend/src/pages/NoticePage.test.tsx`**
 
 ```tsx
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
@@ -1840,7 +1840,7 @@ test('학사 탭 클릭 시 학사 공지만 표시된다', async () => {
 })
 ```
 
-- [ ] **Step 2: 테스트 실패 확인**
+- [x] **Step 2: 테스트 실패 확인**
 
 ```bash
 cd frontend && npx vitest run src/pages/NoticePage.test.tsx
@@ -1848,7 +1848,7 @@ cd frontend && npx vitest run src/pages/NoticePage.test.tsx
 
 Expected: FAIL
 
-- [ ] **Step 3: `frontend/src/pages/NoticePage.tsx` 구현**
+- [x] **Step 3: `frontend/src/pages/NoticePage.tsx` 구현**
 
 ```tsx
 import { useEffect, useState } from 'react'
@@ -1950,7 +1950,7 @@ export default function NoticePage() {
 }
 ```
 
-- [ ] **Step 4: 테스트 통과 확인**
+- [x] **Step 4: 테스트 통과 확인**
 
 ```bash
 cd frontend && npx vitest run src/pages/NoticePage.test.tsx
@@ -1958,7 +1958,7 @@ cd frontend && npx vitest run src/pages/NoticePage.test.tsx
 
 Expected: PASS
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 
 ```bash
 cd .. && git add frontend/src/pages/NoticePage.tsx frontend/src/pages/NoticePage.test.tsx
@@ -1972,7 +1972,7 @@ git commit -m "feat: implement NoticePage with category filter"
 **Files:**
 - Modify: `frontend/src/pages/BoardPage.tsx`
 
-- [ ] **Step 1: 테스트 작성 — `frontend/src/pages/BoardPage.test.tsx`**
+- [x] **Step 1: 테스트 작성 — `frontend/src/pages/BoardPage.test.tsx`**
 
 ```tsx
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
@@ -2012,7 +2012,7 @@ test('제목 검색으로 필터링된다', async () => {
 })
 ```
 
-- [ ] **Step 2: 테스트 실패 확인**
+- [x] **Step 2: 테스트 실패 확인**
 
 ```bash
 cd frontend && npx vitest run src/pages/BoardPage.test.tsx
@@ -2020,7 +2020,7 @@ cd frontend && npx vitest run src/pages/BoardPage.test.tsx
 
 Expected: FAIL
 
-- [ ] **Step 3: `frontend/src/pages/BoardPage.tsx` 구현**
+- [x] **Step 3: `frontend/src/pages/BoardPage.tsx` 구현**
 
 ```tsx
 import { useEffect, useState, useMemo } from 'react'
@@ -2175,7 +2175,7 @@ export default function BoardPage() {
 }
 ```
 
-- [ ] **Step 4: 테스트 통과 확인**
+- [x] **Step 4: 테스트 통과 확인**
 
 ```bash
 cd frontend && npx vitest run src/pages/BoardPage.test.tsx
@@ -2183,7 +2183,7 @@ cd frontend && npx vitest run src/pages/BoardPage.test.tsx
 
 Expected: PASS
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 
 ```bash
 cd .. && git add frontend/src/pages/BoardPage.tsx frontend/src/pages/BoardPage.test.tsx
@@ -2197,7 +2197,7 @@ git commit -m "feat: implement BoardPage with filter, sort, search"
 **Files:**
 - Modify: `frontend/src/pages/SchedulePage.tsx`
 
-- [ ] **Step 1: `frontend/src/pages/SchedulePage.tsx` 구현**
+- [x] **Step 1: `frontend/src/pages/SchedulePage.tsx` 구현**
 
 ```tsx
 import { useEffect, useState, useMemo } from 'react'
@@ -2299,7 +2299,7 @@ export default function SchedulePage() {
 }
 ```
 
-- [ ] **Step 2: 커밋**
+- [x] **Step 2: 커밋**
 
 ```bash
 git add frontend/src/pages/SchedulePage.tsx
@@ -2313,7 +2313,7 @@ git commit -m "feat: implement SchedulePage with month grouping and category fil
 **Files:**
 - Modify: `frontend/src/pages/DepartmentPage.tsx`
 
-- [ ] **Step 1: `frontend/src/pages/DepartmentPage.tsx` 구현**
+- [x] **Step 1: `frontend/src/pages/DepartmentPage.tsx` 구현**
 
 ```tsx
 import Navbar from '../components/Navbar'
@@ -2459,7 +2459,7 @@ export default function DepartmentPage() {
 }
 ```
 
-- [ ] **Step 2: 커밋**
+- [x] **Step 2: 커밋**
 
 ```bash
 git add frontend/src/pages/DepartmentPage.tsx
@@ -2473,7 +2473,7 @@ git commit -m "feat: implement DepartmentPage (static)"
 **Files:**
 - Modify: `frontend/src/pages/LoginPage.tsx`
 
-- [ ] **Step 1: `frontend/src/pages/LoginPage.tsx` 구현**
+- [x] **Step 1: `frontend/src/pages/LoginPage.tsx` 구현**
 
 ```tsx
 import { Link } from 'react-router-dom'
@@ -2532,7 +2532,7 @@ export default function LoginPage() {
 }
 ```
 
-- [ ] **Step 2: 커밋**
+- [x] **Step 2: 커밋**
 
 ```bash
 git add frontend/src/pages/LoginPage.tsx
@@ -2543,7 +2543,7 @@ git commit -m "feat: implement LoginPage (UI only)"
 
 ## Task 21: 최종 통합 확인
 
-- [ ] **Step 1: 전체 테스트 실행**
+- [x] **Step 1: 전체 테스트 실행**
 
 ```bash
 cd frontend && npx vitest run
@@ -2551,7 +2551,7 @@ cd frontend && npx vitest run
 
 Expected: 모든 테스트 PASS
 
-- [ ] **Step 2: TypeScript 타입 체크**
+- [x] **Step 2: TypeScript 타입 체크**
 
 ```bash
 cd frontend && npx tsc --noEmit
@@ -2559,7 +2559,7 @@ cd frontend && npx tsc --noEmit
 
 Expected: 에러 없음
 
-- [ ] **Step 3: 프로덕션 빌드 확인**
+- [x] **Step 3: 프로덕션 빌드 확인**
 
 ```bash
 cd frontend && npm run build
@@ -2567,7 +2567,7 @@ cd frontend && npm run build
 
 Expected: `dist/` 생성, 에러 없음
 
-- [ ] **Step 4: 개발 서버 동시 실행 확인**
+- [x] **Step 4: 개발 서버 동시 실행 확인**
 
 터미널 1 — Spring Boot:
 ```bash
@@ -2585,7 +2585,7 @@ cd frontend && npm run dev
 - 각 메뉴 (`/notice`, `/board`, `/schedule`, `/department`) 정상 렌더링
 - `/board` 검색·필터·정렬 동작
 
-- [ ] **Step 5: 최종 커밋**
+- [x] **Step 5: 최종 커밋**
 
 ```bash
 cd .. && git add . && git commit -m "feat: complete React SPA migration"

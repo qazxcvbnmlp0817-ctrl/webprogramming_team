@@ -12,12 +12,14 @@ public class DepartmentDetailDto {
     private final String phone;
     private final String email;
     private final String hours;
+    private final DeptPageContentDto pageContent;
 
     public DepartmentDetailDto(Long id, String name, String description,
                                List<ProfessorDto> professors,
                                List<CurriculumItemDto> curriculum,
                                String address, String phone,
-                               String email, String hours) {
+                               String email, String hours,
+                               DeptPageContentDto pageContent) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -27,6 +29,7 @@ public class DepartmentDetailDto {
         this.phone = phone;
         this.email = email;
         this.hours = hours;
+        this.pageContent = pageContent;
     }
 
     public Long getId()                            { return id; }
@@ -38,4 +41,5 @@ public class DepartmentDetailDto {
     public String getPhone()                       { return phone; }
     public String getEmail()                       { return email; }
     public String getHours()                       { return hours; }
+    public DeptPageContentDto getPageContent()     { return pageContent; }
 }

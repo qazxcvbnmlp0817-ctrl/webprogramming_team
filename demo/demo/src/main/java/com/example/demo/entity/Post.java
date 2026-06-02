@@ -48,6 +48,9 @@ public class Post {
     @Column(nullable = false)
     private Long scopeId;
 
+    @Column(nullable = true)
+    private Boolean hidden = false;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getTitle() { return title; }
@@ -82,4 +85,6 @@ public class Post {
     public void setScopeId(Long scopeId) { this.scopeId = scopeId; }
     public String getAuthorUsername() { return authorUsername; }
     public void setAuthorUsername(String authorUsername) { this.authorUsername = authorUsername; }
+    public boolean isHidden() { return Boolean.TRUE.equals(hidden); }
+    public void setHidden(boolean hidden) { this.hidden = hidden; }
 }

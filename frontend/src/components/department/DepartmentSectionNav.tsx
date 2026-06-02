@@ -4,7 +4,6 @@ const navItems = [
   { href: '#curriculum', label: '교육과정' },
   { href: '#careers', label: '진로' },
   { href: '#requirements', label: '졸업·자격증' },
-  { href: '#facilities', label: '시설' },
   { href: '#contact', label: '연락처' },
   { href: '#faq', label: 'FAQ' },
 ]

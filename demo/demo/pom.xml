@@ -46,6 +46,12 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Jackson JSON 직렬화 -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+
         <!-- BCrypt 암호화 (Security 필터 없이 crypto만) -->
         <dependency>
             <groupId>org.springframework.security</groupId>

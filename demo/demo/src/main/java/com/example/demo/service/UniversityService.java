@@ -18,19 +18,25 @@ public class UniversityService {
     private final DepartmentRepository deptRepo;
     private final ProfessorRepository professorRepo;
     private final CurriculumItemRepository curriculumRepo;
+    private final DeptPageContentRepository contentRepo;
+    private final DeptContentService deptContentService;
 
     public UniversityService(UniversityRepository universityRepo,
                              CollegeSchoolRepository schoolRepo,
                              FacultyGroupRepository facultyRepo,
                              DepartmentRepository deptRepo,
                              ProfessorRepository professorRepo,
-                             CurriculumItemRepository curriculumRepo) {
+                             CurriculumItemRepository curriculumRepo,
+                             DeptPageContentRepository contentRepo,
+                             DeptContentService deptContentService) {
         this.universityRepo = universityRepo;
         this.schoolRepo     = schoolRepo;
         this.facultyRepo    = facultyRepo;
         this.deptRepo       = deptRepo;
         this.professorRepo  = professorRepo;
         this.curriculumRepo = curriculumRepo;
+        this.contentRepo    = contentRepo;
+        this.deptContentService = deptContentService;
     }
 
     public List<UniversityDto> getAllUniversities() {
@@ -49,12 +55,17 @@ public class UniversityService {
                     .map(p -> new ProfessorDto(p.getId(), p.getName(), p.getSpecialty(), p.getEmail()))
                     .collect(Collectors.toList());
             List<CurriculumItemDto> curriculum = curriculumRepo.findByDeptId(deptId).stream()
-                    .map(c -> new CurriculumItemDto(c.getName(), c.getYear(), c.isRequired(), c.getCredits()))
+                    .map(c -> new CurriculumItemDto(
+                            c.getName(), c.getYear(), c.getSemester(), c.getCategory(),
+                            c.isRequired(), c.getCredits()))
                     .collect(Collectors.toList());
+            DeptPageContent pageContentEntity = contentRepo.findById(deptId).orElse(null);
+            DeptPageContentDto pageContent = deptContentService.buildDto(dept, pageContentEntity);
             return new DepartmentDetailDto(
                     dept.getId(), dept.getName(), dept.getDescription(),
                     professors, curriculum,
-                    dept.getAddress(), dept.getPhone(), dept.getEmail(), dept.getHours()
+                    dept.getAddress(), dept.getPhone(), dept.getEmail(), dept.getHours(),
+                    pageContent
             );
         });
     }

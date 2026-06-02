@@ -2,20 +2,27 @@ import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useDept } from '../context/DeptContext'
 
-const SCHOOL_NAV = [
-  { to: '/school/departments', label: '학과 선택' },
-  { to: '/school/notice',      label: '공지사항' },
-  { to: '/school/board',       label: '게시판' },
-  { to: '/school/schedule',    label: '일정' },
-  { to: '/school/info',        label: '학교정보' },
-]
+function buildSchoolNav(univId: number | null) {
+  return [
+    { to: `/universities/${univId ?? ''}`, label: '홈' },
+    { to: '/school/departments',           label: '학과 선택' },
+    { to: '/school/notice',                label: '공지사항' },
+    { to: '/school/board',                 label: '게시판' },
+    { to: '/school/schedule',              label: '일정' },
+    { to: '/timetable',                    label: '시간표' },
+    { to: '/school/info',                  label: '학교정보' },
+  ]
+}
 
-const DEPT_NAV = [
-  { to: '/dept/notice',     label: '공지사항' },
-  { to: '/dept/board',      label: '게시판' },
-  { to: '/dept/schedule',   label: '일정' },
-  { to: '/dept/department', label: '학과정보' },
-]
+function buildDeptNav(loggedIn: boolean) {
+  return [
+    { to: '/dept/notice',              label: '공지사항' },
+    { to: '/dept/board',               label: '게시판' },
+    { to: loggedIn ? '/calendar' : '/dept/schedule', label: '일정' },
+    { to: '/timetable',                label: '시간표' },
+    { to: '/dept/department',          label: '학과정보' },
+  ]
+}
 
 function buildFacultyNav(facultyId: string) {
   return [
@@ -23,6 +30,7 @@ function buildFacultyNav(facultyId: string) {
     { to: `/school/faculty/${facultyId}/notice`,   label: '공지사항' },
     { to: `/school/faculty/${facultyId}/board`,    label: '게시판' },
     { to: `/school/faculty/${facultyId}/schedule`, label: '일정' },
+    { to: '/timetable',                            label: '시간표' },
     { to: '/school/departments',                   label: '학과 선택' },
   ]
 }
@@ -30,15 +38,12 @@ function buildFacultyNav(facultyId: string) {
 export default function Navbar() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
-  const { selectedUniversityId, selectedUniversityName, selectedDeptName } = useDept()
+  const { selectedUniversityId, selectedUniversityName, selectedDeptName, selectedFacultyName } = useDept()
   const [menuOpen, setMenuOpen] = useState(false)
-  // 초기값을 sessionStorage에서 바로 읽어서 페이지 이동 시 "로그인" 버튼 깜빡임 방지
-  const [isLoggedIn, setIsLoggedIn] = useState(
-    () => sessionStorage.getItem('isLoggedIn') === 'true'
-  )
+  const [isLoggedInState, setIsLoggedInState] = useState(false)
 
   useEffect(() => {
-    const check = () => setIsLoggedIn(sessionStorage.getItem('isLoggedIn') === 'true')
+    const check = () => setIsLoggedInState(sessionStorage.getItem('isLoggedIn') === 'true')
     check()
     window.addEventListener('storage', check)
     window.addEventListener('loginChanged', check)
@@ -50,21 +55,14 @@ export default function Navbar() {
 
   const facultyMatch = pathname.match(/^\/school\/faculty\/(\d+)/)
   const isFaculty = !!facultyMatch
-  const facultyId  = facultyMatch?.[1] ?? ''
-
+  const facultyId = facultyMatch?.[1] ?? ''
   const isSchool = !isFaculty && (pathname.startsWith('/school') || /^\/universities\/\d+/.test(pathname))
 
-  const rawLinks = isFaculty
+  const navLinks = isFaculty
     ? buildFacultyNav(facultyId)
     : isSchool
-      ? SCHOOL_NAV
-      : DEPT_NAV
-
-  const navLinks = rawLinks.map(link =>
-    link.label === '일정'
-      ? { ...link, to: isLoggedIn ? '/calendar' : link.to }
-      : link
-  )
+      ? buildSchoolNav(selectedUniversityId)
+      : buildDeptNav(isLoggedInState)
 
   const homeLink = isFaculty
     ? `/school/faculty/${facultyId}`
@@ -76,43 +74,58 @@ export default function Navbar() {
     sessionStorage.removeItem('isLoggedIn')
     sessionStorage.removeItem('username')
     sessionStorage.removeItem('memberType')
-    setIsLoggedIn(false)
+    setIsLoggedInState(false)
     navigate('/login')
+  }
+
+  // 컨텍스트 breadcrumb 구성
+  const contextCrumbs: { icon: string; label: string; to?: string }[] = []
+  if (selectedUniversityName && selectedUniversityId) {
+    contextCrumbs.push({
+      icon: 'fa-university',
+      label: selectedUniversityName,
+      to: `/universities/${selectedUniversityId}`,
+    })
+  }
+  if (isFaculty && selectedFacultyName) {
+    contextCrumbs.push({ icon: 'fa-layer-group', label: selectedFacultyName })
+  }
+  if (!isSchool && !isFaculty && selectedDeptName) {
+    contextCrumbs.push({ icon: 'fa-door-open', label: selectedDeptName })
   }
 
   return (
     <nav className="fixed top-0 left-0 w-full bg-black text-white z-50 border-b border-gray-800">
       <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
-
-        {/* 로고 + 컨텍스트 배지 */}
-        <div className="flex items-center gap-3">
-          <Link
-            to={homeLink}
-            className="font-bold text-lg tracking-tight hover:opacity-80 transition"
-          >
+        <div className="flex items-center gap-0 min-w-0">
+          <Link to={homeLink} className="font-bold text-base tracking-tight hover:opacity-80 transition shrink-0">
             학과정보통합서비스
           </Link>
-          {isFaculty && selectedUniversityName && (
-            <span className="hidden md:inline-flex items-center gap-1 text-xs text-gray-400 border border-gray-700 px-2 py-0.5 rounded">
-              <i className="fas fa-layer-group text-[10px]" />
-              학부 포털
-            </span>
-          )}
-          {isSchool && selectedUniversityName && (
-            <span className="hidden md:inline-flex items-center gap-1 text-xs text-gray-400 border border-gray-700 px-2 py-0.5 rounded">
-              <i className="fas fa-university text-[10px]" />
-              {selectedUniversityName}
-            </span>
-          )}
-          {!isSchool && !isFaculty && selectedDeptName && (
-            <span className="hidden md:inline-flex items-center gap-1 text-xs text-gray-400 border border-gray-700 px-2 py-0.5 rounded">
-              <i className="fas fa-door-open text-[10px]" />
-              {selectedDeptName}
-            </span>
+          {contextCrumbs.length > 0 && (
+            <div className="flex items-center gap-0 ml-2 min-w-0">
+              {contextCrumbs.map((crumb, idx) => (
+                <span key={idx} className="flex items-center gap-0 min-w-0">
+                  <span className="text-gray-600 mx-1 text-xs shrink-0">›</span>
+                  {crumb.to ? (
+                    <Link
+                      to={crumb.to}
+                      className="flex items-center gap-1 text-xs text-gray-300 hover:text-white transition truncate max-w-[120px] md:max-w-[180px]"
+                    >
+                      <i className={`fas ${crumb.icon} text-[10px] shrink-0 text-gray-500`} />
+                      <span className="truncate">{crumb.label}</span>
+                    </Link>
+                  ) : (
+                    <span className="flex items-center gap-1 text-xs text-gray-300 truncate max-w-[100px] md:max-w-[160px]">
+                      <i className={`fas ${crumb.icon} text-[10px] shrink-0 text-gray-500`} />
+                      <span className="truncate">{crumb.label}</span>
+                    </span>
+                  )}
+                </span>
+              ))}
+            </div>
           )}
         </div>
 
-        {/* 데스크탑 메뉴 */}
         <ul className="hidden md:flex gap-8 text-sm font-medium">
           {navLinks.map(({ to, label }) => (
             <li key={to}>
@@ -128,40 +141,26 @@ export default function Navbar() {
           ))}
         </ul>
 
-        {/* 데스크탑 우측 버튼 */}
         <div className="hidden md:flex items-center gap-3">
-          <Link
-            to="/universities"
-            className="border border-white text-white text-sm px-3 py-1 rounded hover:bg-white hover:text-black transition"
-          >
+          <Link to="/universities" className="border border-white text-white text-sm px-3 py-1 rounded hover:bg-white hover:text-black transition">
             학교 변경
           </Link>
-          {isLoggedIn ? (
+          {isLoggedInState ? (
             <>
-              <Link
-                to="/mypage"
-                className="border border-white text-white text-sm px-3 py-1 rounded hover:bg-white hover:text-black transition"
-              >
+              <Link to="/mypage" className="border border-white text-white text-sm px-3 py-1 rounded hover:bg-white hover:text-black transition">
                 마이페이지
               </Link>
-              <button
-                onClick={handleLogout}
-                className="border border-white text-white text-sm px-3 py-1 rounded hover:bg-white hover:text-black transition"
-              >
+              <button onClick={handleLogout} className="border border-white text-white text-sm px-3 py-1 rounded hover:bg-white hover:text-black transition">
                 로그아웃
               </button>
             </>
           ) : (
-            <Link
-              to="/login"
-              className="border border-white text-white text-sm px-3 py-1 rounded hover:bg-white hover:text-black transition"
-            >
+            <Link to="/login" className="border border-white text-white text-sm px-3 py-1 rounded hover:bg-white hover:text-black transition">
               로그인
             </Link>
           )}
         </div>
 
-        {/* 햄버거 버튼 */}
         <button
           onClick={() => setMenuOpen(prev => !prev)}
           className="md:hidden text-white focus:outline-none"
@@ -172,12 +171,8 @@ export default function Navbar() {
         </button>
       </div>
 
-      {/* 모바일 드롭다운 */}
       {menuOpen && (
-        <div
-          data-testid="mobile-menu"
-          className="md:hidden bg-black border-t border-gray-700 px-4 py-4 flex flex-col gap-4 text-sm"
-        >
+        <div data-testid="mobile-menu" className="md:hidden bg-black border-t border-gray-700 px-4 py-4 flex flex-col gap-4 text-sm">
           {navLinks.map(({ to, label }) => (
             <Link
               key={to}
@@ -190,35 +185,20 @@ export default function Navbar() {
               {label}
             </Link>
           ))}
-          <Link
-            to="/universities"
-            onClick={() => setMenuOpen(false)}
-            className="border border-white text-center py-1 rounded hover:bg-white hover:text-black transition"
-          >
+          <Link to="/universities" onClick={() => setMenuOpen(false)} className="border border-white text-center py-1 rounded hover:bg-white hover:text-black transition">
             학교 변경
           </Link>
-          {isLoggedIn ? (
+          {isLoggedInState ? (
             <>
-              <Link
-                to="/mypage"
-                onClick={() => setMenuOpen(false)}
-                className="border border-white text-center py-1 rounded hover:bg-white hover:text-black transition"
-              >
+              <Link to="/mypage" onClick={() => setMenuOpen(false)} className="border border-white text-center py-1 rounded hover:bg-white hover:text-black transition">
                 마이페이지
               </Link>
-              <button
-                onClick={handleLogout}
-                className="border border-white text-center py-1 rounded hover:bg-white hover:text-black transition w-full"
-              >
+              <button onClick={handleLogout} className="border border-white text-center py-1 rounded hover:bg-white hover:text-black transition w-full">
                 로그아웃
               </button>
             </>
           ) : (
-            <Link
-              to="/login"
-              onClick={() => setMenuOpen(false)}
-              className="border border-white text-center py-1 rounded hover:bg-white hover:text-black transition"
-            >
+            <Link to="/login" onClick={() => setMenuOpen(false)} className="border border-white text-center py-1 rounded hover:bg-white hover:text-black transition">
               로그인
             </Link>
           )}

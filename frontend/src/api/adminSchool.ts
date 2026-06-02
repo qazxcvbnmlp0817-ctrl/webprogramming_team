@@ -37,6 +37,7 @@ export interface PostItem {
   category: string
   viewCount: number
   createdDate: string
+  hidden: boolean
 }
 
 export interface PostPage {
@@ -150,6 +151,60 @@ export async function fetchSchoolMonthlyStats(univId?: number): Promise<MonthlyS
   return res.json()
 }
 
+export interface NoticeItem {
+  id: number
+  title: string
+  author: string
+  category: string
+  viewCount: number
+  featured: boolean
+  createdDate: string
+  hidden: boolean
+}
+
+export interface NoticePage {
+  notices: NoticeItem[]
+  totalPages: number
+  totalElements: number
+}
+
+export async function fetchSchoolAdminNotices(page: number, univId?: number): Promise<NoticePage> {
+  const res = await fetch('/api/admin/school/notices' + qs(`page=${page}`, univParam(univId)), { headers: headers() })
+  handle403(res)
+  return res.json()
+}
+
+export async function deleteSchoolAdminNotice(noticeId: number, univId?: number): Promise<void> {
+  const res = await fetch('/api/admin/school/notices/' + noticeId + qs(univParam(univId)), {
+    method: 'DELETE',
+    headers: headers(),
+  })
+  handle403(res)
+}
+
+export async function hideSchoolPost(postId: number, hidden: boolean, univId?: number): Promise<void> {
+  const res = await fetch('/api/admin/school/posts/' + postId + '/hidden' + qs(univParam(univId)), {
+    method: 'PUT',
+    headers: headers(),
+    body: JSON.stringify({ hidden }),
+  })
+  handle403(res)
+}
+
+export async function hideSchoolNotice(noticeId: number, hidden: boolean, univId?: number): Promise<void> {
+  const res = await fetch('/api/admin/school/notices/' + noticeId + '/hidden' + qs(univParam(univId)), {
+    method: 'PUT',
+    headers: headers(),
+    body: JSON.stringify({ hidden }),
+  })
+  handle403(res)
+}
+
+export interface DeptItem {
+  id: number
+  name: string
+}
+
 export interface ProfessorItem {
   id: number
   name: string
@@ -174,6 +229,12 @@ export interface AssignmentItem {
   deptId: number
   professorName: string
   courseName: string
+}
+
+export async function fetchSchoolDepts(univId?: number): Promise<DeptItem[]> {
+  const res = await fetch('/api/admin/school/departments' + qs(univParam(univId)), { headers: headers() })
+  handle403(res)
+  return res.json()
 }
 
 export async function fetchSchoolProfessors(univId?: number): Promise<ProfessorItem[]> {
@@ -203,8 +264,9 @@ export async function createSchoolAssignment(
     body: JSON.stringify({ professorId, courseId, deptId }),
   })
   if (!res.ok) {
-    handle403(res)
-    throw new Error(await res.text())
+    // 배정 실패는 비즈니스 오류 — 리다이렉트 없이 메시지만 throw
+    const text = await res.text()
+    throw new Error(text || '배정 추가에 실패했습니다.')
   }
   return res.json()
 }

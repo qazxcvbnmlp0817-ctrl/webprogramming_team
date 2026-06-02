@@ -3,411 +3,308 @@ import Navbar from '../components/Navbar'
 import AdminBanner from '../components/common/AdminBanner'
 import { useDept } from '../context/DeptContext'
 import { isLoggedIn, getAuthItem } from '../utils/authStorage'
-import {
-  loadSchedules, addSchedule, updateSchedule, deleteSchedule,
-  type LocalSchedule,
-} from '../utils/localSchedule'
+import { fetchMyTimetable, type TimetableEntryDto } from '../api/timetable'
 import ScheduleCalendarView from '../components/schedule/ScheduleCalendarView'
 import { PERSONAL_CATEGORY_META, type ScheduleItem } from '../utils/scheduleItem'
 import {
-  fetchStudentClassSchedules,
+  fetchProfessorAssignedCourses,
+  fetchAssistantCourses,
   fetchStudentCourseEvents,
   fetchStudentDeptEvents,
-  fetchProfessorCourses,
-  fetchAssistantCourses,
-  createProfessorCourseSchedule,
-  createProfessorDeptSchedule,
-  type ClassScheduleDto,
   type CourseEventDto,
   type DeptCourseEventDto,
 } from '../api/classSchedules'
 import {
-  addSharedCourseEvent,
-  loadSharedCourseEventsByDept,
-  deleteSharedCourseEvent,
-  sharedEventToScheduleItem,
-} from '../utils/sharedCourseEvents'
+  createSchedule,
+  updateSchedule,
+  deleteUnifiedSchedule,
+  toggleScheduleComplete,
+  type UnifiedScheduleDto,
+  type ScheduleCreateReq,
+  type ScheduleType,
+} from '../api/unifiedSchedules'
 
 // ── 타입 ──────────────────────────────────────────────────────────────────────
 
 type CourseOption = { courseId: number; courseName: string }
 
-// ── 기본 과목 목록 (API 데이터 없을 때 포함) ──────────────────────────────────
-
-const PRESET_COURSES: CourseOption[] = [
-  { courseId: 2001, courseName: '데이터베이스' },
-  { courseId: 2002, courseName: '운영체제' },
-  { courseId: 2003, courseName: '알고리즘' },
-  { courseId: 2004, courseName: '공학윤리와 사회' },
-  { courseId: 2005, courseName: '프로젝트랩' },
-  { courseId: 2006, courseName: '임베디드시스템' },
-  { courseId: 2007, courseName: '소프트웨어공학' },
-  { courseId: 2008, courseName: '웹프로그래밍2' },
-]
-
-function mergeCourses(apiCourses: CourseOption[]): CourseOption[] {
-  const existingNames = new Set(apiCourses.map(c => c.courseName))
-  return [
-    ...apiCourses,
-    ...PRESET_COURSES.filter(c => !existingNames.has(c.courseName)),
-  ]
-}
-
 // ── 유틸 ──────────────────────────────────────────────────────────────────────
 
 const DAY_MAP: Record<string, number> = { 일: 0, 월: 1, 화: 2, 수: 3, 목: 4, 금: 5, 토: 6 }
-
 function pad2(n: number) { return String(n).padStart(2, '0') }
-
 function currentSemester(): string {
   const now = new Date()
   return `${now.getFullYear()}-${now.getMonth() + 1 <= 7 ? '1' : '2'}`
 }
+function periodToTime(period: number): string {
+  return `${String(8 + period).padStart(2, '0')}:00`
+}
 
-// 반복 수업 시간표 → 날짜별 ScheduleItem 변환 (±3개월 범위)
-function expandClassSchedule(cs: ClassScheduleDto): ScheduleItem[] {
-  const targetDow = DAY_MAP[cs.dayOfWeek]
-  if (targetDow === undefined) return []
-  const now   = new Date()
+// DB 일정 DTO → ScheduleItem 변환
+function unifiedToItem(dto: UnifiedScheduleDto): ScheduleItem {
+  const isMultiDay = !!dto.endDate && dto.endDate > dto.startDate
+  return {
+    id: String(dto.id),
+    title: dto.title,
+    date: dto.startDate,
+    endDate: dto.endDate ?? undefined,
+    category: dto.category,
+    scheduleType: dto.scheduleType,
+    isCompleted: dto.isCompleted,
+    courseId: dto.courseId ?? undefined,
+    startTime: dto.startTime ?? undefined,
+    endTime: dto.endTime ?? undefined,
+    allDay: isMultiDay ? true : !dto.startTime,
+    content: dto.content ?? undefined,
+    createdBy: dto.createdBy,
+  }
+}
+
+// 시간표 → 날짜별 ScheduleItem (±3개월, readonly)
+function expandTimetableEntry(entry: TimetableEntryDto): ScheduleItem[] {
+  const text = entry.offering.lectureTime?.replace(/\s+/g, '') ?? ''
+  const matches = [...text.matchAll(/([월화수목금])([0-9,]+)/g)]
+  const now = new Date()
   const start = new Date(now.getFullYear(), now.getMonth() - 3, 1)
   const end   = new Date(now.getFullYear(), now.getMonth() + 3, 31)
   const items: ScheduleItem[] = []
-  const cur = new Date(start)
-  while (cur.getDay() !== targetDow) cur.setDate(cur.getDate() + 1)
-  while (cur <= end) {
-    const ds = `${cur.getFullYear()}-${pad2(cur.getMonth() + 1)}-${pad2(cur.getDate())}`
-    items.push({
-      id: `course-${cs.id}-${ds}`,
-      title: cs.courseName,
-      date: ds,
-      category: 'course',
-      startTime: cs.startTime,
-      endTime: cs.endTime,
-      allDay: false,
-      content: `${cs.professorName} 교수 | ${cs.room}`,
-      readonly: true,
-    })
-    cur.setDate(cur.getDate() + 7)
+  for (const match of matches) {
+    const targetDow = DAY_MAP[match[1]]
+    if (targetDow === undefined) continue
+    const periods = match[2].split(',').map(Number).filter(Boolean).sort((a, b) => a - b)
+    if (periods.length === 0) continue
+    const startTime = periodToTime(periods[0])
+    const endTime   = periodToTime(periods[periods.length - 1] + 1)
+    const cur = new Date(start)
+    while (cur.getDay() !== targetDow) cur.setDate(cur.getDate() + 1)
+    while (cur <= end) {
+      const ds = `${cur.getFullYear()}-${pad2(cur.getMonth() + 1)}-${pad2(cur.getDate())}`
+      items.push({
+        id: `timetable-${entry.entryId}-${match[1]}-${ds}`,
+        title: entry.offering.courseName,
+        date: ds,
+        category: 'course',
+        startTime, endTime,
+        allDay: false,
+        content: `${entry.offering.professorName || ''} | ${entry.offering.section}분반`,
+        readonly: true,
+      })
+      cur.setDate(cur.getDate() + 7)
+    }
   }
   return items
 }
 
-function courseEventToScheduleItem(ev: CourseEventDto): ScheduleItem {
+// ClassEvent 한글 카테고리 → PERSONAL_CATEGORY_META 영문 key 정규화
+const CAT_NORM: Record<string, string> = {
+  '시험': 'exam', '과제': 'task', '기타': 'other', '학사': 'academic', '행사': 'event',
+}
+function normCat(cat: string) { return CAT_NORM[cat] ?? cat }
+
+// ClassEvent 과목 이벤트 → ScheduleItem (readonly, 학생 조회용)
+function courseEventToItem(ev: CourseEventDto): ScheduleItem {
+  const isMulti = ev.endDate && ev.endDate > ev.date
   return {
-    id: `prof-event-${ev.id}`,
+    id: `ce-course-${ev.id}`,
     title: ev.title,
     date: ev.date,
-    category: ev.category,
-    allDay: true,
+    endDate: ev.endDate ?? undefined,
+    category: normCat(ev.category),
+    scheduleType: 'COURSE',
+    startTime: ev.startTime ?? undefined,
+    endTime: ev.endTime ?? undefined,
+    allDay: isMulti ? true : !ev.startTime,
     content: `D${ev.dday >= 0 ? '-' + ev.dday : '+' + Math.abs(ev.dday)}`,
+    createdBy: ev.registeredBy,
     readonly: true,
   }
 }
 
-function deptCourseEventToScheduleItem(ev: DeptCourseEventDto): ScheduleItem {
+// ClassEvent 학과 이벤트 → ScheduleItem (readonly, 학생 조회용)
+function deptEventToItem(ev: DeptCourseEventDto): ScheduleItem {
+  const isMulti = ev.endDate && ev.endDate > ev.date
   return {
-    id: `dept-event-${ev.id}`,
+    id: `ce-dept-${ev.id}`,
     title: ev.courseName ? `[${ev.courseName}] ${ev.title}` : ev.title,
     date: ev.date,
-    category: ev.category,
-    allDay: true,
-    content: `D${ev.dday >= 0 ? '-' + ev.dday : '+' + Math.abs(ev.dday)}`,
+    endDate: ev.endDate ?? undefined,
+    category: normCat(ev.category),
+    scheduleType: ev.courseName ? 'COURSE' : 'DEPT_NOTICE',
+    startTime: ev.startTime ?? undefined,
+    endTime: ev.endTime ?? undefined,
+    allDay: isMulti ? true : !ev.startTime,
+    content: ev.memo
+      ? `${ev.memo} | D${ev.dday >= 0 ? '-' + ev.dday : '+' + Math.abs(ev.dday)}`
+      : `D${ev.dday >= 0 ? '-' + ev.dday : '+' + Math.abs(ev.dday)}`,
+    createdBy: ev.registeredBy,
     readonly: true,
   }
-}
-
-// ── 수업 일정 등록 모달 ────────────────────────────────────────────────────────
-
-function ProfEventModal({
-  open,
-  courses,
-  onClose,
-  onSubmit,
-}: {
-  open: boolean
-  courses: CourseOption[]
-  onClose: () => void
-  onSubmit: (courseId: number, courseName: string, title: string, eventDate: string, category: string) => Promise<void>
-}) {
-  const [courseId, setCourseId] = useState<number | ''>('')
-  const [title, setTitle]       = useState('')
-  const [eventDate, setEventDate] = useState('')
-  const [category, setCategory]  = useState('기타')
-  const [loading, setLoading]    = useState(false)
-  const [msg, setMsg]            = useState<string | null>(null)
-
-  const uniqueCourses = useMemo(() => {
-    const seen = new Set<number>()
-    return courses.filter(c => { if (seen.has(c.courseId)) return false; seen.add(c.courseId); return true })
-  }, [courses])
-
-  if (!open) return null
-
-  const handleSubmit = async () => {
-    if (!courseId || !title || !eventDate) { setMsg('과목, 제목, 날짜는 필수입니다.'); return }
-    const selected = uniqueCourses.find(c => c.courseId === Number(courseId))
-    setLoading(true)
-    await onSubmit(Number(courseId), selected?.courseName ?? '', title, eventDate, category)
-    setLoading(false)
-    setCourseId(''); setTitle(''); setEventDate(''); setCategory('기타'); setMsg(null)
-    onClose()
-  }
-
-  const selectedCourse = uniqueCourses.find(c => c.courseId === Number(courseId))
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h3 className="text-base font-bold text-gray-900">수업 일정 등록</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
-        </div>
-        <div className="px-6 py-5 flex flex-col gap-4">
-          {msg && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded">{msg}</p>}
-
-          {/* 과목 선택 */}
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">과목 선택 <span className="text-red-500">*</span></label>
-            <select
-              value={courseId}
-              onChange={e => setCourseId(e.target.value === '' ? '' : Number(e.target.value))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-400 bg-white">
-              <option value="">-- 과목을 선택하세요 --</option>
-              {uniqueCourses.map(c => (
-                <option key={c.courseId} value={c.courseId}>{c.courseName}</option>
-              ))}
-            </select>
-            {selectedCourse && (
-              <p className="mt-1 text-xs text-blue-600">선택됨: {selectedCourse.courseName}</p>
-            )}
-          </div>
-
-          {/* 일정 제목 */}
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">일정 제목 <span className="text-red-500">*</span></label>
-            <input
-              value={title}
-              onChange={e => setTitle(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-400"
-              placeholder="예: 중간고사, 과제 제출, 보강 등" />
-          </div>
-
-          {/* 날짜 */}
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">날짜 <span className="text-red-500">*</span></label>
-            <input
-              type="date"
-              value={eventDate}
-              onChange={e => setEventDate(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-400" />
-          </div>
-
-          {/* 카테고리 */}
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">카테고리</label>
-            <div className="flex gap-2">
-              {(['시험', '과제', '기타'] as const).map(cat => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setCategory(cat)}
-                  className={`flex-1 py-2 rounded-lg text-sm font-semibold border transition
-                    ${category === cat
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}>
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex gap-3 px-6 pb-6">
-          <button
-            onClick={onClose}
-            className="flex-1 py-2.5 border border-gray-300 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50 transition">
-            취소
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="flex-1 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 transition">
-            {loading ? '등록 중...' : '등록하기'}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
 }
 
 // ── CalendarPage ──────────────────────────────────────────────────────────────
 
 export default function CalendarPage() {
   const { selectedDeptId } = useDept()
-  const loggedIn    = isLoggedIn()
-  const memberType  = getAuthItem('memberType')
-  const username    = getAuthItem('username') ?? ''
-  const deptId      = getAuthItem('deptId') ?? ''
-  const isStudent   = memberType === 'student'
-  const isProfessor = memberType === 'professor' || memberType === 'assistant'
+  const loggedIn   = isLoggedIn()
+  const memberType = getAuthItem('memberType')
+  const username   = getAuthItem('username') ?? ''
 
-  const [personalSchedules, setPersonalSchedules] = useState<LocalSchedule[]>([])
-  const [courseSchedules, setCourseSchedules]     = useState<ScheduleItem[]>([])
-  const [courseEvents, setCourseEvents]           = useState<ScheduleItem[]>([])
-  const [profCourses, setProfCourses]             = useState<CourseOption[]>([])
-  const [loadingCourse, setLoadingCourse]         = useState(false)
-  const [profModalOpen, setProfModalOpen]         = useState(false)
+  const deptId  = getAuthItem('deptId') ?? ''
+  const isStudent = memberType === 'student'
 
-  // 개인 일정 로드
-  useEffect(() => { setPersonalSchedules(loadSchedules()) }, [])
+  // ── 상태 ──────────────────────────────────────────────────────────────────
+  const [dbSchedules, setDbSchedules]         = useState<ScheduleItem[]>([])
+  const [classEvents, setClassEvents]         = useState<ScheduleItem[]>([]) // ClassEvent 기반
+  const [timetableItems, setTimetableItems]   = useState<ScheduleItem[]>([])
+  const [myCourses, setMyCourses]             = useState<CourseOption[]>([])
+  const [loading, setLoading]                 = useState(false)
 
   const semester = currentSemester()
 
-  // 학생: 수업 시간표 + API 이벤트 + 교수가 등록한 공유 이벤트 로드
+  // ── DB 일정 로드 (통합 API) ────────────────────────────────────────────────
+  useEffect(() => {
+    if (!loggedIn || !username) return
+    setLoading(true)
+    fetch('/api/schedules/my', { headers: { 'X-Username': username } })
+      .then(r => {
+        if (!r.ok) throw new Error(`일정 조회 실패: ${r.status}`)
+        return r.json()
+      })
+      .then((dtos: import('../api/unifiedSchedules').UnifiedScheduleDto[]) => {
+        setDbSchedules(dtos.filter(d => d.startDate).map(unifiedToItem))
+      })
+      .catch(e => console.error('[CalendarPage] 일정 로드 오류:', e))
+      .finally(() => setLoading(false))
+  }, [loggedIn, username])
+
+  // ── 학생: ClassEvent 기반 학과 공지 + 과목 이벤트 로드 ───────────────────
   useEffect(() => {
     if (!loggedIn || !isStudent || !username) return
-    setLoadingCourse(true)
+    const sem = currentSemester()
     Promise.all([
-      fetchStudentClassSchedules(username, semester),
-      fetchStudentCourseEvents(username, semester),
-      deptId ? fetchStudentDeptEvents(deptId) : Promise.resolve([]),
-    ]).then(([dtos, apiEvents, deptEvents]) => {
-      setCourseSchedules(dtos.flatMap(expandClassSchedule))
-
-      // 수강과목 기반 이벤트
-      const fromApi = apiEvents.map(courseEventToScheduleItem)
-
-      // 학과 전체 교수 등록 이벤트 (DB)
-      const fromDept = (deptEvents as DeptCourseEventDto[]).map(deptCourseEventToScheduleItem)
-
-      // localStorage 공유 이벤트 (같은 브라우저 동기화 폴백)
-      const fromShared = loadSharedCourseEventsByDept(deptId).map(sharedEventToScheduleItem)
-
-      // 중복 제거 (id 기준, DB 우선)
-      const usedIds = new Set([...fromApi.map(e => e.id), ...fromDept.map(e => e.id)])
-      const merged = [...fromApi, ...fromDept, ...fromShared.filter(e => !usedIds.has(e.id))]
-
-      setCourseEvents(merged)
-      setLoadingCourse(false)
+      deptId ? fetchStudentDeptEvents(deptId, username) : Promise.resolve([]),
+      fetchStudentCourseEvents(username, sem),
+    ]).then(([deptEvs, courseEvs]) => {
+      const items: ScheduleItem[] = [
+        ...(deptEvs as DeptCourseEventDto[]).map(deptEventToItem),
+        ...(courseEvs as CourseEventDto[]).map(courseEventToItem),
+      ]
+      // 통합 API 결과와 id 중복 제거
+      setClassEvents(items)
     })
-  }, [loggedIn, isStudent, username, semester, deptId])
+  }, [loggedIn, isStudent, username, deptId])
 
-  // 학생: 교수가 localStorage에 새 이벤트를 저장하면 실시간으로 반영
+  // ── 시간표 로드 (readonly 반복 수업) ──────────────────────────────────────
   useEffect(() => {
-    if (!loggedIn || !isStudent || !deptId) return
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'class_course_events_v1') {
-        const fromShared = loadSharedCourseEventsByDept(deptId).map(sharedEventToScheduleItem)
-        setCourseEvents(prev => {
-          const apiEvents = prev.filter(ev => ev.id.startsWith('prof-event-'))
-          const apiIds = new Set(apiEvents.map(ev => ev.id))
-          return [...apiEvents, ...fromShared.filter(ev => !apiIds.has(ev.id))]
-        })
-      }
-    }
-    window.addEventListener('storage', handleStorage)
-    return () => window.removeEventListener('storage', handleStorage)
-  }, [loggedIn, isStudent, deptId])
+    if (!loggedIn || !username) return
+    fetchMyTimetable(username, semester)
+      .then(entries => setTimetableItems(entries.flatMap(expandTimetableEntry)))
+      .catch(() => {})
+  }, [loggedIn, username, semester])
 
-  // 교수/조교: 담당 과목 목록 + 기본 과목 병합
+  // ── 과목 목록 로드 (교수·조교만, 드롭다운용) ──────────────────────────────
   useEffect(() => {
-    if (!loggedIn || !isProfessor || !username) return
+    if (!loggedIn || !username) return
     if (memberType === 'professor') {
-      fetchProfessorCourses(username).then(dtos => {
-        const seen = new Set<number>()
-        const apiCourses = dtos
-          .filter(c => { if (seen.has(c.courseId)) return false; seen.add(c.courseId); return true })
-          .map(c => ({ courseId: c.courseId, courseName: c.courseName }))
-        setProfCourses(mergeCourses(apiCourses))
-      })
+      fetchProfessorAssignedCourses(username)
+        .then(dtos => {
+          const seen = new Set<number>()
+          setMyCourses(
+            dtos
+              .filter(c => { if (seen.has(c.courseId)) return false; seen.add(c.courseId); return true })
+              .map(c => ({ courseId: c.courseId, courseName: c.courseName }))
+          )
+        })
+    } else if (memberType === 'assistant') {
+      fetchAssistantCourses(username)
+        .then(dtos => setMyCourses(dtos.map(c => ({ courseId: c.courseId, courseName: c.courseName }))))
+    }
+    // 학생은 PERSONAL만 등록 가능 → 과목 선택 불필요
+  }, [loggedIn, memberType, username])
+
+  // ── 전체 일정 (통합 DB + ClassEvent + 시간표 병합, 중복 제거) ───────────────
+  const allSchedules = useMemo<ScheduleItem[]>(() => {
+    const unified = [...dbSchedules, ...timetableItems]
+    const usedIds = new Set(unified.map(s => s.id))
+    // ClassEvent 아이템 중 id 중복 없는 것만 추가
+    const extra = classEvents.filter(e => !usedIds.has(e.id))
+    return [...unified, ...extra]
+  }, [dbSchedules, classEvents, timetableItems])
+
+  // ── 일정 생성 / 수정 ──────────────────────────────────────────────────────
+  const handleSave = async (
+    data: Omit<ScheduleItem, 'id'> & {
+      id?: string
+      courseId?: number
+      targetGrades?: number[]
+      isAllGrades?: boolean
+    }
+  ): Promise<boolean> => {
+    // 수업 시간표 ID(timetable-*, course-*)는 직접 수정 불가 — category 'course'는 허용
+    if (data.id && (data.id.startsWith('timetable-') || data.id.startsWith('course-'))) return false
+    if (!username) {
+      alert('로그인이 필요합니다.')
+      return false
+    }
+
+    const req: ScheduleCreateReq = {
+      title:         data.title,
+      content:       data.content ?? '',
+      scheduleType:  (data.scheduleType ?? 'PERSONAL') as ScheduleType,
+      courseId:      data.courseId,
+      targetGrades:  data.targetGrades,
+      isAllGrades:   data.isAllGrades,
+      category:      data.category,
+      startDate:     data.date,
+      endDate:       data.endDate ?? '',
+      startTime:     data.startTime ?? '',
+      endTime:       data.endTime ?? '',
+    }
+
+    if (data.id) {
+      const numId = parseInt(data.id)
+      if (isNaN(numId)) return false
+      const updated = await updateSchedule(username, numId, req)
+      if (updated) {
+        setDbSchedules(prev => prev.map(s => s.id === data.id ? unifiedToItem(updated) : s))
+        return true
+      }
+      return false
     } else {
-      fetchAssistantCourses(username).then(dtos =>
-        setProfCourses(mergeCourses(dtos.map(c => ({ courseId: c.courseId, courseName: c.courseName }))))
-      )
+      const created = await createSchedule(username, req)
+      if (created) {
+        setDbSchedules(prev => [...prev, unifiedToItem(created)])
+        return true
+      }
+      return false
     }
-  }, [loggedIn, isProfessor, memberType, username])
-
-  // 교수: 로그인 시 자신이 등록한 일정 캘린더에 표시 (DB + localStorage 병합)
-  useEffect(() => {
-    if (!loggedIn || !isProfessor || !deptId) return
-    fetchStudentDeptEvents(deptId).then(dbEvents => {
-      const fromDb = dbEvents.map(deptCourseEventToScheduleItem)
-      const fromShared = loadSharedCourseEventsByDept(deptId)
-        .filter(e => e.registeredBy === username)
-        .map(sharedEventToScheduleItem)
-      const dbIds = new Set(fromDb.map(e => e.id))
-      const merged = [...fromDb, ...fromShared.filter(e => !dbIds.has(e.id))]
-      if (merged.length > 0) setCourseEvents(merged)
-    })
-  }, [loggedIn, isProfessor, deptId, username])
-
-  const allSchedules = useMemo<ScheduleItem[]>(() => [
-    ...personalSchedules,
-    ...courseSchedules,
-    ...courseEvents,
-  ], [personalSchedules, courseSchedules, courseEvents])
-
-  const reload = () => setPersonalSchedules(loadSchedules())
-
-  const handleSave = (data: Omit<ScheduleItem, 'id'> & { id?: string }) => {
-    if (data.category === 'course') return
-    const local: Omit<LocalSchedule, 'id'> & { id?: string } = {
-      title:     data.title,
-      date:      data.date,
-      startTime: data.startTime ?? '',
-      endTime:   data.endTime ?? '',
-      category:  data.category as LocalSchedule['category'],
-      status:    'scheduled',
-      content:   data.content ?? '',
-      allDay:    data.allDay ?? false,
-      ...(data.id ? { id: data.id } : {}),
-    }
-    if (local.id) updateSchedule(local as LocalSchedule)
-    else addSchedule(local as Omit<LocalSchedule, 'id'>)
-    reload()
   }
 
-  const handleDelete = (id: string) => {
-    if (id.startsWith('course-')) return
-    if (id.startsWith('dept-event-')) return  // DB 이벤트는 읽기 전용
-    // 공유 이벤트: 교수 본인이 등록한 것만 삭제 가능
-    if (id.startsWith('ce-')) {
-      deleteSharedCourseEvent(id)
-      setCourseEvents(prev => prev.filter(e => e.id !== id))
-      return
-    }
-    if (id.startsWith('prof-event-')) return
-    deleteSchedule(id)
-    reload()
+  // ── 일정 삭제 ─────────────────────────────────────────────────────────────
+  const handleDelete = async (id: string) => {
+    if (id.startsWith('timetable-') || id.startsWith('course-')) return
+    const numId = parseInt(id)
+    if (isNaN(numId)) return
+    const ok = await deleteUnifiedSchedule(username, numId)
+    if (ok) setDbSchedules(prev => prev.filter(s => s.id !== id))
   }
 
-  // 교수가 수업 일정 등록 → DB 저장 + localStorage 폴백
-  const handleProfEventSubmit = async (
-    courseId: number, courseName: string, title: string, eventDate: string, category: string,
-  ) => {
-    // 1. DB 저장 (학과 전체 학생에게 공유됨)
-    const saved = await createProfessorDeptSchedule(username, { courseName, title, eventDate, category })
-
-    if (saved) {
-      // DB 저장 성공 → 교수 캘린더에 즉시 반영
-      setCourseEvents(prev => [...prev, deptCourseEventToScheduleItem(saved)])
-    } else {
-      // DB 실패 시 localStorage 폴백 (같은 브라우저 동기화)
-      const shared = addSharedCourseEvent({
-        courseName,
-        title,
-        date: eventDate,
-        category,
-        deptId,
-        registeredBy: username,
-      })
-      setCourseEvents(prev => [...prev, sharedEventToScheduleItem(shared)])
+  // ── 완료 토글 ─────────────────────────────────────────────────────────────
+  const handleToggleComplete = async (id: string) => {
+    const numId = parseInt(id)
+    if (isNaN(numId)) return
+    const updated = await toggleScheduleComplete(username, numId)
+    if (updated) {
+      setDbSchedules(prev => prev.map(s => s.id === id ? { ...s, isCompleted: updated.isCompleted } : s))
     }
+  }
 
-    // 2. 수강신청 기반 course 이벤트도 저장 (enrollment 있는 학생 대상)
-    if (courseId < 2001) {
-      await createProfessorCourseSchedule(username, { courseId, title, eventDate, category })
-    }
+  // ── 수정 (onUpdate) ───────────────────────────────────────────────────────
+  const handleUpdate = async (
+    id: string,
+    data: Omit<ScheduleItem, 'id'> & { courseId?: number; targetGrades?: number[]; isAllGrades?: boolean }
+  ): Promise<boolean> => {
+    return handleSave({ ...data, id })
   }
 
   return (
@@ -416,34 +313,21 @@ export default function CalendarPage() {
       <div className="pt-14" />
       <AdminBanner scope="dept" targetId={selectedDeptId ?? undefined} />
 
-      {/* 교수/조교 전용: 수업 일정 등록 버튼 */}
-      {loggedIn && isProfessor && (
-        <div className="max-w-7xl mx-auto px-4 py-2 flex justify-end">
-          <button
-            onClick={() => setProfModalOpen(true)}
-            className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition shadow-sm">
-            + 수업 일정 등록
-          </button>
-        </div>
-      )}
-
       <div style={{ minHeight: 'calc(100vh - 56px)' }}>
         <ScheduleCalendarView
           schedules={allSchedules}
           categoryMeta={PERSONAL_CATEGORY_META}
-          loading={loadingCourse}
+          loading={loading}
           canWrite={loggedIn}
+          username={username}
+          memberType={memberType}
+          myCourses={myCourses}
           onSave={handleSave}
+          onUpdate={handleUpdate}
           onDelete={handleDelete}
+          onToggleComplete={handleToggleComplete}
         />
       </div>
-
-      <ProfEventModal
-        open={profModalOpen}
-        courses={profCourses}
-        onClose={() => setProfModalOpen(false)}
-        onSubmit={handleProfEventSubmit}
-      />
     </div>
   )
 }

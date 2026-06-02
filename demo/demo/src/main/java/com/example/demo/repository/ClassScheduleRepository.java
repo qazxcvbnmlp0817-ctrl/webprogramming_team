@@ -17,4 +17,6 @@ public interface ClassScheduleRepository extends JpaRepository<ClassSchedule, Lo
     List<ClassSchedule> findByDeptIdAndSemester(Long deptId, String semester);
 
     List<ClassSchedule> findByDeptId(Long deptId);
+
+    void deleteByDeptId(Long deptId);
 }

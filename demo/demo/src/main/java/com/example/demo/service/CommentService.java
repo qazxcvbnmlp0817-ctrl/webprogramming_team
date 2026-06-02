@@ -25,13 +25,7 @@ public class CommentService {
 
     public List<CommentDto> getCommentsByUsername(String username) {
         return commentRepository.findByAuthorUsernameOrderByCreatedDateDesc(username)
-                .stream().map(c -> {
-                    String postTitle = postRepository.findById(c.getPostId())
-                            .map(p -> p.getTitle()).orElse(null);
-                    return new CommentDto(c.getId(), c.getPostId(), c.getAuthor(),
-                            c.getAuthorUsername(), c.getContent(),
-                            c.getCreatedDate().toString(), c.getParentId(), postTitle);
-                }).collect(Collectors.toList());
+                .stream().map(this::toDto).collect(Collectors.toList());
     }
 
     public List<CommentDto> getByPostId(Long postId) {

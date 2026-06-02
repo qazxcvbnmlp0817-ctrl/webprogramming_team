@@ -19,7 +19,11 @@ export default function DepartmentGuideCards({ guideCards }: DepartmentGuideCard
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {guideCards.map(card => (
-          <article key={card.title} className="border-2 border-black p-4 min-h-44 flex flex-col justify-between hover:bg-gray-50 transition">
+          <a
+            key={card.title}
+            href={card.href}
+            className="block border-2 border-black p-4 min-h-44 flex flex-col justify-between hover:bg-gray-50 transition focus:outline-none focus:ring-2 focus:ring-black"
+          >
             <div>
               <div className="w-10 h-10 bg-black text-white flex items-center justify-center mb-4">
                 <i className={`fas ${card.icon}`} />
@@ -27,8 +31,11 @@ export default function DepartmentGuideCards({ guideCards }: DepartmentGuideCard
               <h3 className="font-black text-lg">{card.title}</h3>
               <p className="text-sm text-gray-600 leading-relaxed mt-2 break-keep">{card.description}</p>
             </div>
-            <p className="mt-5 text-xs font-black border-t border-gray-200 pt-3">{card.action}</p>
-          </article>
+            <p className="mt-5 text-xs font-black border-t border-gray-200 pt-3">
+              {card.action}
+              <i className="fas fa-arrow-down ml-1 text-[10px]" />
+            </p>
+          </a>
         ))}
       </div>
     </section>

@@ -16,9 +16,13 @@ export interface ClassScheduleDto {
 export interface CourseEventDto {
   id: number
   title: string
-  date: string    // yyyy-MM-dd
+  date: string     // yyyy-MM-dd
+  endDate?: string
   dday: number
-  category: string // 시험, 과제, 기타
+  category: string
+  startTime?: string
+  endTime?: string
+  registeredBy?: string
 }
 
 export interface CourseDto {
@@ -86,6 +90,17 @@ export async function fetchProfessorCourses(username: string): Promise<ClassSche
   } catch { return [] }
 }
 
+// 교수: 배정된 과목 목록 (일정 등록 모달 과목 선택 드롭다운용 - 시간표 미등록 과목도 포함)
+export async function fetchProfessorAssignedCourses(username: string): Promise<CourseDto[]> {
+  try {
+    const res = await fetch('/api/professor/my-courses', {
+      headers: { 'X-Username': username },
+    })
+    if (!res.ok) return []
+    return res.json()
+  } catch { return [] }
+}
+
 // 학과별 과목 목록 (수업 선택 탭)
 export async function fetchCoursesByDept(deptId: number): Promise<CourseDto[]> {
   try {
@@ -110,18 +125,50 @@ export interface DeptCourseEventDto {
   id: number
   title: string
   date: string
+  endDate?: string
   dday: number
   category: string
   courseName?: string
+  memo?: string
+  startTime?: string
+  endTime?: string
+  registeredBy?: string
 }
 
-// 교수/조교: 학과 전체 공개 수업 일정 등록
+// 교수·조교·관리자: 공지 일정 등록
+// scope: 'NOTICE'(학과공지, 기본값) | 'GLOBAL'(전체공지, 관리자만)
 export async function createProfessorDeptSchedule(
   username: string,
-  payload: { courseName: string; title: string; eventDate: string; category: string },
+  payload: {
+    courseName: string
+    title: string
+    eventDate: string
+    endDate?: string
+    category: string
+    memo?: string
+    scope?: string
+    startTime?: string
+    endTime?: string
+  },
 ): Promise<DeptCourseEventDto | null> {
   try {
     const res = await fetch('/api/professor/dept-schedules', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Username': username },
+      body: JSON.stringify({ scope: 'NOTICE', ...payload }),
+    })
+    if (!res.ok) return null
+    return res.json()
+  } catch { return null }
+}
+
+// 교수 전용: 담당 과목 수강생 대상 이벤트 등록
+export async function createProfessorCourseScheduleV2(
+  username: string,
+  payload: { courseId: number; title: string; eventDate: string; endDate?: string; category: string; memo?: string; startTime?: string; endTime?: string },
+): Promise<DeptCourseEventDto | null> {
+  try {
+    const res = await fetch('/api/professor/schedules', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Username': username },
       body: JSON.stringify(payload),
@@ -131,10 +178,13 @@ export async function createProfessorDeptSchedule(
   } catch { return null }
 }
 
-// 학생: 소속 학과 교수 등록 일정 조회
-export async function fetchStudentDeptEvents(deptId: string): Promise<DeptCourseEventDto[]> {
+// 학과 공지 이벤트 조회 (NOTICE + GLOBAL) — 로그인 필수
+export async function fetchStudentDeptEvents(deptId: string, username: string): Promise<DeptCourseEventDto[]> {
+  if (!username) return []
   try {
-    const res = await fetch(`/api/student/dept-events?deptId=${encodeURIComponent(deptId)}`)
+    const res = await fetch(`/api/student/dept-events?deptId=${encodeURIComponent(deptId)}`, {
+      headers: { 'X-Username': username },
+    })
     if (!res.ok) return []
     return res.json()
   } catch { return [] }

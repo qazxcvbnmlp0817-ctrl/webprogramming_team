@@ -36,4 +36,14 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     // 좋아요 내림차순 정렬 (동점 시 최신순)
     List<Post> findByScopeTypeAndScopeIdOrderByLikesDescCreatedDateDesc(
         String scopeType, Long scopeId);
+
+    // 숨김 제외 — 일반 사용자 공개용 (hidden IS NULL OR hidden = false)
+    @Query("SELECT p FROM Post p WHERE p.scopeType = :scopeType AND p.scopeId = :scopeId AND (p.hidden IS NULL OR p.hidden = false) ORDER BY p.createdDate DESC")
+    List<Post> findVisibleByScopeTypeAndScopeId(@Param("scopeType") String scopeType, @Param("scopeId") Long scopeId);
+
+    @Query("SELECT p FROM Post p WHERE p.scopeType = :scopeType AND p.scopeId = :scopeId AND (p.hidden IS NULL OR p.hidden = false) ORDER BY p.likes DESC, p.createdDate DESC")
+    List<Post> findVisibleByScopeTypeAndScopeIdOrderByLikes(@Param("scopeType") String scopeType, @Param("scopeId") Long scopeId);
+
+    @Query("SELECT COUNT(p) FROM Post p WHERE p.scopeType = :scopeType AND p.scopeId = :scopeId AND (p.hidden IS NULL OR p.hidden = false)")
+    long countVisibleByScopeTypeAndScopeId(@Param("scopeType") String scopeType, @Param("scopeId") Long scopeId);
 }

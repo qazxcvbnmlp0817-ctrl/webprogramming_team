@@ -37,6 +37,7 @@ export interface PostItem {
   category: string
   viewCount: number
   createdDate: string
+  hidden: boolean
 }
 
 export interface PostPage {
@@ -53,6 +54,7 @@ export interface NoticeItem {
   viewCount: number
   featured: boolean
   createdDate: string
+  hidden: boolean
 }
 
 export interface NoticePage {
@@ -120,8 +122,32 @@ export async function deleteDeptNotice(noticeId: number, deptId?: number): Promi
   handle403(res)
 }
 
+export async function hideDeptPost(postId: number, hidden: boolean, deptId?: number): Promise<void> {
+  const res = await fetch('/api/admin/dept/posts/' + postId + '/hidden' + qs(deptParam(deptId)), {
+    method: 'PUT',
+    headers: headers(),
+    body: JSON.stringify({ hidden }),
+  })
+  handle403(res)
+}
+
+export async function hideDeptNotice(noticeId: number, hidden: boolean, deptId?: number): Promise<void> {
+  const res = await fetch('/api/admin/dept/notices/' + noticeId + '/hidden' + qs(deptParam(deptId)), {
+    method: 'PUT',
+    headers: headers(),
+    body: JSON.stringify({ hidden }),
+  })
+  handle403(res)
+}
+
 export async function fetchDeptUsers(deptId?: number): Promise<AdminUser[]> {
   const res = await fetch('/api/admin/dept/users' + qs(deptParam(deptId)), { headers: headers() })
+  handle403(res)
+  return res.json()
+}
+
+export async function fetchDeptPendingUsers(deptId?: number): Promise<AdminUser[]> {
+  const res = await fetch('/api/admin/dept/pending-users' + qs(deptParam(deptId)), { headers: headers() })
   handle403(res)
   return res.json()
 }
@@ -171,6 +197,12 @@ export async function fetchDeptProfessors(deptId?: number): Promise<ProfessorIte
   return res.json()
 }
 
+export async function fetchDeptUnivProfessors(deptId?: number): Promise<ProfessorItem[]> {
+  const res = await fetch('/api/admin/dept/univ-professors' + qs(deptParam(deptId)), { headers: headers() })
+  handle403(res)
+  return res.json()
+}
+
 export async function fetchDeptCourses(deptId?: number): Promise<CourseItem[]> {
   const res = await fetch('/api/admin/dept/courses' + qs(deptParam(deptId)), { headers: headers() })
   handle403(res)
@@ -192,8 +224,9 @@ export async function createDeptAssignment(
     body: JSON.stringify({ professorId, courseId }),
   })
   if (!res.ok) {
-    handle403(res)
-    throw new Error(await res.text())
+    // 배정 실패는 비즈니스 오류 — 리다이렉트 없이 메시지만 throw
+    const text = await res.text()
+    throw new Error(text || '배정 추가에 실패했습니다.')
   }
   return res.json()
 }

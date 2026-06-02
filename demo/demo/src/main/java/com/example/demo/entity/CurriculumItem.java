@@ -14,6 +14,8 @@ public class CurriculumItem {
     private String name;
 
     private String year;
+    private String semester;
+    private String category;
     private boolean required;
     private int credits;
 
@@ -26,6 +28,10 @@ public class CurriculumItem {
     public void setName(String name) { this.name = name; }
     public String getYear() { return year; }
     public void setYear(String year) { this.year = year; }
+    public String getSemester() { return semester; }
+    public void setSemester(String semester) { this.semester = semester; }
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
     public boolean isRequired() { return required; }
     public void setRequired(boolean required) { this.required = required; }
     public int getCredits() { return credits; }

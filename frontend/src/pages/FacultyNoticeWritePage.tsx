@@ -1,9 +1,10 @@
 import { useRef, useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import { isSameFaculty } from '../utils/accessCheck'
 import type { PostAttachmentDto } from '../types/post'
 
-const CATEGORIES = ['학사', '장학', '행사', '취업']
+const CATEGORIES = ['일반', '학사', '장학', '행사', '취업']
 
 function formatFileSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`
@@ -15,10 +16,11 @@ export default function FacultyNoticeWritePage() {
   const navigate = useNavigate()
   const { facultyId } = useParams<{ facultyId: string }>()
   const [title, setTitle]       = useState('')
-  const [category, setCategory] = useState('학사')
+  const [category, setCategory] = useState('일반')
   const [content, setContent]   = useState('')
 
   const [targetGrades, setTargetGrades] = useState<number[]>([1, 2, 3, 4])
+  const [isPublicToOutsiders, setIsPublicToOutsiders] = useState(false)
 
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [imageFiles, setImageFiles]       = useState<File[]>([])
@@ -29,7 +31,11 @@ export default function FacultyNoticeWritePage() {
 
   useEffect(() => {
     const memberType = sessionStorage.getItem('memberType') ?? ''
-    if (memberType !== 'professor' && memberType !== 'admin') {
+    const isAdmin = memberType === 'admin'
+    if (!['professor', 'admin', 'assistant'].includes(memberType)) {
+      navigate(`/school/faculty/${facultyId}/notice`, { replace: true }); return
+    }
+    if (!isAdmin && !isSameFaculty(facultyId ? Number(facultyId) : null)) {
       navigate(`/school/faculty/${facultyId}/notice`, { replace: true })
     }
   }, [navigate, facultyId])
@@ -83,6 +89,7 @@ export default function FacultyNoticeWritePage() {
         scopeId: Number(facultyId) || 1,
         attachments: uploadedAttachments,
         authorUsername: sessionStorage.getItem('username') ?? '',
+        isPublicToOutsiders,
       }),
     })
     if (res.ok) {
@@ -162,6 +169,20 @@ export default function FacultyNoticeWritePage() {
                 </label>
               ))}
             </div>
+          </div>
+
+          {/* 외부자 공개 */}
+          <div className="flex items-center gap-2 py-2">
+            <input
+              id="publicToOutsiders"
+              type="checkbox"
+              className="accent-black w-4 h-4"
+              checked={isPublicToOutsiders}
+              onChange={e => setIsPublicToOutsiders(e.target.checked)}
+            />
+            <label htmlFor="publicToOutsiders" className="text-sm font-medium cursor-pointer">
+              외부자 공개 <span className="text-gray-400 font-normal">(비소속 학생/비로그인 유저도 열람 가능)</span>
+            </label>
           </div>
 
           {/* 사진 첨부 */}

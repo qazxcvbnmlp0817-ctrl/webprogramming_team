@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import type { PostDto } from '../types/post'
+import AccessDenied from '../components/common/AccessDenied'
+import { isLoggedIn as checkLoggedIn, isPrivileged } from '../utils/accessCheck'
 
 interface CommentDto {
   id: number
@@ -146,6 +148,23 @@ export default function PostDetailPage() {
     if (res.ok) navigate(-1)
   }
 
+  async function handleAdminHide() {
+    if (!post) return
+    const newHidden = !post.hidden
+    const res = await fetch(`/api/posts/${id}/hidden`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Username': username },
+      body: JSON.stringify({ hidden: newHidden }),
+    })
+    if (res.ok) setPost(prev => prev ? { ...prev, hidden: newHidden } : prev)
+  }
+
+  async function handleAdminDelete() {
+    if (!confirm('게시글을 삭제하시겠습니까?')) return
+    const res = await fetch(`/api/posts/${id}`, { method: 'DELETE' })
+    if (res.ok) navigate(-1)
+  }
+
   if (loading) {
     return (
       <div className="bg-white text-black font-sans min-h-screen">
@@ -159,6 +178,18 @@ export default function PostDetailPage() {
   }
 
   if (!post) return null
+
+  if (!isPrivileged() && post.scopeType && post.scopeType !== 'univ') {
+    if (!checkLoggedIn()) {
+      return (
+        <div className="bg-white text-black font-sans min-h-screen">
+          <Navbar />
+          <div className="pt-14" />
+          <AccessDenied message="로그인이 필요합니다." />
+        </div>
+      )
+    }
+  }
 
   const isAuthor  = username === post.authorUsername || myName === post.author
   const canDelete = isAuthor || memberType === 'admin'
@@ -214,10 +245,35 @@ export default function PostDetailPage() {
     )
   }
 
+  const adminRole = sessionStorage.getItem('adminRole')
+  const isAdmin = !!adminRole
+
   return (
     <div className="bg-white text-black font-sans min-h-screen">
       <Navbar />
       <div className="pt-14" />
+
+      {isAdmin && (
+        <div className="max-w-3xl mx-auto px-4 pt-4">
+          <div className="border border-gray-300 bg-gray-50 px-4 py-2.5 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <i className="fas fa-shield-halved" />
+              <span>관리자 모드</span>
+              {post.hidden && <span className="bg-gray-400 text-white px-1.5 py-0.5 text-xs">숨김 중</span>}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleAdminHide}
+                className={`text-xs border px-3 py-1 transition ${post.hidden ? 'border-blue-400 text-blue-600 hover:bg-blue-50' : 'border-gray-400 text-gray-600 hover:bg-gray-100'}`}
+              >{post.hidden ? '표시 복원' : '숨김 처리'}</button>
+              <button
+                onClick={handleAdminDelete}
+                className="text-xs border border-red-400 text-red-500 px-3 py-1 hover:bg-red-50 transition"
+              >삭제</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="max-w-3xl mx-auto px-4 py-8">
         <button onClick={() => navigate(-1)} className="text-sm text-gray-500 hover:text-black mb-6 flex items-center gap-1">

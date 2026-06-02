@@ -1,10 +1,21 @@
-﻿export interface CareerItem {
+﻿export interface CareerCertificate {
+  name: string
+  href: string
+}
+
+export interface CareerItem {
   category: string
   jobs: string[]
   description: string
   preparation?: string[]
   courses?: string[]
   portfolio?: string
+  certificates?: CareerCertificate[]
+}
+
+export interface IntroHighlight {
+  title: string
+  items: string[]
 }
 
 export interface FacilityItem {
@@ -45,6 +56,7 @@ export interface GuideCard {
   description: string
   action: string
   icon: string
+  href: string
 }
 
 export interface DepartmentExtra {
@@ -63,6 +75,7 @@ export interface DepartmentExtra {
   studentLife: StudentLifeItem[]
   professorEnhancements: ProfessorEnhancement[]
   requirements: RequirementItem[]
+  introHighlights?: IntroHighlight[]
 }
 
 type ExtraTemplate = Omit<DepartmentExtra, 'deptId'>
@@ -77,10 +90,10 @@ const defaultStudentLife: StudentLifeItem[] = [
 ]
 
 const defaultGuideCards: GuideCard[] = [
-  { title: '처음 보는 학과 정리', description: '학과 소개와 핵심 키워드로 내 전공 방향을 5분 안에 파악합니다.', action: '학과 소개 읽기', icon: 'fa-magnifying-glass' },
-  { title: '수강 흐름 잡기', description: '학년별 과목 순서와 전공 분류를 필터로 빠르게 확인합니다.', action: '교육과정 필터 보기', icon: 'fa-route' },
-  { title: '진로·자격증 탐색', description: '전공을 어떤 직무·자격증으로 연결할 수 있는지 카드로 확인합니다.', action: '진로 카드 보기', icon: 'fa-briefcase' },
-  { title: '공지·상담 동선', description: '학과 공지, 사무실 연락처, 게시판으로 이어지는 이동 경로를 모았습니다.', action: '빠른 링크 이동', icon: 'fa-comments' },
+  { title: '처음 보는 학과 정리', description: '학과 소개와 핵심 키워드로 내 전공 방향을 5분 안에 파악합니다.', action: '학과 소개 읽기', icon: 'fa-magnifying-glass', href: '#intro' },
+  { title: '수강 흐름 잡기', description: '학년별 과목 순서와 전공 분류를 필터로 빠르게 확인합니다.', action: '교육과정 필터 보기', icon: 'fa-route', href: '#curriculum' },
+  { title: '진로·자격증 탐색', description: '전공을 어떤 직무·자격증으로 연결할 수 있는지 카드로 확인합니다.', action: '진로 카드 보기', icon: 'fa-briefcase', href: '#careers' },
+  { title: '공지·상담 동선', description: '학과 공지, 사무실 연락처, 게시판으로 이어지는 이동 경로를 모았습니다.', action: '빠른 링크 이동', icon: 'fa-comments', href: '#contact' },
 ]
 
 const defaultRequirements: RequirementItem[] = [
@@ -98,6 +111,11 @@ const computerTemplate: ExtraTemplate = {
   keywords: ['AI', '웹개발', '데이터', '정보보안', '클라우드'],
   guideCards: defaultGuideCards,
   overviewCounts: { notices: 12, schedules: 4 },
+  introHighlights: [
+    { title: '핵심 학습 영역', items: ['프로그래밍 기초', '자료구조·알고리즘', '운영체제', '데이터베이스', '컴퓨터네트워크'] },
+    { title: '심화 전공 트랙', items: ['웹·앱 서비스 개발', '데이터·인공지능', '정보보안·시스템'] },
+    { title: '졸업 후 진출 분야', items: ['IT 서비스 기업', '데이터·AI 스타트업', '공공·금융 시스템', '대학원·연구소'] },
+  ],
   careers: [
     {
       category: '개발',
@@ -106,6 +124,11 @@ const computerTemplate: ExtraTemplate = {
       preparation: ['Git/GitHub 사용 습관', 'REST API와 DB 기초', '팀 프로젝트 경험'],
       courses: ['웹프로그래밍', '소프트웨어공학', '데이터베이스'],
       portfolio: '학과 커뮤니티, 예약 시스템, 게시판 같은 실제 사용자 흐름이 있는 웹서비스',
+      certificates: [
+        { name: '정보처리기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+        { name: '정보처리산업기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+        { name: 'SQLD', href: 'https://www.dataq.or.kr/www/sub/a_07.do' },
+      ],
     },
     {
       category: '데이터/AI',
@@ -114,6 +137,12 @@ const computerTemplate: ExtraTemplate = {
       preparation: ['파이썬 분석 노트북', '모델 성능 비교 기록', '데이터 전처리 경험'],
       courses: ['인공지능', '자료구조', '알고리즘'],
       portfolio: '공공데이터 분석 대시보드, 추천 모델, 이미지 분류 미니 프로젝트',
+      certificates: [
+        { name: '빅데이터분석기사', href: 'https://www.dataq.or.kr/www/sub/a_07.do' },
+        { name: 'ADsP', href: 'https://www.dataq.or.kr/www/sub/a_07.do' },
+        { name: 'SQLD', href: 'https://www.dataq.or.kr/www/sub/a_07.do' },
+        { name: '정보처리기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+      ],
     },
     {
       category: '보안/인프라',
@@ -122,6 +151,12 @@ const computerTemplate: ExtraTemplate = {
       preparation: ['Linux 기본 명령', '네트워크 구조 이해', '취약점 분석 실습'],
       courses: ['정보보호', '컴퓨터네트워크', '운영체제'],
       portfolio: '로그 분석, 간단한 침해 대응 보고서, Docker 배포 자동화 기록',
+      certificates: [
+        { name: '정보보안기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+        { name: '정보보안산업기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+        { name: '리눅스마스터', href: 'https://www.ihd.or.kr/intro.kh?menuCode=qual' },
+        { name: '네트워크관리사', href: 'https://www.ihd.or.kr/intro.kh?menuCode=qual' },
+      ],
     },
   ],
   facilities: [
@@ -149,6 +184,11 @@ const electricalTemplate: ExtraTemplate = {
   keywords: ['전력', '회로', '제어', '에너지', '설비'],
   guideCards: defaultGuideCards,
   overviewCounts: { notices: 9, schedules: 3 },
+  introHighlights: [
+    { title: '핵심 학습 영역', items: ['회로이론', '전기기기', '전력공학', '제어공학', '전기설비'] },
+    { title: '심화 전공 트랙', items: ['전력·에너지 시스템', '자동화·제어 설계', '공공 인프라 관리'] },
+    { title: '졸업 후 진출 분야', items: ['한전·발전 공기업', '제조·설비 기업', '전기직 공무원', '스마트에너지 산업'] },
+  ],
   careers: [
     {
       category: '전력/에너지',
@@ -156,6 +196,11 @@ const electricalTemplate: ExtraTemplate = {
       description: '전력 생산, 송배전, 에너지 설비 운영과 유지보수를 다룹니다.',
       preparation: ['전기기사 자격증 준비', '실험 보고서 관리', '설비 도면 읽기'],
       courses: ['전력공학', '전기기기', '회로이론'],
+      certificates: [
+        { name: '전기기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+        { name: '전기산업기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+        { name: '전기공사기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+      ],
     },
     {
       category: '자동화/제어',
@@ -163,6 +208,11 @@ const electricalTemplate: ExtraTemplate = {
       description: '센서, 회로, 제어 시스템을 활용해 산업 현장의 자동화를 설계합니다.',
       preparation: ['PLC 프로그래밍 기초', 'CAD 사용 경험', '현장 인턴십'],
       courses: ['제어공학', '자동화실험', '전자회로'],
+      certificates: [
+        { name: '전기기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+        { name: '일반기계기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+        { name: '메카트로닉스기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+      ],
     },
     {
       category: '공공/공기업',
@@ -170,6 +220,11 @@ const electricalTemplate: ExtraTemplate = {
       description: '전공 자격증과 실무 지식을 기반으로 공공 인프라 분야로 진출합니다.',
       preparation: ['전기기사 취득', 'NCS 기출 풀이', '공기업 직무기술서 분석'],
       courses: ['전기설비', '안전공학', '전력계통'],
+      certificates: [
+        { name: '전기기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+        { name: '산업안전기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+        { name: '전기안전기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+      ],
     },
   ],
   facilities: [
@@ -196,6 +251,11 @@ const scienceTemplate: ExtraTemplate = {
   keywords: ['기초과학', '이론', '실험', '연구', '응용'],
   guideCards: defaultGuideCards,
   overviewCounts: { notices: 8, schedules: 3 },
+  introHighlights: [
+    { title: '핵심 학습 영역', items: ['수리해석', '전공실험', '계측분석', '컴퓨팅·통계', '소재과학'] },
+    { title: '심화 전공 트랙', items: ['이론·계산 연구', '분석·측정 실험', '응용·산업 연계'] },
+    { title: '졸업 후 진출 분야', items: ['대학원·국책연구소', '반도체·소재 기업 R&D', '데이터 분석 직무', '교육·학계'] },
+  ],
   careers: [
     {
       category: '연구/학계',
@@ -211,6 +271,10 @@ const scienceTemplate: ExtraTemplate = {
       description: '과학적 탐구 역량을 바탕으로 산업 현장의 기술 개발에 참여합니다.',
       preparation: ['분석 장비 운용 경험', '데이터 분석 역량', '인턴십'],
       courses: ['전공실험', '계측분석', '소재과학'],
+      certificates: [
+        { name: '화학분석기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+        { name: '화공기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+      ],
     },
     {
       category: '데이터/분석',
@@ -218,6 +282,10 @@ const scienceTemplate: ExtraTemplate = {
       description: '수리적 분석 능력을 활용해 다양한 분야의 데이터 기반 직무에 진출합니다.',
       preparation: ['파이썬·R 프로그래밍', '통계 기초 탄탄히', '데이터 프로젝트'],
       courses: ['확률통계', '수치해석', '프로그래밍'],
+      certificates: [
+        { name: 'ADsP', href: 'https://www.dataq.or.kr/www/sub/a_07.do' },
+        { name: '빅데이터분석기사', href: 'https://www.dataq.or.kr/www/sub/a_07.do' },
+      ],
     },
   ],
   facilities: [
@@ -244,6 +312,11 @@ const bioMedTemplate: ExtraTemplate = {
   keywords: ['생명과학', '의약', '임상', '보건', '바이오'],
   guideCards: defaultGuideCards,
   overviewCounts: { notices: 10, schedules: 4 },
+  introHighlights: [
+    { title: '핵심 학습 영역', items: ['해부생리학', '분자생물학', '약리학', '임상실습', '공중보건학'] },
+    { title: '심화 전공 트랙', items: ['의료·임상 현장', '바이오·제약 연구', '공공 보건 행정'] },
+    { title: '졸업 후 진출 분야', items: ['병원·의료기관', '제약·바이오기업', '보건직 공무원', '국공립 연구소'] },
+  ],
   careers: [
     {
       category: '의료/임상',
@@ -251,6 +324,11 @@ const bioMedTemplate: ExtraTemplate = {
       description: '실무 중심의 교육과 국가고시 준비로 의료 현장으로 진출합니다.',
       preparation: ['국가고시 모의고사', '임상 실습 기록 관리', '의료 용어 숙지'],
       courses: ['임상실습', '해부생리학', '병리학'],
+      certificates: [
+        { name: '간호사 국가면허', href: 'https://www.kuksiwon.or.kr/' },
+        { name: '임상병리사 국가면허', href: 'https://www.kuksiwon.or.kr/' },
+        { name: '방사선사 국가면허', href: 'https://www.kuksiwon.or.kr/' },
+      ],
     },
     {
       category: '연구/개발',
@@ -259,6 +337,10 @@ const bioMedTemplate: ExtraTemplate = {
       preparation: ['실험 역량 강화', '논문 읽기 습관', '대학원 진학'],
       courses: ['분자생물학', '생화학', '미생물학'],
       portfolio: '학부 연구 보고서, 실험 데이터 분석 결과물',
+      certificates: [
+        { name: '식품기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+        { name: '생물공학기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+      ],
     },
     {
       category: '공공/보건',
@@ -266,6 +348,10 @@ const bioMedTemplate: ExtraTemplate = {
       description: '공공 보건 정책과 행정 분야에서 전문 역량을 발휘합니다.',
       preparation: ['공무원 시험 준비', 'NCS 학습', '자격증 취득'],
       courses: ['공중보건학', '역학', '보건법규'],
+      certificates: [
+        { name: '보건교육사', href: 'https://www.kuksiwon.or.kr/' },
+        { name: '위생사', href: 'https://www.kuksiwon.or.kr/' },
+      ],
     },
   ],
   facilities: [
@@ -292,6 +378,11 @@ const architectureTemplate: ExtraTemplate = {
   keywords: ['건축', '설계', '토목', '환경', '인프라'],
   guideCards: defaultGuideCards,
   overviewCounts: { notices: 8, schedules: 3 },
+  introHighlights: [
+    { title: '핵심 학습 영역', items: ['건축설계', '구조역학', '토질역학', '환경공학', 'CAD·BIM'] },
+    { title: '심화 전공 트랙', items: ['설계·계획 스튜디오', '시공·구조 엔지니어링', '공공 인프라 관리'] },
+    { title: '졸업 후 진출 분야', items: ['건축·설계 사무소', '건설·엔지니어링 기업', '국토부·환경부', '도시개발 공기업'] },
+  ],
   careers: [
     {
       category: '설계/계획',
@@ -300,6 +391,11 @@ const architectureTemplate: ExtraTemplate = {
       preparation: ['CAD·BIM 툴 숙달', '포트폴리오 작성', '설계 공모전 참가'],
       courses: ['건축설계', '구조역학', '재료역학'],
       portfolio: '설계 스튜디오 작품집, 공모전 출품작, 모형 제작 기록',
+      certificates: [
+        { name: '건축사 (졸업 후 취득)', href: 'https://www.kaba.or.kr/' },
+        { name: '건축기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+        { name: '조경기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+      ],
     },
     {
       category: '시공/엔지니어링',
@@ -307,6 +403,11 @@ const architectureTemplate: ExtraTemplate = {
       description: '설계를 현실로 구현하는 시공·엔지니어링 분야에서 활동합니다.',
       preparation: ['기사 자격증 취득', '현장 실습 경험', '도면 해독 능력'],
       courses: ['시공학', '구조설계', '토질역학'],
+      certificates: [
+        { name: '토목기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+        { name: '건축기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+        { name: '건설안전기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+      ],
     },
     {
       category: '공공/인프라',
@@ -314,6 +415,11 @@ const architectureTemplate: ExtraTemplate = {
       description: '공공 인프라 계획과 관리 분야에서 전문성을 발휘합니다.',
       preparation: ['기사 자격증 취득', 'NCS 준비', '공공기관 인턴십'],
       courses: ['건설관리', '환경공학', '도시계획'],
+      certificates: [
+        { name: '토목기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+        { name: '환경기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+        { name: '도시계획기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+      ],
     },
   ],
   facilities: [
@@ -340,6 +446,11 @@ const humanitiesTemplate: ExtraTemplate = {
   keywords: ['문학', '언어', '교육', '콘텐츠', '글쓰기'],
   guideCards: defaultGuideCards,
   overviewCounts: { notices: 8, schedules: 3 },
+  introHighlights: [
+    { title: '핵심 학습 영역', items: ['언어학', '문학 이론', '글쓰기·표현', '교육론', '미디어 언어'] },
+    { title: '심화 전공 트랙', items: ['교육 현장 실습', '콘텐츠·출판 기획', '공공 문화·연구'] },
+    { title: '졸업 후 진출 분야', items: ['교사·교육콘텐츠', '출판·미디어·홍보', '공공기관·문화재단', '대학원·연구소'] },
+  ],
   careers: [
     {
       category: '교육',
@@ -347,6 +458,10 @@ const humanitiesTemplate: ExtraTemplate = {
       description: '언어와 문학 이해를 바탕으로 교육 현장과 학습 콘텐츠 분야로 확장합니다.',
       preparation: ['교직 이수 확인', '교육봉사 경험', '교원임용 시험 준비'],
       courses: ['교육론', '교육실습', '교육과정'],
+      certificates: [
+        { name: '교원임용 (교사 자격)', href: 'https://www.kice.re.kr/' },
+        { name: '독서지도사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+      ],
     },
     {
       category: '콘텐츠/출판',
@@ -362,6 +477,10 @@ const humanitiesTemplate: ExtraTemplate = {
       description: '자료 해석, 글쓰기, 발표 역량을 공공과 연구 분야로 연결합니다.',
       preparation: ['공무원 시험 준비', '공공기관 인턴십', '논문 작성 경험'],
       courses: ['조사방법론', '문화정책', '인문학연구'],
+      certificates: [
+        { name: '한국어교원 자격증 (2급)', href: 'https://kteacher.korean.go.kr/' },
+        { name: '한국사능력검정시험', href: 'https://www.historyexam.go.kr/' },
+      ],
     },
   ],
   facilities: [
@@ -388,6 +507,11 @@ const publicPolicyTemplate: ExtraTemplate = {
   keywords: ['공공정책', '지방행정', '조사분석', '공공기관', '사회문제'],
   guideCards: defaultGuideCards,
   overviewCounts: { notices: 10, schedules: 4 },
+  introHighlights: [
+    { title: '핵심 학습 영역', items: ['행정학', '법학개론', '정책분석', '조사방법론', '지방자치론'] },
+    { title: '심화 전공 트랙', items: ['공공행정·공무원 준비', '조사·분석·컨설팅', '지역사회·복지 행정'] },
+    { title: '졸업 후 진출 분야', items: ['중앙·지방공무원', '공공기관·공기업', '정책연구소', 'NGO·사회적경제'] },
+  ],
   careers: [
     {
       category: '공공행정',
@@ -395,6 +519,10 @@ const publicPolicyTemplate: ExtraTemplate = {
       description: '정책, 법, 예산, 조직 이해를 바탕으로 공공 영역에서 일합니다.',
       preparation: ['공무원 시험 준비', 'NCS 학습', '공공기관 인턴십'],
       courses: ['행정학', '법학개론', '정책학'],
+      certificates: [
+        { name: '행정사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+        { name: '한국사능력검정시험', href: 'https://www.historyexam.go.kr/' },
+      ],
     },
     {
       category: '조사/분석',
@@ -402,6 +530,10 @@ const publicPolicyTemplate: ExtraTemplate = {
       description: '사회 현상을 자료와 설문, 통계로 읽고 정책 제안으로 연결합니다.',
       preparation: ['통계 소프트웨어 학습', '보고서 작성 연습', '리서치 인턴십'],
       courses: ['조사방법론', '통계학', '정책분석'],
+      certificates: [
+        { name: 'ADsP', href: 'https://www.dataq.or.kr/www/sub/a_07.do' },
+        { name: '사회조사분석사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+      ],
     },
     {
       category: '지역/복지',
@@ -409,6 +541,10 @@ const publicPolicyTemplate: ExtraTemplate = {
       description: '지역 문제 해결과 주민 서비스 개선에 필요한 실무 역량을 쌓습니다.',
       preparation: ['현장 봉사 경험', '지역사회 이해', '복지 기관 인턴십'],
       courses: ['지방자치론', '사회복지개론', '공공관리'],
+      certificates: [
+        { name: '사회복지사 2급', href: 'https://www.welfare.net/' },
+        { name: '사회조사분석사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+      ],
     },
   ],
   facilities: [
@@ -435,6 +571,11 @@ const designArtTemplate: ExtraTemplate = {
   keywords: ['디자인', '창작', '영상', '예술', '시각'],
   guideCards: defaultGuideCards,
   overviewCounts: { notices: 7, schedules: 3 },
+  introHighlights: [
+    { title: '핵심 학습 영역', items: ['디자인 기초', '타이포그래피', '영상편집', '브랜딩', '스토리텔링'] },
+    { title: '심화 전공 트랙', items: ['그래픽·UI/UX 디자인', '미디어·영상 콘텐츠', '프리랜서·창업'] },
+    { title: '졸업 후 진출 분야', items: ['광고·디자인 에이전시', 'IT 기업 UX팀', '방송·미디어', '독립 창작·스튜디오'] },
+  ],
   careers: [
     {
       category: '디자인 실무',
@@ -443,6 +584,10 @@ const designArtTemplate: ExtraTemplate = {
       preparation: ['Adobe CC 숙달', '포트폴리오 누적', '디자인 공모전 참가'],
       courses: ['디자인기초', '타이포그래피', '영상편집'],
       portfolio: '브랜드 아이덴티티, 포스터, 영상 클립, UX 프로토타입 등 다양한 결과물 모음',
+      certificates: [
+        { name: '시각디자인기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+        { name: '컴퓨터그래픽스운용기능사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+      ],
     },
     {
       category: '미디어/콘텐츠',
@@ -450,6 +595,9 @@ const designArtTemplate: ExtraTemplate = {
       description: '영상, 애니메이션, 게임 등 미디어 콘텐츠 산업에서 활동합니다.',
       preparation: ['스토리보드 작성 연습', '3D 툴 학습', '인턴십'],
       courses: ['애니메이션', '영상제작', '스토리텔링'],
+      certificates: [
+        { name: '멀티미디어콘텐츠제작전문가', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+      ],
     },
     {
       category: '프리랜서/창업',
@@ -483,6 +631,11 @@ const agricultureTemplate: ExtraTemplate = {
   keywords: ['농업', '생명', '식물', '생태', '바이오'],
   guideCards: defaultGuideCards,
   overviewCounts: { notices: 7, schedules: 3 },
+  introHighlights: [
+    { title: '핵심 학습 영역', items: ['재배학·작물학', '식물생리학', '식품가공학', '생태학', '스마트팜'] },
+    { title: '심화 전공 트랙', items: ['농업·식품 산업', '공공·연구기관', '환경·생태 보전'] },
+    { title: '졸업 후 진출 분야', items: ['농진청·국립기관', '식품·농업 기업', '환경·생태 컨설팅', '지자체 농업직'] },
+  ],
   careers: [
     {
       category: '농업/식품 산업',
@@ -490,6 +643,11 @@ const agricultureTemplate: ExtraTemplate = {
       description: '농업 기술과 생명과학을 접목해 식품과 농업 산업으로 진출합니다.',
       preparation: ['농업기사 자격증 준비', '스마트팜 실습 경험', '식품 관련 인턴십'],
       courses: ['재배학', '식물생리학', '식품가공학'],
+      certificates: [
+        { name: '식품기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+        { name: '원예기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+        { name: '농업기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+      ],
     },
     {
       category: '공공/연구',
@@ -497,6 +655,10 @@ const agricultureTemplate: ExtraTemplate = {
       description: '공공기관에서 농업 정책, 기술 보급, 안전 관리 업무를 담당합니다.',
       preparation: ['공무원 시험 준비', '자격증 취득', '공공기관 인턴십'],
       courses: ['농업정책', '작물학', '환경생태학'],
+      certificates: [
+        { name: '농업기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+        { name: '한국사능력검정시험', href: 'https://www.historyexam.go.kr/' },
+      ],
     },
     {
       category: '환경/생태',
@@ -504,6 +666,11 @@ const agricultureTemplate: ExtraTemplate = {
       description: '생태계와 자연 자원을 보전하고 관리하는 분야로 진출합니다.',
       preparation: ['생태조사 현장 실습', '환경 관련 자격증', '연구소 인턴십'],
       courses: ['생태학', '환경과학', '해양학'],
+      certificates: [
+        { name: '환경기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+        { name: '산림기사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+        { name: '자연환경관리기술사', href: 'https://www.q-net.or.kr/man001.do?gSite=Q&gId=' },
+      ],
     },
   ],
   facilities: [
@@ -530,6 +697,11 @@ const sportsWelfareTemplate: ExtraTemplate = {
   keywords: ['스포츠', '건강', '복지', '상담', '심리'],
   guideCards: defaultGuideCards,
   overviewCounts: { notices: 7, schedules: 3 },
+  introHighlights: [
+    { title: '핵심 학습 영역', items: ['운동생리학', '스포츠코칭', '사회복지실천', '상담이론', '심리학'] },
+    { title: '심화 전공 트랙', items: ['스포츠 지도·트레이닝', '복지·상담 실습', '공공기관·사회서비스'] },
+    { title: '졸업 후 진출 분야', items: ['스포츠센터·코칭', '복지관·상담기관', '공공체육시설', '사회복지직 공무원'] },
+  ],
   careers: [
     {
       category: '스포츠 지도',
@@ -537,6 +709,10 @@ const sportsWelfareTemplate: ExtraTemplate = {
       description: '체육 지도와 스포츠 과학 역량으로 스포츠 관련 현장에서 활동합니다.',
       preparation: ['생활스포츠지도사 자격', '지도 봉사 경험', '스포츠 산업 인턴십'],
       courses: ['운동생리학', '스포츠코칭', '트레이닝방법론'],
+      certificates: [
+        { name: '생활스포츠지도사 2급', href: 'https://sqms.kspo.or.kr/' },
+        { name: '건강운동관리사', href: 'https://sqms.kspo.or.kr/' },
+      ],
     },
     {
       category: '복지/상담',
@@ -544,6 +720,10 @@ const sportsWelfareTemplate: ExtraTemplate = {
       description: '사회 취약 계층과 다양한 대상을 지원하는 복지·상담 현장에서 일합니다.',
       preparation: ['사회복지사 자격증 취득', '현장 실습 이수', '상담 기법 훈련'],
       courses: ['상담이론', '사회복지실천', '심리학개론'],
+      certificates: [
+        { name: '사회복지사 2급', href: 'https://www.welfare.net/' },
+        { name: '청소년상담사 3급', href: 'https://www.youthcounselor.or.kr:446/new/sub01_1.html' },
+      ],
     },
     {
       category: '공공/기관',
@@ -551,6 +731,10 @@ const sportsWelfareTemplate: ExtraTemplate = {
       description: '공공기관과 사회 서비스 기관에서 전문 역량을 발휘합니다.',
       preparation: ['공무원 시험 준비', 'NCS 학습', '공공기관 인턴십'],
       courses: ['복지정책', '지역사회복지', '체육행정'],
+      certificates: [
+        { name: '사회복지사 2급', href: 'https://www.welfare.net/' },
+        { name: '한국사능력검정시험', href: 'https://www.historyexam.go.kr/' },
+      ],
     },
   ],
   facilities: [
@@ -577,6 +761,10 @@ const defaultTemplate: ExtraTemplate = {
   keywords: ['전공기초', '진로탐색', '학과생활', '졸업준비', '학생지원'],
   guideCards: defaultGuideCards,
   overviewCounts: { notices: 7, schedules: 2 },
+  introHighlights: [
+    { title: '핵심 학습 영역', items: ['전공 기초과목', '전공 심화과목', '실험·실습', '캡스톤디자인'] },
+    { title: '졸업 후 진출 분야', items: ['전공 관련 산업체', '공공기관·지역기업', '대학원·연구소'] },
+  ],
   careers: [
     { category: '전공 실무', jobs: ['전공 분야 실무자', '프로젝트 담당자', '현장 실습 연계 직무'], description: '전공 교과와 실습 경험을 바탕으로 관련 산업 분야로 진출합니다.' },
     { category: '공공/지역', jobs: ['공공기관', '지역 기업', '행정 지원 직무'], description: '지역사회와 산업 수요를 이해하고 공공 또는 지역 기반 직무로 확장합니다.' },

@@ -31,4 +31,7 @@ public class NoticeWriteRequestDto {
     private String authorUsername;
     public String getAuthorUsername() { return authorUsername; }
     public void setAuthorUsername(String authorUsername) { this.authorUsername = authorUsername; }
+    private Boolean isPublicToOutsiders;
+    public Boolean getIsPublicToOutsiders() { return isPublicToOutsiders; }
+    public void setIsPublicToOutsiders(Boolean isPublicToOutsiders) { this.isPublicToOutsiders = isPublicToOutsiders; }
 }

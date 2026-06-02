@@ -179,22 +179,6 @@ public class ProfessorScheduleService {
         enrollmentRepository.delete(e);
     }
 
-    // 학과의 수강 가능 과목 목록 조회
-    public List<Map<String, Object>> getCoursesByDept(Long deptId) {
-        return curriculumItemRepository.findByDeptId(deptId).stream()
-                .map(c -> {
-                    Map<String, Object> row = new HashMap<>();
-                    row.put("courseId", c.getId());
-                    row.put("courseName", c.getName());
-                    row.put("year", c.getYear());
-                    row.put("credits", c.getCredits());
-                    row.put("required", c.isRequired());
-                    row.put("deptId", c.getDeptId());
-                    return row;
-                })
-                .collect(Collectors.toList());
-    }
-
     public List<Map<String, Object>> getMyEnrollments(String studentUsername, String semester) {
         return enrollmentRepository.findByStudentUsernameAndSemester(studentUsername, semester).stream()
                 .map(e -> {

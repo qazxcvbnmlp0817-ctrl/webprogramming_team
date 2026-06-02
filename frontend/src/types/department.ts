@@ -1,3 +1,8 @@
+import type {
+  CareerItem, FacilityItem, FaqItem, StudentLifeItem,
+  ProfessorEnhancement, RequirementItem, GuideCard, IntroHighlight,
+} from '../data/departmentExtras'
+
 export interface ProfessorDto {
   id: number
   name: string
@@ -8,9 +13,31 @@ export interface ProfessorDto {
 export interface CurriculumItemDto {
   name: string
   year: string
+  semester?: string | null
   required: boolean
   credit: number
   category?: string
+}
+
+export interface DeptPageContentDto {
+  name?: string
+  description?: string
+  address?: string
+  phone?: string
+  email?: string
+  hours?: string
+  slogan?: string
+  homepage?: string
+  keywords?: string[]
+  guideCards?: GuideCard[]
+  introHighlights?: IntroHighlight[]
+  careers?: CareerItem[]
+  facilities?: FacilityItem[]
+  faqs?: FaqItem[]
+  studentLife?: StudentLifeItem[]
+  professorEnhancements?: ProfessorEnhancement[]
+  requirements?: RequirementItem[]
+  overviewCounts?: { notices?: number; schedules?: number }
 }
 
 export interface DepartmentDetailDto {
@@ -23,4 +50,5 @@ export interface DepartmentDetailDto {
   phone: string
   email: string
   hours: string
+  pageContent?: DeptPageContentDto | null
 }

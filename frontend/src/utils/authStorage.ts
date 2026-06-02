@@ -16,6 +16,7 @@ const SESSION_KEYS = [
   'adminRole',
   'deptId',
   'facultyId',
+  'studentId',   // 학번(학생) 또는 교번(교수·조교·직원)
 ] as const
 
 type SessionKey = (typeof SESSION_KEYS)[number]

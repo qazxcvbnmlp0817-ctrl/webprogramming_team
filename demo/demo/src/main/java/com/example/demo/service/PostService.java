@@ -46,15 +46,13 @@ public class PostService {
     }
 
     public List<PostDto> getPostsByDept(Long deptId) {
-        List<Post> posts = postRepository
-                .findByScopeTypeAndScopeIdOrderByCreatedDateDesc("dept", deptId);
+        List<Post> posts = postRepository.findVisibleByScopeTypeAndScopeId("dept", deptId);
         if (posts.isEmpty()) return DummyDataHelper.getPostsByDept(deptId);
         return posts.stream().map(this::toDto).collect(Collectors.toList());
     }
 
     public List<PostDto> getTopPostsByLikesForDept(Long deptId, int limit) {
-        List<Post> posts = postRepository
-                .findByScopeTypeAndScopeIdOrderByLikesDescCreatedDateDesc("dept", deptId);
+        List<Post> posts = postRepository.findVisibleByScopeTypeAndScopeIdOrderByLikes("dept", deptId);
         if (posts.isEmpty()) {
             return DummyDataHelper.getPostsByDept(deptId).stream()
                     .sorted((a, b) -> b.getLikes() - a.getLikes())
@@ -65,15 +63,13 @@ public class PostService {
     }
 
     public List<PostDto> getPostsByFaculty(Long facultyId) {
-        List<Post> posts = postRepository
-                .findByScopeTypeAndScopeIdOrderByCreatedDateDesc("faculty", facultyId);
+        List<Post> posts = postRepository.findVisibleByScopeTypeAndScopeId("faculty", facultyId);
         if (posts.isEmpty()) return DummyDataHelper.getPostsByFaculty(facultyId);
         return posts.stream().map(this::toDto).collect(Collectors.toList());
     }
 
     public List<PostDto> getTopPostsByLikesForFaculty(Long facultyId, int limit) {
-        List<Post> posts = postRepository
-                .findByScopeTypeAndScopeIdOrderByLikesDescCreatedDateDesc("faculty", facultyId);
+        List<Post> posts = postRepository.findVisibleByScopeTypeAndScopeIdOrderByLikes("faculty", facultyId);
         if (posts.isEmpty()) {
             return DummyDataHelper.getPostsByFaculty(facultyId).stream()
                     .sorted((a, b) -> b.getLikes() - a.getLikes())
@@ -84,8 +80,7 @@ public class PostService {
     }
 
     public List<PostDto> getPostsByUniv(Long univId) {
-        List<Post> posts = postRepository
-                .findByScopeTypeAndScopeIdOrderByCreatedDateDesc("univ", univId);
+        List<Post> posts = postRepository.findVisibleByScopeTypeAndScopeId("univ", univId);
         if (posts.isEmpty()) return DummyDataHelper.getUniversityPosts(univId);
         return posts.stream().map(this::toDto).collect(Collectors.toList());
     }
@@ -218,7 +213,8 @@ public class PostService {
                 p.getAuthorUsername(),
                 attachments,
                 p.getScopeType(),
-                p.getScopeId()
+                p.getScopeId(),
+                p.isHidden()
         );
     }
 

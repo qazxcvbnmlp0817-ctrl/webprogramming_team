@@ -276,8 +276,6 @@ public class SchoolCrudService {
                 .forEach(n -> noticeRepo.deleteById(n.getId()));
         postRepo.findByScopeTypeAndScopeIdOrderByCreatedDateDesc("univ", collegeId)
                 .forEach(p -> postRepo.deleteById(p.getId()));
-        scheduleRepo.findByScopeTypeAndScopeIdOrderByEventDateAsc("univ", collegeId)
-                .forEach(s -> scheduleRepo.deleteById(s.getId()));
         collegeSchoolRepo.deleteById(collegeId);
     }
 
@@ -290,8 +288,6 @@ public class SchoolCrudService {
                 .forEach(n -> noticeRepo.deleteById(n.getId()));
         postRepo.findByScopeTypeAndScopeIdOrderByCreatedDateDesc("faculty", facultyId)
                 .forEach(p -> postRepo.deleteById(p.getId()));
-        scheduleRepo.findByScopeTypeAndScopeIdOrderByEventDateAsc("faculty", facultyId)
-                .forEach(s -> scheduleRepo.deleteById(s.getId()));
         facultyGroupRepo.deleteById(facultyId);
     }
 
@@ -307,8 +303,7 @@ public class SchoolCrudService {
                 .forEach(n -> noticeRepo.deleteById(n.getId()));
         postRepo.findByScopeTypeAndScopeIdOrderByCreatedDateDesc("dept", deptId)
                 .forEach(p -> postRepo.deleteById(p.getId()));
-        scheduleRepo.findByScopeTypeAndScopeIdOrderByEventDateAsc("dept", deptId)
-                .forEach(s -> scheduleRepo.deleteById(s.getId()));
+        scheduleRepo.deleteByDepartmentId(deptId);
         deptRepo.deleteById(deptId);
     }
 }

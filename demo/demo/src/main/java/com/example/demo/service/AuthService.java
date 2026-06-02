@@ -78,24 +78,25 @@ public class AuthService {
         response.put("department", user.getDepartment());
         response.put("college", user.getCollege());
         response.put("enrollmentStatus", user.getEnrollmentStatus());
+        // 학번(학생) / 교번(교수·조교·직원) 반환
+        if (user.getStudentId() != null && !user.getStudentId().isBlank()) {
+            response.put("studentId", user.getStudentId());
+        }
 
-        // DEPT_ADMIN: resolved deptId for deep-link to /admin/dept/{id}
-        if ("DEPT_ADMIN".equals(user.getAdminRole())
-                && user.getUniversityId() != null && user.getDepartment() != null) {
+        // 모든 유저: deptId, facultyId 조회 (접근 권한 체크용)
+        if (user.getUniversityId() != null && user.getDepartment() != null) {
             try {
                 Long deptId = adminService.resolveDeptIdByName(
                         Long.parseLong(user.getUniversityId()), user.getDepartment());
                 if (deptId != null) response.put("deptId", deptId);
-            } catch (NumberFormatException ignored) { /* leave deptId off */ }
+            } catch (NumberFormatException ignored) {}
         }
-        // SCHOOL_ADMIN: resolved facultyId for deep-link to /admin/faculty/{id}
-        if ("SCHOOL_ADMIN".equals(user.getAdminRole())
-                && user.getUniversityId() != null && user.getCollege() != null) {
+        if (user.getUniversityId() != null && user.getCollege() != null) {
             try {
                 Long facultyId = adminService.resolveFacultyIdByName(
                         Long.parseLong(user.getUniversityId()), user.getCollege());
                 if (facultyId != null) response.put("facultyId", facultyId);
-            } catch (NumberFormatException ignored) { /* leave facultyId off */ }
+            } catch (NumberFormatException ignored) {}
         }
         return response;
     }
@@ -109,6 +110,31 @@ public class AuthService {
             return response;
         }
 
+        // 비밀번호 정책 검증 (8자 이상, 영문+숫자+특수문자 포함)
+        String pw = request.getPassword();
+        if (pw == null || pw.length() < 8
+                || !pw.matches(".*[a-zA-Z].*")
+                || !pw.matches(".*[0-9].*")
+                || !pw.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?].*")) {
+            response.put("success", false);
+            response.put("message", "비밀번호는 8자 이상이며 영문, 숫자, 특수문자를 모두 포함해야 합니다.");
+            return response;
+        }
+
+        // 학번/교번 중복 확인 (admin 제외, 같은 대학 + 같은 회원 유형 내에서만 중복 방지)
+        String memberType = request.getMemberType();
+        boolean skipDuplicateCheck = "admin".equals(memberType);
+        if (!skipDuplicateCheck
+                && request.getStudentId() != null && !request.getStudentId().isBlank()
+                && request.getUniversityId() != null) {
+            if (userRepository.existsByStudentIdAndUniversityIdAndMemberType(
+                    request.getStudentId(), request.getUniversityId(), memberType)) {
+                response.put("success", false);
+                response.put("message", "이미 사용 중인 학번/교번입니다.");
+                return response;
+            }
+        }
+
         User user = new User();
         user.setUsername(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
@@ -119,9 +145,15 @@ public class AuthService {
         user.setDepartment(request.getDepartment());
         user.setStudentId(request.getStudentId());
         user.setPhone(request.getPhone());
-        user.setGrade(request.getGrade());
-        user.setEnrollmentStatus(request.getEnrollmentStatus());
-        user.setStatus(request.getMemberType().equals("admin") ? "PENDING_APPROVAL" : "ACTIVE");
+        // 학생만 학년·재학상태 저장, 교수·조교·관리자·직원은 null
+        if ("student".equals(request.getMemberType())) {
+            user.setGrade(request.getGrade());
+            user.setEnrollmentStatus(request.getEnrollmentStatus());
+        } else {
+            user.setGrade(null);
+            user.setEnrollmentStatus(null);
+        }
+        user.setStatus("PENDING_APPROVAL");
         user.setCreatedDate(java.time.LocalDateTime.now());
 
         userRepository.save(user);
@@ -146,16 +178,35 @@ public class AuthService {
         if (request.getUniversityId() == null && request.getStudentId() == null) {
             // 관리자: 이름만으로 조회
             userOpt = userRepository.findByName(request.getName());
-        } else if (request.getUniversityId() != null && request.getCollege() != null && request.getStudentId() != null) {
-            // 학생/교수/조교/직원: 이름 + 학번/교번 + 단과대 + 대학
-            userOpt = userRepository.findByNameAndStudentIdAndCollegeAndUniversityId(
-                    request.getName(), request.getStudentId(),
-                    request.getCollege(), request.getUniversityId());
+        } else if (request.getStudentId() != null) {
+            // 1. department(학과) 기준 조회 — 드롭다운 선택값 있을 때 가장 정확
+            if (request.getDepartment() != null && !request.getDepartment().isBlank()) {
+                userOpt = userRepository.findByNameAndStudentIdAndDepartment(
+                        request.getName(), request.getStudentId(), request.getDepartment());
+            } else if (request.getCollege() != null && !request.getCollege().isBlank()
+                    && request.getUniversityId() != null) {
+                // 2. college + universityId
+                userOpt = userRepository.findByNameAndStudentIdAndCollegeAndUniversityId(
+                        request.getName(), request.getStudentId(),
+                        request.getCollege(), request.getUniversityId());
+            } else {
+                // 3. 이름 + 학번만
+                userOpt = userRepository.findByNameAndStudentId(
+                        request.getName(), request.getStudentId());
+            }
+            // 4. 최종 폴백
+            if (userOpt.isEmpty()) {
+                userOpt = userRepository.findByNameAndStudentId(
+                        request.getName(), request.getStudentId());
+            }
         } else {
             userOpt = Optional.empty();
         }
 
         if (userOpt.isEmpty()) {
+            System.out.printf("[findId] 불일치 - name=%s studentId=%s dept=%s college=%s univId=%s%n",
+                    request.getName(), request.getStudentId(), request.getDepartment(),
+                    request.getCollege(), request.getUniversityId());
             response.put("success", false);
             response.put("message", "일치하는 회원 정보가 없습니다.");
             return response;
@@ -196,11 +247,44 @@ public class AuthService {
             response.put("message", "사용자를 찾을 수 없습니다.");
             return response;
         }
+        // 비밀번호 정책 검증 (8자 이상, 영문+숫자+특수문자)
+        if (newPassword == null || newPassword.length() < 8
+                || !newPassword.matches(".*[a-zA-Z].*")
+                || !newPassword.matches(".*[0-9].*")
+                || !newPassword.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?].*")) {
+            response.put("success", false);
+            response.put("message", "비밀번호는 8자 이상이며 영문, 숫자, 특수문자를 모두 포함해야 합니다.");
+            return response;
+        }
         User user = userOpt.get();
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
         response.put("success", true);
         response.put("message", "비밀번호가 변경되었습니다.");
+        return response;
+    }
+
+    public Map<String, Object> getMyProfile(String username) {
+        Map<String, Object> response = new HashMap<>();
+        Optional<User> userOpt = userRepository.findByUsername(username);
+        if (userOpt.isEmpty()) {
+            response.put("success", false);
+            response.put("message", "사용자를 찾을 수 없습니다.");
+            return response;
+        }
+        User user = userOpt.get();
+        response.put("success",    true);
+        response.put("username",   user.getUsername());
+        response.put("name",       user.getName());
+        response.put("memberType", user.getMemberType());
+        response.put("department", user.getDepartment());
+        response.put("college",    user.getCollege());
+        response.put("universityId", user.getUniversityId());
+        response.put("grade",      user.getGrade());
+        response.put("enrollmentStatus", user.getEnrollmentStatus());
+        if (user.getStudentId() != null && !user.getStudentId().isBlank()) {
+            response.put("studentId", user.getStudentId());
+        }
         return response;
     }
 
@@ -248,16 +332,38 @@ public class AuthService {
         if (request.getUniversityId() == null && request.getStudentId() == null) {
             // 관리자: 아이디 + 이름만으로 조회
             userOpt = userRepository.findByUsernameAndName(request.getUsername(), request.getName());
-        } else if (request.getUniversityId() != null && request.getCollege() != null && request.getStudentId() != null) {
-            // 학생/교수/조교/직원: 아이디 + 이름 + 학번/교번 + 단과대 + 대학
-            userOpt = userRepository.findByUsernameAndNameAndStudentIdAndCollegeAndUniversityId(
-                    request.getUsername(), request.getName(),
-                    request.getStudentId(), request.getCollege(), request.getUniversityId());
+        } else if (request.getStudentId() != null) {
+            // 학생/교수/조교: 아이디 + 이름 + 학번/교번
+            // 1. department(학과) 기준 조회 — 가장 정확
+            if (request.getDepartment() != null && !request.getDepartment().isBlank()) {
+                userOpt = userRepository.findByUsernameAndNameAndStudentIdAndDepartment(
+                        request.getUsername(), request.getName(),
+                        request.getStudentId(), request.getDepartment());
+            } else if (request.getCollege() != null && !request.getCollege().isBlank()
+                    && request.getUniversityId() != null) {
+                // 2. college + universityId 기준
+                userOpt = userRepository.findByUsernameAndNameAndStudentIdAndCollegeAndUniversityId(
+                        request.getUsername(), request.getName(),
+                        request.getStudentId(), request.getCollege(), request.getUniversityId());
+            } else {
+                // 3. 이름 + 학번만 (관대한 기준)
+                userOpt = userRepository.findByUsernameAndNameAndStudentId(
+                        request.getUsername(), request.getName(), request.getStudentId());
+            }
+            // 4. 최종 폴백: 이름+학번만
+            if (userOpt.isEmpty()) {
+                userOpt = userRepository.findByUsernameAndNameAndStudentId(
+                        request.getUsername(), request.getName(), request.getStudentId());
+            }
         } else {
             userOpt = Optional.empty();
         }
 
+        // 디버그 로그 (개발 중)
         if (userOpt.isEmpty()) {
+            System.out.printf("[findPassword] 불일치 - username=%s name=%s studentId=%s dept=%s college=%s univId=%s%n",
+                    request.getUsername(), request.getName(), request.getStudentId(),
+                    request.getDepartment(), request.getCollege(), request.getUniversityId());
             response.put("success", false);
             response.put("message", "일치하는 회원 정보가 없습니다.");
             return response;

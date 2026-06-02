@@ -37,6 +37,7 @@ export interface PostItem {
   category: string
   viewCount: number
   createdDate: string
+  hidden: boolean
 }
 
 export interface PostPage {
@@ -53,6 +54,7 @@ export interface NoticeItem {
   viewCount: number
   featured: boolean
   createdDate: string
+  hidden: boolean
 }
 
 export interface NoticePage {
@@ -120,8 +122,32 @@ export async function deleteFacultyNotice(noticeId: number, facultyId?: number):
   handle403(res)
 }
 
+export async function hideFacultyPost(postId: number, hidden: boolean, facultyId?: number): Promise<void> {
+  const res = await fetch('/api/admin/faculty/posts/' + postId + '/hidden' + qs(facultyParam(facultyId)), {
+    method: 'PUT',
+    headers: headers(),
+    body: JSON.stringify({ hidden }),
+  })
+  handle403(res)
+}
+
+export async function hideFacultyNotice(noticeId: number, hidden: boolean, facultyId?: number): Promise<void> {
+  const res = await fetch('/api/admin/faculty/notices/' + noticeId + '/hidden' + qs(facultyParam(facultyId)), {
+    method: 'PUT',
+    headers: headers(),
+    body: JSON.stringify({ hidden }),
+  })
+  handle403(res)
+}
+
 export async function fetchFacultyUsers(facultyId?: number): Promise<AdminUser[]> {
   const res = await fetch('/api/admin/faculty/users' + qs(facultyParam(facultyId)), { headers: headers() })
+  handle403(res)
+  return res.json()
+}
+
+export async function fetchFacultyPendingUsers(facultyId?: number): Promise<AdminUser[]> {
+  const res = await fetch('/api/admin/faculty/pending-users' + qs(facultyParam(facultyId)), { headers: headers() })
   handle403(res)
   return res.json()
 }

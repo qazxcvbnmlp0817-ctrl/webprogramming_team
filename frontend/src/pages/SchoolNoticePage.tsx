@@ -2,7 +2,6 @@ import { useState, useMemo, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import FilterTabs from '../components/FilterTabs'
-import FeaturedCard from '../components/FeaturedCard'
 import Sidebar from '../components/Sidebar'
 import Pagination from '../components/Pagination'
 import { fetchSchoolNotices } from '../api/school'
@@ -10,7 +9,7 @@ import { useDeptFetch } from '../hooks/useDeptFetch'
 import { useDept } from '../context/DeptContext'
 import AdminBanner from '../components/common/AdminBanner'
 
-const TABS       = ['전체', '학사', '장학', '행사', '취업']
+const TABS       = ['전체', '일반', '학사', '장학', '행사', '취업']
 const GRADE_TABS = ['전체', '1학년', '2학년', '3학년', '4학년']
 
 export default function SchoolNoticePage() {
@@ -25,10 +24,9 @@ export default function SchoolNoticePage() {
 
   useEffect(() => { setPage(1) }, [active, gradeFilter, search, searchType])
 
-  const canWrite = ['professor', 'admin'].includes(sessionStorage.getItem('memberType') ?? '')
+  const canWrite = ['professor', 'admin', 'assistant'].includes(sessionStorage.getItem('memberType') ?? '')
 
   const { data, loading } = useDeptFetch(fetchSchoolNotices, selectedUniversityId)
-  const featured = data?.featured ?? null
   const notices  = data?.notices  ?? []
 
   const filtered = useMemo(() => notices.filter(n => {
@@ -83,9 +81,6 @@ export default function SchoolNoticePage() {
           </div>
         ) : (
           <>
-            {featured && (
-              <FeaturedCard category={featured.category} title={featured.title} date={featured.date} meta={`👁 ${featured.viewCount}`} />
-            )}
             <div className="mb-4">
               <div className="flex items-center border border-black">
                 <div className="flex border-r border-black">

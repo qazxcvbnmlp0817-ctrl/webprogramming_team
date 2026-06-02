@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
+import { SCHEDULE_CATEGORY_LIST } from '../../utils/scheduleItem'
 import type { ScheduleItem, CategoryMeta } from '../../utils/scheduleItem'
 
 const DAYS = ['일', '월', '화', '수', '목', '금', '토']
@@ -247,50 +248,161 @@ function DayPanel({ ds, events, anchorRect, categoryMeta, canWrite, onClose, onE
   )
 }
 
+// ── DeleteConfirmModal ────────────────────────────────────────────────────────
+
+function DeleteConfirmModal({ onCancel, onConfirm }: { onCancel: () => void; onConfirm: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
+        <h3 className="text-base font-bold text-gray-900 mb-2">일정 삭제</h3>
+        <p className="text-sm text-gray-600 mb-1">정말 이 일정을 삭제하시겠습니까?</p>
+        <p className="text-xs text-red-500 mb-5">삭제한 일정은 복구할 수 없습니다.</p>
+        <div className="flex gap-3">
+          <button onClick={onCancel}
+            className="flex-1 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition">
+            취소
+          </button>
+          <button onClick={onConfirm}
+            className="flex-1 py-2.5 bg-red-500 text-white rounded-lg text-sm font-semibold hover:bg-red-600 transition">
+            삭제
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── DetailModal ───────────────────────────────────────────────────────────────
 
-function DetailModal({ ev, meta, canWrite, onClose, onEdit, onDelete }: {
-  ev: ScheduleItem; meta: CategoryMeta; canWrite: boolean
-  onClose: () => void; onEdit: (ev: ScheduleItem) => void; onDelete: (id: string) => void
+const SCHEDULE_TYPE_LABELS: Record<string, string> = {
+  PERSONAL:      '개인 일정',
+  COURSE:        '과목 일정',
+  DEPT_NOTICE:   '학과 일정',
+  SCHOOL_NOTICE: '학교 일정',
+  GLOBAL_NOTICE: '전체 공지',
+  GRADE_NOTICE:  '학년 공지',
+  // 구형 별칭 (하위 호환)
+  DEPARTMENT:    '학과 일정',
+  SCHOOL:        '학교 일정',
+  GLOBAL:        '전체 공지',
+}
+
+function DetailModal({ ev, meta, username, memberType, onClose, onEdit, onDelete, onToggleComplete }: {
+  ev: ScheduleItem
+  meta: CategoryMeta
+  username?: string
+  memberType?: string | null
+  onClose: () => void
+  onEdit: (ev: ScheduleItem) => void
+  onDelete: (id: string) => void
+  onToggleComplete?: (id: string) => void
 }) {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+
   const [y, m, d] = ev.date.split('-').map(Number)
   const dow = new Date(y, m - 1, d).getDay()
-  const timeLabel = ev.allDay ? '종일'
+  const isMultiDay = ev.endDate && ev.endDate > ev.date
+  const timeLabel = isMultiDay
+    ? null
+    : ev.allDay ? '종일'
     : ev.startTime ? `${ev.startTime}${ev.endTime ? ' ~ ' + ev.endTime : ''}`
     : null
   const ddayLabel = ev.dday !== undefined ? (ev.dday === 0 ? 'D-Day' : `D-${ev.dday}`) : null
+  const endParts = ev.endDate ? ev.endDate.split('-').map(Number) : null
+
+  // 권한 계산
+  const role = memberType ?? 'student'
+  const isCreator = !!username && (() => {
+    // 수업 시간표(timetable/course 접두사) — 항상 수정 불가
+    if (ev.readonly) return false
+    // scheduleType 없음 = localStorage 개인 일정 → 항상 본인 소유
+    if (!ev.scheduleType || ev.scheduleType === 'PERSONAL') return true
+    // ClassEvent 기반 공지/과목 일정 → createdBy(registeredBy) 비교
+    if (ev.createdBy) return ev.createdBy === username
+    // createdBy 정보 없지만 교수/조교/관리자 → 본인 가능성 높음, 백엔드가 최종 검증
+    return role === 'professor' || role === 'assistant' || role === 'admin'
+  })()
+  const canEditDelete = isCreator && (() => {
+    if (!ev.scheduleType || ev.scheduleType === 'PERSONAL') return true
+    // 학과/학교 일정: 학생도 본인 작성이면 수정/삭제 가능
+    if (['DEPARTMENT', 'DEPT_NOTICE', 'SCHOOL', 'SCHOOL_NOTICE'].includes(ev.scheduleType)) return true
+    // 과목/학년 공지: 교수·조교·관리자만
+    if (['COURSE', 'GRADE_NOTICE'].includes(ev.scheduleType))
+      return role === 'professor' || role === 'assistant' || role === 'admin'
+    // 전체 공지: 교수·조교·관리자만
+    if (['GLOBAL', 'GLOBAL_NOTICE'].includes(ev.scheduleType))
+      return role === 'professor' || role === 'assistant' || role === 'admin'
+    return false
+  })()
+
+  const handleDelete = () => {
+    onDelete(ev.id)
+    setShowDeleteConfirm(false)
+    onClose()
+  }
 
   return (
+    <>
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
       onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-[460px] max-h-[90vh] overflow-y-auto">
+
+        {/* 헤더 */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-200 sticky top-0 bg-white z-10">
           <button onClick={onClose} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition">
             ← 목록으로
           </button>
-          {/* readonly 이벤트(수업 시간표)는 수정/삭제 불가 */}
-          {canWrite && !ev.readonly && (
-            <div className="flex gap-2">
-              <button onClick={() => { onEdit(ev); onClose() }}
-                className="px-4 py-1.5 border border-gray-300 rounded text-xs font-semibold text-gray-700 hover:bg-gray-50 transition">
-                수정
-              </button>
-              <button onClick={() => { if (window.confirm('삭제하시겠습니까?')) { onDelete(ev.id); onClose() } }}
-                className="px-4 py-1.5 border border-gray-300 rounded text-xs font-semibold text-gray-700 hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition">
-                삭제
-              </button>
-            </div>
-          )}
-          {ev.readonly && (
-            <span className="text-xs text-purple-600 font-semibold bg-purple-50 px-2 py-1 rounded">수업 시간표</span>
-          )}
-        </div>
-        <div className="px-6 pt-6 pb-2">
-          <div className="flex items-center gap-3 mb-6">
-            <span className="w-3.5 h-3.5 rounded-full flex-shrink-0 mt-0.5" style={{ background: meta.color }} />
-            <h2 className="text-xl font-bold text-gray-900 leading-snug">{ev.title}</h2>
+          <div className="flex items-center gap-2">
+            {ev.readonly && (
+              <span className="text-xs text-purple-600 font-semibold bg-purple-50 px-2 py-1 rounded">수업 시간표</span>
+            )}
+            {canEditDelete && (
+              <>
+                <button onClick={() => { onEdit(ev); onClose() }}
+                  className="px-3 py-1.5 border border-gray-300 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-50 transition">
+                  일정 수정
+                </button>
+                <button onClick={() => setShowDeleteConfirm(true)}
+                  className="px-3 py-1.5 border border-red-200 rounded-lg text-xs font-semibold text-red-500 hover:bg-red-50 transition">
+                  일정 삭제
+                </button>
+              </>
+            )}
           </div>
+        </div>
+
+        <div className="px-6 pt-6 pb-2">
+          {/* 완료 체크박스 (PERSONAL만) */}
+          {ev.scheduleType === 'PERSONAL' && onToggleComplete && (
+            <label className="flex items-center gap-2 mb-4 cursor-pointer w-fit">
+              <input type="checkbox" checked={ev.isCompleted ?? false}
+                onChange={() => onToggleComplete(ev.id)}
+                className="w-4 h-4 rounded accent-blue-600" />
+              <span className={`text-sm font-medium ${ev.isCompleted ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+                완료
+              </span>
+            </label>
+          )}
+
+          <div className="flex items-center gap-3 mb-5">
+            <span className="w-3 h-3 rounded-full flex-shrink-0 mt-0.5" style={{ background: meta.color }} />
+            <h2 className={`text-xl font-bold leading-snug ${ev.isCompleted ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+              {ev.title}
+            </h2>
+          </div>
+
           <div className="divide-y divide-gray-100">
+            {/* 일정 유형 */}
+            {ev.scheduleType && (
+              <div className="flex items-center gap-4 py-3">
+                <span className="text-gray-400 flex-shrink-0 w-4 h-4 text-center text-xs font-bold">T</span>
+                <span className="text-sm text-gray-500 w-20 flex-shrink-0">유형</span>
+                <span className="inline-block px-2.5 py-0.5 rounded text-xs font-semibold bg-blue-50 text-blue-700">
+                  {SCHEDULE_TYPE_LABELS[ev.scheduleType] ?? ev.scheduleType}
+                </span>
+              </div>
+            )}
+            {/* 날짜 */}
             <div className="flex items-center gap-4 py-3">
               <span className="text-gray-400 flex-shrink-0">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -299,8 +411,15 @@ function DetailModal({ ev, meta, canWrite, onClose, onEdit, onDelete }: {
                 </svg>
               </span>
               <span className="text-sm text-gray-500 w-20 flex-shrink-0">날짜</span>
-              <span className="text-sm text-gray-800">{y}년 {m}월 {d}일 ({DAYS[dow]})</span>
+              {isMultiDay && endParts ? (
+                <span className="text-sm text-gray-800">
+                  {y}년 {m}월 {d}일 ({DAYS[dow]}) ~ {endParts[0]}년 {endParts[1]}월 {endParts[2]}일
+                </span>
+              ) : (
+                <span className="text-sm text-gray-800">{y}년 {m}월 {d}일 ({DAYS[dow]})</span>
+              )}
             </div>
+            {/* 시간 */}
             {timeLabel && (
               <div className="flex items-center gap-4 py-3">
                 <span className="text-gray-400 flex-shrink-0">
@@ -313,6 +432,7 @@ function DetailModal({ ev, meta, canWrite, onClose, onEdit, onDelete }: {
                 <span className="text-sm text-gray-800">{timeLabel}</span>
               </div>
             )}
+            {/* D-Day */}
             {ddayLabel && (
               <div className="flex items-center gap-4 py-3">
                 <span className="text-gray-400 flex-shrink-0">
@@ -325,6 +445,7 @@ function DetailModal({ ev, meta, canWrite, onClose, onEdit, onDelete }: {
                 <span className="text-sm font-bold" style={{ color: meta.color }}>{ddayLabel}</span>
               </div>
             )}
+            {/* 카테고리 */}
             <div className="flex items-center gap-4 py-3">
               <span className="text-gray-400 flex-shrink-0">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -336,8 +457,25 @@ function DetailModal({ ev, meta, canWrite, onClose, onEdit, onDelete }: {
               <span className="inline-block px-3 py-0.5 rounded text-xs font-bold text-white"
                 style={{ background: meta.color }}>{meta.label}</span>
             </div>
+            {/* 작성자 */}
+            {(ev as any).createdBy && (
+              <div className="flex items-center gap-4 py-3">
+                <span className="text-gray-400 flex-shrink-0 w-4 h-4 flex items-center justify-center text-xs">✍</span>
+                <span className="text-sm text-gray-500 w-20 flex-shrink-0">작성자</span>
+                <span className="text-sm text-gray-800">{(ev as any).createdBy}</span>
+              </div>
+            )}
+            {/* 대상 학년 */}
+            {(ev as any).targetGrade && (
+              <div className="flex items-center gap-4 py-3">
+                <span className="text-gray-400 flex-shrink-0 w-4 h-4 flex items-center justify-center text-xs">🎓</span>
+                <span className="text-sm text-gray-500 w-20 flex-shrink-0">대상 학년</span>
+                <span className="text-sm text-gray-800">{(ev as any).targetGrade}학년</span>
+              </div>
+            )}
           </div>
         </div>
+
         {ev.content && (
           <div className="px-6 py-4 border-t border-gray-100">
             <p className="text-sm font-semibold text-gray-800 mb-3">내용</p>
@@ -346,102 +484,284 @@ function DetailModal({ ev, meta, canWrite, onClose, onEdit, onDelete }: {
         )}
       </div>
     </div>
+    {showDeleteConfirm && <DeleteConfirmModal onCancel={() => setShowDeleteConfirm(false)} onConfirm={handleDelete} />}
+    </>
   )
 }
 
+// ── 일정 유형 정의 ─────────────────────────────────────────────────────────────
+
+// 표준 타입명: PERSONAL | COURSE | DEPT_NOTICE | SCHOOL_NOTICE | GLOBAL_NOTICE | GRADE_NOTICE
+const SCHEDULE_TYPE_OPTIONS: Record<string, { value: string; label: string }[]> = {
+  student: [
+    { value: 'PERSONAL',      label: '개인 일정' },
+    { value: 'DEPT_NOTICE',   label: '학과 일정' },
+    { value: 'SCHOOL_NOTICE', label: '학교 일정' },
+  ],
+  assistant: [
+    { value: 'PERSONAL',      label: '개인 일정' },
+    { value: 'DEPT_NOTICE',   label: '학과 공지 (과목 무관)' },
+    { value: 'GRADE_NOTICE',  label: '학년 공지 일정' },
+    { value: 'COURSE',        label: '과목 일정 (과목 선택 필수)' },
+    { value: 'SCHOOL_NOTICE', label: '학교 일정' },
+    { value: 'GLOBAL_NOTICE', label: '학과 전체 안내' }, // 저장 시 백엔드에서 DEPT_NOTICE로 자동 변환
+  ],
+  professor: [
+    { value: 'PERSONAL',      label: '개인 일정' },
+    { value: 'COURSE',        label: '과목 일정' },
+    { value: 'DEPT_NOTICE',   label: '학과 일정' },
+    { value: 'GRADE_NOTICE',  label: '학년 공지 일정' },
+    { value: 'SCHOOL_NOTICE', label: '학교 일정' },
+    { value: 'GLOBAL_NOTICE', label: '학과 전체 안내' }, // 저장 시 백엔드에서 DEPT_NOTICE로 자동 변환
+  ],
+  admin: [
+    { value: 'PERSONAL',      label: '개인 일정' },
+    { value: 'COURSE',        label: '과목 일정' },
+    { value: 'DEPT_NOTICE',   label: '학과 일정' },
+    { value: 'GRADE_NOTICE',  label: '학년 공지 일정' },
+    { value: 'SCHOOL_NOTICE', label: '학교 일정' },
+    { value: 'GLOBAL_NOTICE', label: '전체 공지 일정' },
+  ],
+}
+
+// scheduleItem.ts 의 SCHEDULE_CATEGORY_LIST 를 공통으로 사용
+// → 필터·등록·수정·상세 모달 모두 동일한 목록 유지
+
 // ── FormModal ─────────────────────────────────────────────────────────────────
 
-function FormModal({ initial, defaultDate, categoryMeta, onSave, onClose }: {
+function FormModal({ initial, defaultDate, memberType, myCourses, myDeptName, onSave, onClose }: {
   initial?: ScheduleItem | null
   defaultDate?: string
-  categoryMeta: Record<string, CategoryMeta>
-  onSave: (data: Omit<ScheduleItem, 'id'> & { id?: string }) => void
+  memberType?: string | null
+  myCourses?: { courseId: number; courseName: string }[]
+  myDeptName?: string
+  onSave: (data: Omit<ScheduleItem, 'id'> & { id?: string; courseId?: number; targetGrades?: number[]; isAllGrades?: boolean }) => void
   onClose: () => void
 }) {
-  // Exclude readonly categories (e.g. 'course') from the add/edit form
-  const writableCatKeys = Object.keys(categoryMeta).filter(k => {
-    const meta = categoryMeta[k] as CategoryMeta & { readonly?: boolean }
-    return !meta.readonly
-  })
-  // Also exclude 'course' by convention (synced from professor, not user-created)
-  const editableCatKeys = writableCatKeys.filter(k => k !== 'course')
-  const catKeys = editableCatKeys.length > 0 ? editableCatKeys : writableCatKeys
+  const role = memberType ?? 'student'
+  const typeOptions = SCHEDULE_TYPE_OPTIONS[role] ?? SCHEDULE_TYPE_OPTIONS.student
 
+  const [scheduleType, setScheduleType] = useState(initial?.scheduleType ?? typeOptions[0]?.value ?? 'PERSONAL')
   const [title, setTitle]     = useState(initial?.title ?? '')
-  const [date, setDate]       = useState(initial?.date ?? defaultDate ?? todayStr())
-  const [startTime, setStart] = useState(initial?.startTime ?? '14:00')
+  // 시작일 기본값
+  const initDate = initial?.date ?? defaultDate ?? todayStr()
+  const [date, setDate]       = useState(initDate)
+  // 종료일 기본값 = 시작일 (단일 날짜 이벤트 등록 시 바로 저장 가능)
+  const [endDate, setEndDate] = useState(initial?.endDate ?? initDate)
+  const [startTime, setStart] = useState(initial?.startTime ?? '')
   const [endTime, setEnd]     = useState(initial?.endTime ?? '')
   const [allDay, setAllDay]   = useState(initial?.allDay ?? false)
-  const [cat, setCat]         = useState(initial?.category ?? catKeys[0] ?? '')
+  const [cat, setCat]         = useState(initial?.category ?? 'other')
   const [content, setContent] = useState(initial?.content ?? '')
+  // COURSE
+  const [selectedCourseId, setSelectedCourseId] = useState<number | ''>(initial?.courseId ?? '')
+  // GRADE_NOTICE
+  const [allGrades, setAllGrades]   = useState(false)
+  const [grades, setGrades]         = useState<number[]>([])
+
+  const isMultiDay = endDate && endDate > date
+  const needsCourse = scheduleType === 'COURSE'
+  const needsGrades = ['GRADE_NOTICE', 'DEPT_NOTICE', 'SCHOOL_NOTICE', 'DEPARTMENT'].includes(scheduleType)
+
+  const toggleGrade = (g: number) => {
+    setGrades(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g])
+    setAllGrades(false)
+  }
+  const toggleAllGrades = () => {
+    const next = !allGrades
+    setAllGrades(next)
+    setGrades(next ? [1, 2, 3, 4] : [])
+  }
+
+  const handleStartDateChange = (v: string) => {
+    setDate(v)
+    if (!endDate || endDate < v) setEndDate(v)
+  }
 
   const handleSave = () => {
     if (!title.trim()) { alert('제목을 입력해주세요.'); return }
-    if (!date) { alert('날짜를 선택해주세요.'); return }
-    onSave({ id: initial?.id, title, date, startTime, endTime, allDay, category: cat, content })
+    if (!date) { alert('시작일을 선택해주세요.'); return }
+    if (!endDate) { alert('종료일을 선택해주세요.'); return }
+    if (endDate < date) { alert('종료일은 시작일보다 빠를 수 없습니다.'); return }
+    if (needsCourse && !selectedCourseId) { alert('과목을 선택해주세요.'); return }
+    if (scheduleType === 'GRADE_NOTICE' && grades.length === 0) { alert('대상 학년을 선택해주세요.'); return }
+    onSave({
+      id: initial?.id,
+      title, date, endDate: endDate || undefined,
+      startTime: isMultiDay ? '' : startTime,
+      endTime: isMultiDay ? '' : endTime,
+      allDay: isMultiDay ? true : allDay,
+      category: cat, content,
+      scheduleType,
+      courseId: needsCourse && selectedCourseId ? Number(selectedCourseId) : undefined,
+      targetGrades: needsGrades ? grades : undefined,
+      isAllGrades: allGrades,
+    })
   }
 
-  const selectedMeta = categoryMeta[cat] ?? fallbackMeta(cat)
+  const yearMin = `${new Date().getFullYear() - 10}-01-01`
+  const yearMax = `${new Date().getFullYear() + 10}-12-31`
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/30 p-0 sm:p-4"
       onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="bg-white rounded-lg shadow-2xl w-full max-w-[400px] overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full sm:max-w-[420px] flex flex-col max-h-[95dvh] sm:max-h-[90dvh]">
+
+        {/* 헤더 */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 flex-shrink-0">
           <h3 className="text-base font-semibold text-gray-900">{initial ? '일정 수정' : '일정 추가'}</h3>
           <button onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-xl leading-none w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100">✕</button>
+            className="text-gray-400 hover:text-gray-600 text-xl leading-none w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">✕</button>
         </div>
-        <div className="px-6 py-5 flex flex-col gap-4">
-          <div className="flex items-start gap-4">
-            <label className="text-sm font-medium text-gray-700 w-16 pt-2 flex-shrink-0">제목 <span className="text-red-500">*</span></label>
+
+        {/* 스크롤 영역 */}
+        <div className="overflow-y-auto flex-1 px-5 py-4 flex flex-col gap-4">
+
+          {/* 1. 일정 유형 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">일정 유형 <span className="text-red-500">*</span></label>
+            <select value={scheduleType} onChange={e => setScheduleType(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-400 bg-white">
+              {typeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
+
+          {/* 과목 선택 (COURSE) */}
+          {needsCourse && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">과목 선택 <span className="text-red-500">*</span></label>
+              <select value={selectedCourseId}
+                onChange={e => setSelectedCourseId(e.target.value === '' ? '' : Number(e.target.value))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-400 bg-white">
+                <option value="">-- 과목 선택 --</option>
+                {(myCourses ?? []).map(c => (
+                  <option key={c.courseId} value={c.courseId}>{c.courseName}</option>
+                ))}
+              </select>
+              {(myCourses ?? []).length === 0 && (
+                <p className="mt-1 text-xs text-amber-600">담당/수강 과목이 없습니다. 시간표를 먼저 등록해주세요.</p>
+              )}
+            </div>
+          )}
+
+          {/* 대상 학년 체크박스 (GRADE_NOTICE / DEPT_NOTICE) */}
+          {needsGrades && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                대상 학년 {scheduleType === 'GRADE_NOTICE' && <span className="text-red-500">*</span>}
+              </label>
+              <div className="flex flex-col gap-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={allGrades} onChange={toggleAllGrades}
+                    className="w-4 h-4 rounded accent-blue-600" />
+                  <span className="text-sm font-medium text-gray-700">전체 학년</span>
+                </label>
+                <div className="grid grid-cols-4 gap-2 pl-1">
+                  {[1, 2, 3, 4].map(g => (
+                    <label key={g} className="flex items-center gap-1.5 cursor-pointer">
+                      <input type="checkbox" checked={grades.includes(g)} onChange={() => toggleGrade(g)}
+                        className="w-4 h-4 rounded accent-blue-600" />
+                      <span className="text-sm text-gray-700">{g}학년</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 학과 표시 (DEPT_NOTICE) */}
+          {scheduleType === 'DEPT_NOTICE' && myDeptName && (
+            <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg">
+              <span className="text-xs text-blue-600 font-medium">대상 학과:</span>
+              <span className="text-xs text-blue-800 font-semibold">{myDeptName}</span>
+            </div>
+          )}
+
+          {/* 2. 제목 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">제목 <span className="text-red-500">*</span></label>
             <input value={title} onChange={e => setTitle(e.target.value)}
-              className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
               placeholder="제목을 입력하세요" />
           </div>
-          <div className="flex items-center gap-4">
-            <label className="text-sm font-medium text-gray-700 w-16 flex-shrink-0">날짜 <span className="text-red-500">*</span></label>
-            <input type="date" value={date} onChange={e => setDate(e.target.value)}
-              className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100" />
-          </div>
-          <div className="flex items-center gap-4">
-            <label className="text-sm font-medium text-gray-700 w-16 flex-shrink-0">시간</label>
-            <div className="flex items-center gap-2 flex-1">
-              <input type="time" value={startTime} onChange={e => setStart(e.target.value)}
-                disabled={allDay}
-                className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-300" />
-              <span className="text-gray-400 text-sm flex-shrink-0">~</span>
-              <input type="time" value={endTime} onChange={e => setEnd(e.target.value)}
-                disabled={allDay}
-                className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-blue-400 disabled:bg-gray-50 disabled:text-gray-300" />
-              <label className="flex items-center gap-1.5 text-sm text-gray-600 cursor-pointer flex-shrink-0">
-                <input type="checkbox" checked={allDay} onChange={e => setAllDay(e.target.checked)} className="w-3.5 h-3.5 rounded" />
-                종일
-              </label>
+
+          {/* 3. 날짜 — 2열 그리드 */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">시작일 <span className="text-red-500">*</span></label>
+              <input type="date" value={date} onChange={e => handleStartDateChange(e.target.value)}
+                min={yearMin} max={yearMax}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-400" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">종료일 <span className="text-red-500">*</span></label>
+              <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
+                min={date || yearMin} max={yearMax}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-400" />
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <label className="text-sm font-medium text-gray-700 w-16 flex-shrink-0">카테고리 <span className="text-red-500">*</span></label>
-            <div className="flex items-center gap-2 flex-1 border border-gray-300 rounded px-3 py-2 focus-within:border-blue-400">
-              <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 transition-colors" style={{ background: selectedMeta.color }} />
-              <select value={cat} onChange={e => setCat(e.target.value)}
-                className="flex-1 text-sm outline-none bg-transparent text-gray-800">
-                {catKeys.map(k => <option key={k} value={k}>{categoryMeta[k].label}</option>)}
-              </select>
+          {isMultiDay && (
+            <p className="text-xs text-indigo-600 bg-indigo-50 px-3 py-2 rounded-lg -mt-2">
+              기간 일정 — 시간 없이 종일 일정으로 처리됩니다.
+            </p>
+          )}
+
+          {/* 4. 시간 (단일 날짜일 때만) */}
+          {!isMultiDay && (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-gray-700">시간 <span className="text-gray-400 text-xs">(선택)</span></label>
+                <button type="button" onClick={() => setAllDay(!allDay)}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-all
+                    ${allDay ? 'bg-blue-50 text-blue-600 border-blue-300' : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-50'}`}>
+                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${allDay ? 'bg-blue-500' : 'bg-gray-300'}`} />
+                  종일 일정
+                </button>
+              </div>
+              {!allDay && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <span className="block text-xs text-gray-500 mb-1">시작</span>
+                    <input type="time" value={startTime} onChange={e => setStart(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-400" />
+                  </div>
+                  <div>
+                    <span className="block text-xs text-gray-500 mb-1">종료</span>
+                    <input type="time" value={endTime} onChange={e => setEnd(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-400" />
+                  </div>
+                </div>
+              )}
             </div>
+          )}
+
+          {/* 5. 카테고리 드롭다운 — SCHEDULE_CATEGORY_LIST 공통 사용 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">카테고리</label>
+            <select value={cat} onChange={e => setCat(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-400 bg-white">
+              {SCHEDULE_CATEGORY_LIST.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
           </div>
-          <div className="flex items-start gap-4">
-            <label className="text-sm font-medium text-gray-700 w-16 flex-shrink-0 pt-2">내용</label>
-            <textarea value={content} onChange={e => setContent(e.target.value)} rows={4}
-              className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-blue-400 resize-none"
+
+          {/* 6. 내용 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">내용 <span className="text-gray-400 text-xs">(선택)</span></label>
+            <textarea value={content} onChange={e => setContent(e.target.value)} rows={3}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-400 resize-none"
               placeholder="내용을 입력하세요" />
           </div>
+
         </div>
-        <div className="flex gap-3 px-6 pb-5">
+
+        {/* 버튼 */}
+        <div className="flex gap-3 px-5 py-4 border-t border-gray-100 flex-shrink-0">
           <button onClick={onClose}
-            className="flex-1 py-2.5 border border-gray-300 rounded text-sm font-medium text-gray-600 hover:bg-gray-50 transition">취소</button>
+            className="flex-1 py-3 border border-gray-300 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition">취소</button>
           <button onClick={handleSave}
-            className="flex-1 py-2.5 bg-gray-900 text-white rounded text-sm font-semibold hover:bg-gray-700 transition">저장</button>
+            className="flex-1 py-3 bg-gray-900 text-white rounded-lg text-sm font-semibold hover:bg-gray-700 transition">저장</button>
         </div>
       </div>
     </div>
@@ -583,8 +903,14 @@ export interface ScheduleCalendarViewProps {
   categoryMeta: Record<string, CategoryMeta>
   loading?: boolean
   canWrite?: boolean
-  onSave?: (data: Omit<ScheduleItem, 'id'> & { id?: string }) => void
+  memberType?: string | null
+  username?: string
+  myCourses?: { courseId: number; courseName: string }[]
+  myDeptName?: string
+  onSave?: (data: Omit<ScheduleItem, 'id'> & { id?: string; courseId?: number; targetGrades?: number[]; isAllGrades?: boolean }) => Promise<boolean> | void
+  onUpdate?: (id: string, data: Omit<ScheduleItem, 'id'> & { courseId?: number; targetGrades?: number[]; isAllGrades?: boolean }) => Promise<boolean> | void
   onDelete?: (id: string) => void
+  onToggleComplete?: (id: string) => void
 }
 
 export default function ScheduleCalendarView({
@@ -592,8 +918,14 @@ export default function ScheduleCalendarView({
   categoryMeta,
   loading = false,
   canWrite = false,
+  memberType,
+  username,
+  myCourses,
+  myDeptName,
   onSave,
+  onUpdate,
   onDelete,
+  onToggleComplete,
 }: ScheduleCalendarViewProps) {
   const now = new Date()
   const [mainY, setMainY] = useState(now.getFullYear())
@@ -631,7 +963,25 @@ export default function ScheduleCalendarView({
 
   const evMap = useMemo(() => {
     const map = new Map<string, ScheduleItem[]>()
-    filtered.forEach(s => { const a = map.get(s.date) ?? []; a.push(s); map.set(s.date, a) })
+    filtered.forEach(s => {
+      // 종료일 없으면 시작일에만 등록
+      if (!s.endDate || s.endDate <= s.date) {
+        const a = map.get(s.date) ?? []
+        a.push(s)
+        map.set(s.date, a)
+        return
+      }
+      // 종료일 있으면 기간 전체 날짜에 등록
+      const cur = new Date(s.date)
+      const end = new Date(s.endDate)
+      while (cur <= end) {
+        const ds = `${cur.getFullYear()}-${pad2(cur.getMonth() + 1)}-${pad2(cur.getDate())}`
+        const a = map.get(ds) ?? []
+        a.push(s)
+        map.set(ds, a)
+        cur.setDate(cur.getDate() + 1)
+      }
+    })
     return map
   }, [filtered])
 
@@ -711,7 +1061,19 @@ export default function ScheduleCalendarView({
   }, [catKeys])
 
   const handleSave = onSave
-    ? (data: Omit<ScheduleItem, 'id'> & { id?: string }) => { onSave(data); setFormModal(null); setDetailEv(null) }
+    ? async (data: Omit<ScheduleItem, 'id'> & { id?: string; courseId?: number; targetGrades?: number[]; isAllGrades?: boolean }) => {
+        let success: boolean | void
+        if (data.id && onUpdate) {
+          success = await onUpdate(data.id, data)
+        } else {
+          success = await onSave(data)
+        }
+        // 성공(true) 또는 void(구형 호환)일 때만 모달 닫기
+        if (success !== false) {
+          setFormModal(null)
+          setDetailEv(null)
+        }
+      }
     : undefined
   const openEdit = (ev: ScheduleItem) => { setDetailEv(null); setFormModal({ initial: ev }) }
 
@@ -968,17 +1330,21 @@ export default function ScheduleCalendarView({
         <DetailModal
           ev={detailEv}
           meta={categoryMeta[detailEv.category] ?? fallbackMeta(detailEv.category)}
-          canWrite={writeEnabled && !!onDelete}
+          username={username}
+          memberType={memberType}
           onClose={() => setDetailEv(null)}
           onEdit={openEdit}
-          onDelete={onDelete ?? (() => {})} />
+          onDelete={onDelete ?? (() => {})}
+          onToggleComplete={onToggleComplete} />
       )}
 
       {formModal && handleSave && (
         <FormModal
           initial={formModal.initial}
           defaultDate={formModal.date}
-          categoryMeta={categoryMeta}
+          memberType={memberType}
+          myCourses={myCourses}
+          myDeptName={myDeptName}
           onSave={handleSave}
           onClose={() => setFormModal(null)} />
       )}

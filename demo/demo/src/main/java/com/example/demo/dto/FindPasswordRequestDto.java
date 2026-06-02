@@ -6,6 +6,7 @@ public class FindPasswordRequestDto {
     private String universityId;
     private String college;
     private String studentId;
+    private String department; // 학과 (department) 기준 본인확인 추가
 
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
@@ -17,4 +18,6 @@ public class FindPasswordRequestDto {
     public void setCollege(String college) { this.college = college; }
     public String getStudentId() { return studentId; }
     public void setStudentId(String studentId) { this.studentId = studentId; }
+    public String getDepartment() { return department; }
+    public void setDepartment(String department) { this.department = department; }
 }

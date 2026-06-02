@@ -111,6 +111,24 @@ public class AdminService {
 
     // ── School Admin ─────────────────────────────────────────────────────────
 
+    public Map<String, Object> setPostHidden(Long postId, boolean hidden, String actor) {
+        Post p = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found: " + postId));
+        p.setHidden(hidden);
+        postRepository.save(p);
+        logAction(actor, hidden ? "HIDE" : "UNHIDE", null, "post#" + postId, p.getScopeId());
+        return Map.of("success", true, "hidden", hidden);
+    }
+
+    public Map<String, Object> setNoticeHidden(Long noticeId, boolean hidden, String actor) {
+        Notice n = noticeRepository.findById(noticeId)
+                .orElseThrow(() -> new RuntimeException("Notice not found: " + noticeId));
+        n.setHidden(hidden);
+        noticeRepository.save(n);
+        logAction(actor, hidden ? "HIDE" : "UNHIDE", null, "notice#" + noticeId, n.getScopeId());
+        return Map.of("success", true, "hidden", hidden);
+    }
+
     public Map<String, Object> deleteSchoolPost(Long postId, Long univId, String actor) {
         Post p = postRepository.findById(postId)
                 .orElseThrow(() -> new RuntimeException("Post not found: " + postId));
@@ -156,6 +174,21 @@ public class AdminService {
         return getScopedPosts("univ", univId, page);
     }
 
+    public Map<String, Object> getSchoolNotices(Long univId, int page) {
+        return getScopedNotices("univ", univId, page);
+    }
+
+    public Map<String, Object> deleteSchoolNotice(Long noticeId, Long univId, String actor) {
+        Notice n = noticeRepository.findById(noticeId)
+                .orElseThrow(() -> new RuntimeException("Notice not found: " + noticeId));
+        if (!"univ".equals(n.getScopeType()) || !univId.equals(n.getScopeId())) {
+            throw new RuntimeException("Notice scope mismatch");
+        }
+        noticeRepository.deleteById(noticeId);
+        logAction(actor, "DELETE", null, "univ notice#" + noticeId, univId);
+        return Map.of("success", true);
+    }
+
     public Map<String, Object> getScopedPosts(String scopeType, Long scopeId, int page) {
         Page<Post> postPage = postRepository.findByScopeTypeAndScopeId(
                 scopeType, scopeId,
@@ -169,6 +202,7 @@ public class AdminService {
             m.put("category",    p.getCategory());
             m.put("viewCount",   p.getViewCount());
             m.put("createdDate", p.getCreatedDate() != null ? p.getCreatedDate().toString() : "");
+            m.put("hidden",      p.isHidden());
             return m;
         }).collect(Collectors.toList());
 
@@ -193,6 +227,7 @@ public class AdminService {
             m.put("viewCount",   n.getViewCount());
             m.put("featured",    n.isFeatured());
             m.put("createdDate", n.getCreatedDate() != null ? n.getCreatedDate().toString() : "");
+            m.put("hidden",      n.isHidden());
             return m;
         }).collect(Collectors.toList());
 
@@ -218,6 +253,20 @@ public class AdminService {
         return userRepository.findByUniversityIdAndStatusAndMemberTypeNot(
                         String.valueOf(univId), "PENDING_APPROVAL", "admin")
                 .stream().map(this::toUserMap).collect(Collectors.toList());
+    }
+
+    public List<Map<String, Object>> getAllAdminLogs() {
+        return adminLogRepository.findTop200ByOrderByCreatedAtDesc()
+                .stream().map(log -> {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("id",             log.getId());
+                    m.put("actionType",     log.getActionType());
+                    m.put("actorUsername",  log.getActorUsername());
+                    m.put("targetUsername", log.getTargetUsername());
+                    m.put("detail",         log.getDetail());
+                    m.put("createdAt",      log.getCreatedAt().toString());
+                    return m;
+                }).collect(Collectors.toList());
     }
 
     public List<Map<String, Object>> getAdminLogs(Long univId) {
@@ -415,6 +464,30 @@ public class AdminService {
                 .stream().map(this::toUserMap).collect(Collectors.toList());
     }
 
+    public List<Map<String, Object>> getDeptPendingUsers(Long deptId) {
+        Department d = departmentRepository.findById(deptId)
+                .orElseThrow(() -> new RuntimeException("Department not found: " + deptId));
+        Long univId = deptToUnivId(deptId);
+        if (univId == null) return Collections.emptyList();
+        return userRepository.findByUniversityIdAndDepartmentAndStatus(
+                        String.valueOf(univId), d.getName(), "PENDING_APPROVAL")
+                .stream().map(this::toUserMap).collect(Collectors.toList());
+    }
+
+    public List<Map<String, Object>> getFacultyPendingUsers(Long facultyId) {
+        List<String> deptNames = departmentRepository.findByFacultyIdOrderByIdAsc(facultyId)
+                .stream().map(Department::getName).collect(Collectors.toList());
+        if (deptNames.isEmpty()) return Collections.emptyList();
+        Long univId = facultyToUnivId(facultyId);
+        if (univId == null) return Collections.emptyList();
+        String univStr = String.valueOf(univId);
+        return deptNames.stream()
+                .flatMap(n -> userRepository.findByUniversityIdAndDepartmentAndStatus(
+                        univStr, n, "PENDING_APPROVAL").stream())
+                .map(this::toUserMap)
+                .collect(Collectors.toList());
+    }
+
     public Map<String, Object> updateDeptUserStatus(Long userId, String status,
                                                       Long deptId, String actor) {
         return updateUserStatus(userId, status, actor, deptToUnivId(deptId));
@@ -601,6 +674,8 @@ public class AdminService {
             m.put("id", c.getId());
             m.put("name", c.getName());
             m.put("year", c.getYear());
+            m.put("semester", c.getSemester());
+            m.put("category", c.getCategory());
             m.put("credits", c.getCredits());
             m.put("required", c.isRequired());
             return m;
@@ -615,6 +690,8 @@ public class AdminService {
                 m.put("id", c.getId());
                 m.put("name", c.getName());
                 m.put("year", c.getYear());
+                m.put("semester", c.getSemester());
+                m.put("category", c.getCategory());
                 m.put("credits", c.getCredits());
                 m.put("required", c.isRequired());
                 m.put("deptId", c.getDeptId());
@@ -635,10 +712,8 @@ public class AdminService {
         if (assignmentRepository.existsByProfessorIdAndCourseId(professorId, courseId)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 배정된 강의입니다");
         }
-        Professor prof = professorRepository.findById(professorId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "교수 없음"));
-        if (!prof.getDeptId().equals(deptId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "해당 범위의 교수가 아닙니다");
+        if (!professorRepository.existsById(professorId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "교수 없음");
         }
         CurriculumItem course = curriculumItemRepository.findById(courseId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "강의 없음"));
@@ -664,6 +739,19 @@ public class AdminService {
 
     public List<Long> getDeptIdsForUnivPublic(Long univId) {
         return getDeptIdsForUniv(univId);
+    }
+
+    public List<Map<String, Object>> getDeptsByUniv(Long univId) {
+        return collegeSchoolRepository.findByUniversityId(univId).stream()
+            .flatMap(cs -> facultyGroupRepository.findBySchoolId(cs.getId()).stream())
+            .flatMap(fg -> departmentRepository.findByFacultyId(fg.getId()).stream())
+            .map(d -> {
+                Map<String, Object> m = new HashMap<>();
+                m.put("id", d.getId());
+                m.put("name", d.getName());
+                return m;
+            })
+            .toList();
     }
 
     private List<Long> getDeptIdsForUniv(Long univId) {

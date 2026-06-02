@@ -68,11 +68,6 @@ export default function LoginPage() {
       if (result.success) {
         setError('')
 
-        // setDept()가 deptState를 덮어쓰기 전에 먼저 읽어야 올바른 이전 선택 정보를 보존
-        const savedDeptState = (() => {
-          try { return JSON.parse(localStorage.getItem('deptState') || '{}') } catch { return {} }
-        })()
-
         clearAuthStorage()
 
         setAuthItem('isLoggedIn',  'true',                rememberMe)
@@ -87,6 +82,7 @@ export default function LoginPage() {
         if (result.adminRole)        setAuthItem('adminRole',        result.adminRole,               rememberMe)
         if (result.deptId)           setAuthItem('deptId',           String(result.deptId),          rememberMe)
         if (result.facultyId)        setAuthItem('facultyId',        String(result.facultyId),        rememberMe)
+        if (result.studentId)        setAuthItem('studentId',        String(result.studentId),        rememberMe)
 
         if (result.department || result.universityId) {
           setDept({
@@ -109,9 +105,12 @@ export default function LoginPage() {
         const displayName = result.name || id
         setToastMsg(`${displayName}님 환영합니다!`)
 
+        const savedDeptState = (() => {
+          try { return JSON.parse(localStorage.getItem('deptState') || '{}') } catch { return {} }
+        })()
+
         const doNavigate = () => {
           if (result.deptId) {
-            // API가 학과 정보를 돌려준 경우 → 학과 홈으로 이동
             setDept({
               selectedDeptId:         result.deptId        ?? null,
               selectedDeptName:       result.department    ?? null,
@@ -121,7 +120,6 @@ export default function LoginPage() {
             })
             navigate('/dept/home')
           } else if (result.universityId) {
-            // API가 대학교 정보를 돌려준 경우 → 학과 선택 페이지로 이동
             setDept({
               selectedDeptId:         null,
               selectedDeptName:       result.department    ?? null,
@@ -131,12 +129,8 @@ export default function LoginPage() {
             })
             navigate('/school/departments')
           } else if (savedDeptState.selectedDeptId) {
-            // 로그인 전에 학과를 선택해 둔 경우 → 학과 홈으로 이동 (DeptContext 복원 필수)
-            setDept(savedDeptState)
             navigate('/dept/home')
           } else if (savedDeptState.selectedUniversityId) {
-            // 로그인 전에 대학교를 선택해 둔 경우 → 학과 선택 메인페이지로 이동 (DeptContext 복원 필수)
-            setDept(savedDeptState)
             navigate('/school/departments')
           } else {
             navigate('/universities')

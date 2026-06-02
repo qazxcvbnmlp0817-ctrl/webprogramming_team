@@ -7,11 +7,13 @@ interface DeptState {
   selectedUniversityId: number | null
   selectedUniversityName: string | null
   selectedSchoolName: string | null
+  selectedFacultyName?: string | null
 }
 
 interface DeptContextType extends DeptState {
   setDept: (state: DeptState) => void
   setUniversityInfo: (id: number, name: string) => void
+  setFacultyName: (name: string | null) => void
   clearDept: () => void
 }
 
@@ -33,6 +35,7 @@ function emptyState(): DeptState {
     selectedUniversityId: null,
     selectedUniversityName: null,
     selectedSchoolName: null,
+    selectedFacultyName: null,
   }
 }
 
@@ -54,13 +57,21 @@ export function DeptProvider({ children }: { children: ReactNode }) {
     })
   }
 
+  const setFacultyName = (name: string | null) => {
+    setState(prev => {
+      const next = { ...prev, selectedFacultyName: name }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+      return next
+    })
+  }
+
   const clearDept = () => {
     setState(emptyState())
     localStorage.removeItem(STORAGE_KEY)
   }
 
   return (
-    <DeptContext.Provider value={{ ...state, setDept, setUniversityInfo, clearDept }}>
+    <DeptContext.Provider value={{ ...state, setDept, setUniversityInfo, setFacultyName, clearDept }}>
       {children}
     </DeptContext.Provider>
   )

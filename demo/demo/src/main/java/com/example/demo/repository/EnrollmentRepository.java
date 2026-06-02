@@ -18,4 +18,6 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
     long countByStudentUsernameAndSemester(String studentUsername, String semester);
 
     List<Enrollment> findByDeptId(Long deptId);
+
+    void deleteByDeptId(Long deptId);
 }

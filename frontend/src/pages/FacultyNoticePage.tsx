@@ -2,15 +2,15 @@ import { useState, useMemo, useEffect } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import FilterTabs from '../components/FilterTabs'
-import FeaturedCard from '../components/FeaturedCard'
 import Sidebar from '../components/Sidebar'
 import Pagination from '../components/Pagination'
 import { fetchUniversity } from '../api/universities'
 import { fetchFacultyNotices } from '../api/school'
 import { useDept } from '../context/DeptContext'
 import { useDeptFetch } from '../hooks/useDeptFetch'
+import { isSameFaculty } from '../utils/accessCheck'
 
-const NOTICE_TABS = ['전체', '학사', '장학', '행사', '취업']
+const NOTICE_TABS = ['전체', '일반', '학사', '장학', '행사', '취업']
 const GRADE_TABS  = ['전체', '1학년', '2학년', '3학년', '4학년']
 
 export default function FacultyNoticePage() {
@@ -26,14 +26,14 @@ export default function FacultyNoticePage() {
 
   useEffect(() => { setPage(1) }, [active, gradeFilter, search, searchType])
 
-  const canWrite = ['professor', 'admin'].includes(sessionStorage.getItem('memberType') ?? '')
+  const memberType = sessionStorage.getItem('memberType') ?? ''
+  const isAdmin = memberType === 'admin'
 
   const facultyIdNum = facultyId ? Number(facultyId) : null
 
   const { data: univ }          = useDeptFetch(fetchUniversity, selectedUniversityId)
   const { data, loading }       = useDeptFetch(fetchFacultyNotices, facultyIdNum)
 
-  const featured = data?.featured ?? null
   const notices  = data?.notices  ?? []
 
   const filtered = useMemo(() => notices.filter(n => {
@@ -46,11 +46,15 @@ export default function FacultyNoticePage() {
     return catOk && searchOk && gradeOk
   }), [notices, active, gradeFilter, search, searchType])
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
-  const pageItems  = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE)
-
   const school  = univ?.schools.find(s => s.faculties.some(f => f.id === facultyIdNum))
   const faculty = school?.faculties.find(f => f.id === facultyIdNum)
+
+  const isMember = isAdmin || isSameFaculty(facultyIdNum, faculty?.name)
+  const canWrite = isMember && ['professor', 'assistant', 'admin'].includes(memberType)
+  const visibleFiltered = isMember ? filtered : filtered.filter(n => n.isPublicToOutsiders)
+
+  const totalPages = Math.max(1, Math.ceil(visibleFiltered.length / PER_PAGE))
+  const pageItems  = visibleFiltered.slice((page - 1) * PER_PAGE, page * PER_PAGE)
 
   const categoryCounts = NOTICE_TABS.map(label => ({
     label,
@@ -97,15 +101,6 @@ export default function FacultyNoticePage() {
           </div>
         ) : (
           <>
-            {featured && (
-              <FeaturedCard
-                category={featured.category}
-                title={featured.title}
-                date={featured.date}
-                meta={`👁 ${featured.viewCount}`}
-              />
-            )}
-
             <div className="mb-4">
               <div className="flex items-center border border-black">
                 <div className="flex border-r border-black">
@@ -171,7 +166,7 @@ export default function FacultyNoticePage() {
                   </div>
                   )
                 })}
-                {filtered.length === 0 && (
+                {visibleFiltered.length === 0 && (
                   <div className="py-16 text-center text-gray-400">
                     <i className="fas fa-inbox text-3xl mb-3 block" />공지사항이 없습니다.
                   </div>

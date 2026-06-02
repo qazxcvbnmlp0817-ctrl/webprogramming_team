@@ -28,3 +28,20 @@ uploads/
 
 # ===== Claude Code 설정 =====
 .claude/
+
+# ===== 로컬 실행 스크립트 (개인 환경 전용) =====
+run-backend.cmd
+run-backend.ps1
+run-frontend-dev.cmd
+run-frontend-dev.ps1
+build-frontend.cmd
+build-frontend.ps1
+
+# ===== 브레인스토밍/디자인 문서 (로컬 전용) =====
+docs/superpowers/
+
+# ===== Node.js =====
+node_modules/
+
+# ===== UI 테스트 스크린샷 (로컬 전용) =====
+frontend/test-screenshots/
