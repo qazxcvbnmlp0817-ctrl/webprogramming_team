@@ -151,6 +151,80 @@ function ClassScheduleGrid({
   )
 }
 
+// lectureTime("월5,6,7 수2,3,4")을 사람이 읽는 시간 형식("월 11:00~12:30 / 수 09:30~11:00")으로 변환.
+// 매핑: 1교시 = 09:00, 한 교시 = 30분.
+function formatLectureTime(text: string | null | undefined): string {
+  if (!text) return '강의시간 미정'
+  const clean = text.replace(/\s+/g, '')
+  const out: string[] = []
+  for (const match of clean.matchAll(/([월화수목금토일])([0-9,]+)/g)) {
+    const day = match[1]
+    const periods = match[2].split(',').map(Number).filter(Boolean).sort((a, b) => a - b)
+    if (periods.length === 0) continue
+    const groups: number[][] = []
+    let cur: number[] = [periods[0]]
+    for (let i = 1; i < periods.length; i++) {
+      if (periods[i] === periods[i - 1] + 1) cur.push(periods[i])
+      else { groups.push(cur); cur = [periods[i]] }
+    }
+    groups.push(cur)
+    for (const grp of groups) {
+      const startMin = 510 + grp[0] * 30
+      const endMin   = 510 + (grp[grp.length - 1] + 1) * 30
+      const s = `${String(Math.floor(startMin / 60)).padStart(2, '0')}:${String(startMin % 60).padStart(2, '0')}`
+      const e = `${String(Math.floor(endMin / 60)).padStart(2, '0')}:${String(endMin % 60).padStart(2, '0')}`
+      out.push(`${day} ${s}~${e}`)
+    }
+  }
+  return out.length > 0 ? out.join(' / ') : text
+}
+
+// 학생이 담은 LectureOffering의 lectureTime("월13,14,15,16 수9,10,11,12")을 파싱해 ClassScheduleDto 배열로 변환.
+// 매핑: 1교시 = 09:00, 한 교시 = 30분 단위 (예: 9교시=13:00, 13교시=15:00, 22교시=19:30).
+// 연속 교시는 한 블록으로 묶고, 비연속 교시는 따로 만듦.
+function entriesToScheduleBlocks(entries: TimetableEntryDto[]): ClassScheduleDto[] {
+  const result: ClassScheduleDto[] = []
+  let synthetic = 1
+  const periodToMinutes = (p: number) => 510 + p * 30   // period 1 → 540 = 09:00
+  const minutesToHHMM = (min: number) =>
+    `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`
+
+  for (const entry of entries) {
+    const text = (entry.offering.lectureTime ?? '').replace(/\s+/g, '')
+    for (const match of text.matchAll(/([월화수목금토일])([0-9,]+)/g)) {
+      const day = match[1]
+      const periods = match[2].split(',').map(Number).filter(Boolean).sort((a, b) => a - b)
+      if (periods.length === 0) continue
+      const groups: number[][] = []
+      let cur: number[] = [periods[0]]
+      for (let i = 1; i < periods.length; i++) {
+        if (periods[i] === periods[i - 1] + 1) cur.push(periods[i])
+        else { groups.push(cur); cur = [periods[i]] }
+      }
+      groups.push(cur)
+      for (const grp of groups) {
+        const startMin = periodToMinutes(grp[0])
+        const endMin   = periodToMinutes(grp[grp.length - 1] + 1)
+        result.push({
+          id: entry.entryId * 100 + synthetic++,
+          courseId: entry.offering.id,
+          courseName: entry.offering.courseName,
+          professorId: 0,
+          professorName: entry.offering.professorName ?? '',
+          deptId: 0,
+          dayOfWeek: day,
+          startTime: minutesToHHMM(startMin),
+          endTime:   minutesToHHMM(endMin),
+          room: `${entry.offering.section}분반`,
+          semester: entry.offering.semester,
+          memo: '',
+        })
+      }
+    }
+  }
+  return result
+}
+
 function StudentOfferingGrid({ entries, onRemove }: { entries: TimetableEntryDto[]; onRemove: (entryId: number) => void }) {
   return (
     <section className="border-2 border-black bg-white">
@@ -166,6 +240,7 @@ function StudentOfferingGrid({ entries, onRemove }: { entries: TimetableEntryDto
             <div>
               <p className="font-black text-sm">{entry.offering.courseName}</p>
               <p className="text-xs text-gray-500">{entry.offering.section}분반 · {entry.offering.professorName || '담당교수 미정'}</p>
+              <p className="text-xs text-gray-700 mt-0.5">{formatLectureTime(entry.offering.lectureTime)}</p>
             </div>
             <button type="button" onClick={() => onRemove(entry.entryId)} className="border-2 border-black px-3 py-1 text-xs font-black hover:bg-black hover:text-white">제거</button>
           </div>
@@ -206,7 +281,7 @@ function PersonalScheduleList({ schedules }: { schedules: LocalSchedule[] }) {
 function StudentTimetableView({ username }: { username: string }) {
   const [offerings, setOfferings] = useState<LectureOfferingDto[]>([])
   const [entries, setEntries] = useState<TimetableEntryDto[]>([])
-  const [classSchedules, setClassSchedules] = useState<ClassScheduleDto[]>([])
+  const [serverClassSchedules, setServerClassSchedules] = useState<ClassScheduleDto[]>([])
   const [personalSchedules, setPersonalSchedules] = useState<LocalSchedule[]>([])
   const [query, setQuery] = useState('')
   const [year, setYear] = useState('전체')
@@ -219,14 +294,29 @@ function StudentTimetableView({ username }: { username: string }) {
     const [nextOfferings, nextEntries, nextClassSchedules] = await Promise.all([
       fetchLectureOfferings(SEMESTER),
       fetchMyTimetable(username, SEMESTER),
-      fetchStudentClassSchedules(username, SEMESTER),
+      fetchStudentClassSchedules(username, SEMESTER).catch(() => [] as ClassScheduleDto[]),
     ])
     setOfferings(nextOfferings)
     setEntries(nextEntries)
-    setClassSchedules(nextClassSchedules)
+    setServerClassSchedules(nextClassSchedules)
     setPersonalSchedules(loadSchedules())
     setLoading(false)
   }
+
+  // 그리드에 표시할 시간 블록:
+  // 1) 학생이 담은 (courseName + professorName) 쌍과 일치하는 서버 ClassSchedule이 있으면 그것 우선
+  //    (교수가 수정한 실제 시간이 즉시 반영됨, 같은 과목 다른 교수 분반은 자동 제외)
+  // 2) 매칭되는 ClassSchedule이 없는 강좌는 LectureOffering.lectureTime 파싱으로 폴백
+  const classSchedules = useMemo(() => {
+    const pairKey = (courseName: string, professorName: string | null | undefined) =>
+      `${courseName}|${professorName ?? ''}`
+    const myPairs = new Set(entries.map(e => pairKey(e.offering.courseName, e.offering.professorName)))
+    const matchedFromServer = serverClassSchedules.filter(cs => myPairs.has(pairKey(cs.courseName, cs.professorName)))
+    const coveredPairs = new Set(matchedFromServer.map(cs => pairKey(cs.courseName, cs.professorName)))
+    const uncoveredEntries = entries.filter(e => !coveredPairs.has(pairKey(e.offering.courseName, e.offering.professorName)))
+    const fallbackBlocks = entriesToScheduleBlocks(uncoveredEntries)
+    return [...matchedFromServer, ...fallbackBlocks]
+  }, [entries, serverClassSchedules])
 
   useEffect(() => {
     reload().catch(error => setMessage(error instanceof Error ? error.message : '시간표를 불러오지 못했습니다.'))
@@ -270,7 +360,7 @@ function StudentTimetableView({ username }: { username: string }) {
   }
 
   return (
-    <TimetableShell badge={`수강신청 시간표 ${classSchedules.length}개 / 담은 강좌 ${entries.length}개 · ${totalCredits}학점`}>
+    <TimetableShell badge={`담은 강좌 ${entries.length}개 · ${totalCredits}학점`}>
       {message && <NoticeMessage>{message}</NoticeMessage>}
       <div className="grid xl:grid-cols-[420px_1fr] gap-5 items-start">
         <aside className="border-2 border-black bg-white">
@@ -307,7 +397,7 @@ function StudentTimetableView({ username }: { username: string }) {
                   <div className="mt-3 grid grid-cols-[1fr_auto] gap-2 text-xs">
                     <p className="text-gray-700">{offering.professorName || '담당교수 미정'}</p>
                     <p className="font-bold">{offering.credits}학점</p>
-                    <p className="col-span-2 font-semibold">{offering.lectureTime || '강의시간 미정'}</p>
+                    <p className="col-span-2 font-semibold">{formatLectureTime(offering.lectureTime)}</p>
                   </div>
                 </article>
               )

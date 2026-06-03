@@ -349,13 +349,19 @@ cd demo/demo
 ## 주요 구현 사항
 
 - **BCrypt 암호화**: 회원가입 및 Mock 계정 시딩 시 BCrypt 해시 저장, 로그인 시 검증
-- **회원 유형**: `student`(학생) / `professor`(교수) / `staff`(직원) / `admin`(관리자)
+- **비밀번호 조건 강화**: 8자 이상, 영문·숫자·특수문자 각 1자 이상 포함 필수. 조건 미충족 시 400 반환.
+- **학번/교번 중복 방지**: 같은 대학(`universityId`) 내 동일 `studentId` 중복 가입 차단.
+- **회원 유형**: `student`(학생) / `professor`(교수) / `employee`(직원) / `assistant`(조교) / `admin`(관리자)
+- **grade 처리**: 학생만 학년(1~4) 저장. 교수·조교·직원은 `grade=null`. 조교가 4학년 재학생처럼 저장되던 문제 수정.
 - **사용자 상태 (`APP_USERS.STATUS`)**: `ACTIVE` / `PENDING_APPROVAL` / `SUSPENDED` / `DELETED`
 - **관리자 역할 (`APP_USERS.ADMIN_ROLE`)**: `SUPER_ADMIN` (전 시스템) / `SCHOOL_ADMIN` (자기 학교) / `DEPT_ADMIN` (자기 학과)
 - **가입 승인 흐름**: 모든 유형의 신규 가입자는 `status=PENDING_APPROVAL`로 시작하며 승인 전 로그인 불가. 관리자(`admin`) 신청은 SUPER_ADMIN이 SuperAdminPage에서 역할 선택 후 승인. 일반 사용자(학생·교수 등)는 소속 학교·학과·학부 관리자가 각 대시보드의 "가입 승인" 탭에서 승인 처리.
 - **교수-로그인 계정 연결**: `APP_USERS.PROFESSOR_ENTITY_ID` 컬럼으로 PROFESSORS 테이블 레코드와 연결. 교수 시간표 CRUD 시 해당 FK로 소유권 검증.
 - **수업 시간표 자동 동기화**: `CLASS_SCHEDULES`에 교수가 CRUD를 수행하면 학생 조회 시 즉시 반영. 별도 캐시/알림 없이 Enrollment → ClassSchedule DB 조인으로 구현.
 - **개인 캘린더 (`/calendar`)**: `CalendarRouter`가 로그인 여부를 reactive하게 감지해 분기. **로그인 시** — 개인 일정 + 수업 시간표 + 교수 등록 학과 이벤트 통합 표시. 교수/조교는 "수업 일정 등록" 버튼으로 학과 전체에 공유되는 이벤트(시험·과제 등) 등록 가능. **비로그인 시** — 현재 선택된 학과의 SchedulePage 표시. Navbar의 "일정" 링크도 동일 분기 적용.
+- **일정 공개 범위**: `personal`(개인, ownerId 기준 본인만) / `dept`(학과, departmentId 기준) / `faculty`(학부) / `university`(학교, universityId 기준) / `course`(과목, 수강·담당 기준) / `announcement`(교수·조교 학과 공지, 소속 학과 학생만). 교수/조교는 과목 없이도 공지성 일정 등록 가능.
+- **일정 수정·삭제 권한**: 일정 클릭 시 상세 보기 모달. 작성자 본인에게만 수정·삭제 버튼 표시. 백엔드에서도 ownerId 검증(권한 없으면 403).
+- **마이페이지 학번/교번 표시**: 학생은 학번, 교수·조교는 교번을 "내 정보" 탭에서 표시. 로그인 응답 또는 `GET /api/auth/me`의 `studentId` 필드에서 조회.
 - **authStorage.ts**: `sessionStorage` 우선, 없으면 `localStorage`(`auth_` prefix) 폴백으로 로그인 상태를 읽는 이중 저장소 패턴. Navbar의 `isLoggedIn` 계산에 사용.
 - **학교 CRUD (SUPER_ADMIN)**: SuperAdminPage "학교 관리" 탭에서 University→CollegeSchool→FacultyGroup→Department 전체 계층을 생성·수정·삭제. 수정 시 Merge 전략(요청에 없는 기존 id → cascade 삭제), 삭제 시 모든 하위 데이터(교수, 수강신청, 수업 시간표, 공지 등) cascade 삭제 + 소속 사용자 universityId null화. 단일 `@Transactional` all-or-nothing.
 - **수강신청 중복 방지**: `ENROLLMENTS(student_username, course_id, semester)` 복합 유니크 제약.
