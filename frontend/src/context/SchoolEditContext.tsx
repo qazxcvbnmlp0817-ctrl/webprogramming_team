@@ -26,6 +26,7 @@ export function SchoolEditProvider({ children, univId, onSaved }: SchoolEditProv
   const [saving, setSaving] = useState(false)
 
   const saveSection = useCallback(async (section: string, value: SchoolPageContentDto) => {
+    if (univId == null) return
     setSaving(true)
     try {
       await updateSchoolContentSection(section, value, univId)

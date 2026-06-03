@@ -572,7 +572,12 @@ public class ProfessorScheduleService {
         if (user.getUniversityId() == null || user.getDepartment() == null) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Department information missing");
         }
-        Long univId = Long.parseLong(user.getUniversityId());
+        Long univId;
+        try {
+            univId = Long.parseLong(user.getUniversityId());
+        } catch (NumberFormatException e) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Invalid university ID format");
+        }
         return collegeSchoolRepository.findByUniversityId(univId).stream()
                 .flatMap(school -> facultyGroupRepository.findBySchoolId(school.getId()).stream())
                 .flatMap(faculty -> departmentRepository.findByFacultyId(faculty.getId()).stream())

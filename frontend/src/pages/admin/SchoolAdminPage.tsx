@@ -472,7 +472,7 @@ export default function SchoolAdminPage() {
                       <td className="py-3 pr-4"><StatusBadge status={u.status} /></td>
                       <td className="py-3 pr-4">
                         <span className="border border-gray-300 px-2 py-0.5 text-xs font-mono mr-2">
-                          {u.adminRole ?? 'SUPER_ADMIN'}
+                          {u.adminRole ?? '-'}
                         </span>
                         <button
                           onClick={() => setRoleModalUser(u)}

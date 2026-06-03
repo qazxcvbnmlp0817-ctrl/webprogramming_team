@@ -65,13 +65,15 @@ public class ScheduleController {
     @GetMapping("/dept")
     public ResponseEntity<List<ScheduleDto>> deptSchedules(
             @RequestParam(required = false) Long deptId) {
-        return ResponseEntity.ok(scheduleService.getSchedulesByDept(deptId != null ? deptId : 1L));
+        if (deptId == null) return ResponseEntity.badRequest().build();
+        return ResponseEntity.ok(scheduleService.getSchedulesByDept(deptId));
     }
 
     // GET /api/schedules?deptId=X — 하위 호환 레거시 (기존 프론트 코드 호환)
     @GetMapping
     public ResponseEntity<List<ScheduleDto>> legacyDeptSchedules(
             @RequestParam(required = false) Long deptId) {
-        return ResponseEntity.ok(scheduleService.getSchedulesByDept(deptId != null ? deptId : 1L));
+        if (deptId == null) return ResponseEntity.badRequest().build();
+        return ResponseEntity.ok(scheduleService.getSchedulesByDept(deptId));
     }
 }

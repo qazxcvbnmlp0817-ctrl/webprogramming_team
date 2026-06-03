@@ -17,9 +17,13 @@ public interface PageVisitRepository extends JpaRepository<PageVisit, Long> {
     List<PageVisit> findByScopeTypeAndScopeIdInAndVisitedAtAfter(String scopeType, List<Long> scopeIds, LocalDateTime since);
     long countByScopeTypeAndScopeIdInAndVisitedAtAfter(String scopeType, List<Long> scopeIds, LocalDateTime since);
 
-    // Monthly range query
+    // Monthly range query — single scope ID
     long countByScopeTypeAndScopeIdAndVisitedAtBetween(String scopeType, Long scopeId,
                                                         LocalDateTime start, LocalDateTime end);
+
+    // Monthly range query — multiple scope IDs (use only when list is non-empty)
+    long countByScopeTypeAndScopeIdInAndVisitedAtBetween(String scopeType, List<Long> scopeIds,
+                                                          LocalDateTime start, LocalDateTime end);
 
     @Query(value = "SELECT COUNT(*) FROM PAGE_VISITS pv " +
                    "JOIN DEPTS d ON pv.scope_type = 'dept' AND pv.scope_id = d.id " +

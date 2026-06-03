@@ -277,8 +277,8 @@ public class ScheduleService {
         }
         if (req.getEndDate()   != null && !req.getEndDate().isBlank())
             s.setEndDate(LocalDate.parse(req.getEndDate()));
-        s.setStartTime(req.getStartTime());
-        s.setEndTime(req.getEndTime());
+        if (req.getStartTime() != null) s.setStartTime(req.getStartTime());
+        if (req.getEndTime()   != null) s.setEndTime(req.getEndTime());
         if (req.getCourseId()    != null) s.setCourseId(req.getCourseId());
         if (req.getTargetGrade() != null) s.setTargetGrade(req.getTargetGrade());
         s.setUpdatedAt(LocalDateTime.now());

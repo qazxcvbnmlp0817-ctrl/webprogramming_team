@@ -47,6 +47,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
                                                    LocalDateTime start,
                                                    LocalDateTime end);
 
+    // Monthly stats: signup count filtered by university + department within a date range
+    long countByUniversityIdAndDepartmentAndCreatedDateBetween(String universityId,
+                                                                String department,
+                                                                LocalDateTime start,
+                                                                LocalDateTime end);
+
     // Professor account: find login account linked to a Professor entity
     Optional<User> findByProfessorEntityId(Long professorEntityId);
 
