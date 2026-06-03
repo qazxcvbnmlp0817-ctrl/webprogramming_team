@@ -10,6 +10,8 @@ import { useDept } from '../context/DeptContext'
 import Navbar from '../components/Navbar'
 import MiniCalendar from '../components/MiniCalendar'
 import AdminBanner from '../components/common/AdminBanner'
+import { isLoggedIn } from '../utils/accessCheck'
+import { getAuthItem } from '../utils/authStorage'
 
 export default function UniversityShowPage() {
   const { id } = useParams<{ id: string }>()
@@ -21,6 +23,17 @@ export default function UniversityShowPage() {
   const [posts,     setPosts]     = useState<PostDto[]>([])
   const [schedules, setSchedules] = useState<ScheduleDto[]>([])
   const [loading,   setLoading]   = useState(true)
+  const [loggedIn,  setLoggedIn]  = useState(() => isLoggedIn())
+
+  useEffect(() => {
+    const sync = () => setLoggedIn(isLoggedIn())
+    window.addEventListener('loginChanged', sync)
+    window.addEventListener('storage', sync)
+    return () => {
+      window.removeEventListener('loginChanged', sync)
+      window.removeEventListener('storage', sync)
+    }
+  }, [])
 
   const today = new Date().toLocaleDateString('ko-KR', {
     year: 'numeric', month: 'long', day: 'numeric', weekday: 'long',
@@ -58,6 +71,7 @@ export default function UniversityShowPage() {
   if (!univ) return null
 
   const upcoming = schedules.filter(s => s.dday >= 0 && s.dday <= 14)
+  const isMember = loggedIn && getAuthItem('universityId') === String(id)
 
   return (
     <div className="bg-white text-black font-sans">
@@ -142,10 +156,14 @@ export default function UniversityShowPage() {
                       <i className="fas fa-inbox block mb-2" />공지사항이 없습니다.
                     </li>
                   ) : notices.map(n => (
-                    <li key={n.id} className="px-4 py-3 hover:bg-gray-50 transition flex items-start justify-between gap-2">
-                      <Link to="/school/notice" className="text-sm font-medium hover:underline leading-snug flex-1 min-w-0 line-clamp-1">
+                    <li
+                      key={n.id}
+                      onClick={() => navigate(`/notice/${n.id}`)}
+                      className="px-4 py-3 hover:bg-gray-50 transition flex items-start justify-between gap-2 cursor-pointer"
+                    >
+                      <span className="text-sm font-medium hover:underline leading-snug flex-1 min-w-0 line-clamp-1">
                         {n.title}
-                      </Link>
+                      </span>
                       <span className="text-xs text-gray-400 flex-shrink-0 whitespace-nowrap">{n.date}</span>
                     </li>
                   ))}
@@ -156,18 +174,26 @@ export default function UniversityShowPage() {
               <div className="border-2 border-black flex flex-col">
                 <div className="bg-black text-white px-4 py-3 flex items-center justify-between">
                   <span className="font-bold text-sm"><i className="fas fa-fire mr-2" />인기 게시글</span>
-                  <Link to="/school/board" className="text-xs text-gray-300 hover:text-white transition">더보기 →</Link>
+                  {isMember && <Link to="/school/board" className="text-xs text-gray-300 hover:text-white transition">더보기 →</Link>}
                 </div>
                 <ul className="flex-1 divide-y divide-gray-100">
-                  {posts.length === 0 ? (
+                  {!isMember ? (
+                    <li className="px-4 py-8 text-center text-gray-400 text-sm">
+                      <i className="fas fa-lock block mb-2" />{loggedIn ? '소속 구성원만 열람할 수 있습니다.' : '로그인 후 이용 가능합니다.'}
+                    </li>
+                  ) : posts.length === 0 ? (
                     <li className="px-4 py-8 text-center text-gray-400 text-sm">
                       <i className="fas fa-inbox block mb-2" />게시글이 없습니다.
                     </li>
                   ) : posts.map(p => (
-                    <li key={p.id} className="px-4 py-3 hover:bg-gray-50 transition flex items-start justify-between gap-2">
-                      <Link to="/school/board" className="text-sm font-medium hover:underline leading-snug flex-1 min-w-0 line-clamp-1">
+                    <li
+                      key={p.id}
+                      onClick={() => navigate(`/post/${p.id}`)}
+                      className="px-4 py-3 hover:bg-gray-50 transition flex items-start justify-between gap-2 cursor-pointer"
+                    >
+                      <span className="text-sm font-medium hover:underline leading-snug flex-1 min-w-0 line-clamp-1">
                         {p.title}
-                      </Link>
+                      </span>
                       <span className="text-xs text-gray-400 flex-shrink-0 whitespace-nowrap">
                         <i className="fas fa-heart text-red-400 mr-0.5" />{p.likes}
                       </span>

@@ -8,6 +8,8 @@ import { fetchSchoolNotices } from '../api/school'
 import { useDeptFetch } from '../hooks/useDeptFetch'
 import { useDept } from '../context/DeptContext'
 import AdminBanner from '../components/common/AdminBanner'
+import { isLoggedIn } from '../utils/accessCheck'
+import { getAuthItem } from '../utils/authStorage'
 
 const TABS       = ['전체', '일반', '학사', '장학', '행사', '취업']
 const GRADE_TABS = ['전체', '1학년', '2학년', '3학년', '4학년']
@@ -24,7 +26,10 @@ export default function SchoolNoticePage() {
 
   useEffect(() => { setPage(1) }, [active, gradeFilter, search, searchType])
 
-  const canWrite = ['professor', 'admin', 'assistant'].includes(sessionStorage.getItem('memberType') ?? '')
+  const memberType = sessionStorage.getItem('memberType') ?? ''
+  const canWrite = ['professor', 'admin', 'assistant'].includes(memberType)
+  const isMember = memberType === 'admin' ||
+    (isLoggedIn() && getAuthItem('universityId') === String(selectedUniversityId))
 
   const { data, loading } = useDeptFetch(fetchSchoolNotices, selectedUniversityId)
   const notices  = data?.notices  ?? []
@@ -39,8 +44,10 @@ export default function SchoolNoticePage() {
     return catOk && searchOk && gradeOk
   }), [notices, active, gradeFilter, search, searchType])
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
-  const pageItems  = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE)
+  const visibleFiltered = isMember ? filtered : filtered.filter(n => n.isPublicToOutsiders)
+
+  const totalPages = Math.max(1, Math.ceil(visibleFiltered.length / PER_PAGE))
+  const pageItems  = visibleFiltered.slice((page - 1) * PER_PAGE, page * PER_PAGE)
 
   const categoryCounts = TABS.map(label => ({
     label,
@@ -139,7 +146,7 @@ export default function SchoolNoticePage() {
                   </div>
                   )
                 })}
-                {filtered.length === 0 && (
+                {visibleFiltered.length === 0 && (
                   <div className="py-16 text-center text-gray-400">
                     <i className="fas fa-inbox text-3xl mb-3 block" />공지사항이 없습니다.
                   </div>

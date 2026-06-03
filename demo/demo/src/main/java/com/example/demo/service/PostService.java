@@ -9,7 +9,6 @@ import com.example.demo.entity.PostLike;
 import com.example.demo.repository.PostAttachmentRepository;
 import com.example.demo.repository.PostLikeRepository;
 import com.example.demo.repository.PostRepository;
-import com.example.demo.util.DummyDataHelper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,43 +45,28 @@ public class PostService {
     }
 
     public List<PostDto> getPostsByDept(Long deptId) {
-        List<Post> posts = postRepository.findVisibleByScopeTypeAndScopeId("dept", deptId);
-        if (posts.isEmpty()) return DummyDataHelper.getPostsByDept(deptId);
-        return posts.stream().map(this::toDto).collect(Collectors.toList());
+        return postRepository.findVisibleByScopeTypeAndScopeId("dept", deptId)
+                .stream().map(this::toDto).collect(Collectors.toList());
     }
 
     public List<PostDto> getTopPostsByLikesForDept(Long deptId, int limit) {
-        List<Post> posts = postRepository.findVisibleByScopeTypeAndScopeIdOrderByLikes("dept", deptId);
-        if (posts.isEmpty()) {
-            return DummyDataHelper.getPostsByDept(deptId).stream()
-                    .sorted((a, b) -> b.getLikes() - a.getLikes())
-                    .limit(limit)
-                    .collect(Collectors.toList());
-        }
-        return posts.stream().map(this::toDto).limit(limit).collect(Collectors.toList());
+        return postRepository.findVisibleByScopeTypeAndScopeIdOrderByLikes("dept", deptId)
+                .stream().map(this::toDto).limit(limit).collect(Collectors.toList());
     }
 
     public List<PostDto> getPostsByFaculty(Long facultyId) {
-        List<Post> posts = postRepository.findVisibleByScopeTypeAndScopeId("faculty", facultyId);
-        if (posts.isEmpty()) return DummyDataHelper.getPostsByFaculty(facultyId);
-        return posts.stream().map(this::toDto).collect(Collectors.toList());
+        return postRepository.findVisibleByScopeTypeAndScopeId("faculty", facultyId)
+                .stream().map(this::toDto).collect(Collectors.toList());
     }
 
     public List<PostDto> getTopPostsByLikesForFaculty(Long facultyId, int limit) {
-        List<Post> posts = postRepository.findVisibleByScopeTypeAndScopeIdOrderByLikes("faculty", facultyId);
-        if (posts.isEmpty()) {
-            return DummyDataHelper.getPostsByFaculty(facultyId).stream()
-                    .sorted((a, b) -> b.getLikes() - a.getLikes())
-                    .limit(limit)
-                    .collect(Collectors.toList());
-        }
-        return posts.stream().map(this::toDto).limit(limit).collect(Collectors.toList());
+        return postRepository.findVisibleByScopeTypeAndScopeIdOrderByLikes("faculty", facultyId)
+                .stream().map(this::toDto).limit(limit).collect(Collectors.toList());
     }
 
     public List<PostDto> getPostsByUniv(Long univId) {
-        List<Post> posts = postRepository.findVisibleByScopeTypeAndScopeId("univ", univId);
-        if (posts.isEmpty()) return DummyDataHelper.getUniversityPosts(univId);
-        return posts.stream().map(this::toDto).collect(Collectors.toList());
+        return postRepository.findVisibleByScopeTypeAndScopeId("univ", univId)
+                .stream().map(this::toDto).collect(Collectors.toList());
     }
 
     public PostDto getById(Long id) {

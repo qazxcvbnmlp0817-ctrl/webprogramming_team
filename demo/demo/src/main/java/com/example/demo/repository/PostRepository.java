@@ -19,10 +19,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     long countByScopeTypeAndScopeIdAndCreatedDateBetween(String scopeType, Long scopeId,
                                                           LocalDateTime start, LocalDateTime end);
 
-    // Monthly stats: post count for multiple scope IDs in a date range
-    long countByScopeTypeAndScopeIdInAndCreatedDateBetween(String scopeType, List<Long> scopeIds,
-                                                            LocalDateTime start, LocalDateTime end);
-
     List<Post> findByAuthorUsernameOrderByCreatedDateDesc(String authorUsername);
 
     @Query("SELECT p.id FROM Post p WHERE p.scopeType = :scopeType AND p.scopeId = :scopeId")

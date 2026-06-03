@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import MiniCalendar from '../components/MiniCalendar'
 import { fetchUniversity } from '../api/universities'
@@ -10,6 +10,7 @@ import type { NoticeDto } from '../types/notice'
 import type { PostDto } from '../types/post'
 import type { ScheduleDto } from '../types/schedule'
 import AdminBanner from '../components/common/AdminBanner'
+import { isLoggedIn, isSameFaculty } from '../utils/accessCheck'
 
 interface FacultyPageProps {
   embedded?: boolean
@@ -18,6 +19,7 @@ interface FacultyPageProps {
 
 export default function FacultyPage({ embedded = false, facultyIdOverride }: FacultyPageProps = {}) {
   const params = useParams<{ facultyId: string }>()
+  const navigate = useNavigate()
   const facultyId = facultyIdOverride != null ? String(facultyIdOverride) : params.facultyId
   const { selectedUniversityId, setFacultyName } = useDept()
 
@@ -30,23 +32,30 @@ export default function FacultyPage({ embedded = false, facultyIdOverride }: Fac
   const [schedules, setSchedules] = useState<ScheduleDto[]>([])
   const [today,     setToday]     = useState('')
   const [loading,   setLoading]   = useState(true)
+  const [loggedIn,  setLoggedIn]  = useState(() => isLoggedIn())
+
+  useEffect(() => {
+    const sync = () => setLoggedIn(isLoggedIn())
+    window.addEventListener('loginChanged', sync)
+    window.addEventListener('storage', sync)
+    return () => {
+      window.removeEventListener('loginChanged', sync)
+      window.removeEventListener('storage', sync)
+    }
+  }, [])
 
   useEffect(() => {
     if (!facultyIdNum) return
-    let cancelled = false
     setLoading(true)
     fetchFacultyMainData(facultyIdNum)
       .then(data => {
-        if (!cancelled) {
-          setNotices(data.notices)
-          setPosts(data.posts)
-          setSchedules(data.schedules)
-          setToday(data.today)
-        }
+        setNotices(data.notices)
+        setPosts(data.posts)
+        setSchedules(data.schedules)
+        setToday(data.today)
       })
       .catch(() => {})
-      .finally(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
+      .finally(() => setLoading(false))
   }, [facultyIdNum])
 
   const school  = univ?.schools.find(s => s.faculties.some(f => f.id === facultyIdNum))
@@ -59,6 +68,7 @@ export default function FacultyPage({ embedded = false, facultyIdOverride }: Fac
   }, [faculty?.name])
 
   const base = `/school/faculty/${facultyId}`
+  const isMember = loggedIn && isSameFaculty(facultyIdNum)
 
   const body = (<>
       {/* 히어로 */}
@@ -138,10 +148,14 @@ export default function FacultyPage({ embedded = false, facultyIdOverride }: Fac
                       <i className="fas fa-inbox block mb-2" />공지사항이 없습니다.
                     </li>
                   ) : notices.map(n => (
-                    <li key={n.id} className="px-4 py-3 hover:bg-gray-50 transition flex items-start justify-between gap-2">
-                      <Link to={`${base}/notice`} className="text-sm font-medium hover:underline leading-snug flex-1 min-w-0 line-clamp-1">
+                    <li
+                      key={n.id}
+                      onClick={() => navigate(`/notice/${n.id}`)}
+                      className="px-4 py-3 hover:bg-gray-50 transition flex items-start justify-between gap-2 cursor-pointer"
+                    >
+                      <span className="text-sm font-medium hover:underline leading-snug flex-1 min-w-0 line-clamp-1">
                         {n.title}
-                      </Link>
+                      </span>
                       <span className="text-xs text-gray-400 flex-shrink-0 whitespace-nowrap">{n.date}</span>
                     </li>
                   ))}
@@ -152,18 +166,26 @@ export default function FacultyPage({ embedded = false, facultyIdOverride }: Fac
               <div className="border-2 border-black flex flex-col">
                 <div className="bg-black text-white px-4 py-3 flex items-center justify-between">
                   <span className="font-bold text-sm"><i className="fas fa-fire mr-2" />인기 게시글</span>
-                  <Link to={`${base}/board`} className="text-xs text-gray-300 hover:text-white transition">더보기 →</Link>
+                  {isMember && <Link to={`${base}/board`} className="text-xs text-gray-300 hover:text-white transition">더보기 →</Link>}
                 </div>
                 <ul className="flex-1 divide-y divide-gray-100">
-                  {posts.length === 0 ? (
+                  {!isMember ? (
+                    <li className="px-4 py-8 text-center text-gray-400 text-sm">
+                      <i className="fas fa-lock block mb-2" />{loggedIn ? '소속 구성원만 열람할 수 있습니다.' : '로그인 후 이용 가능합니다.'}
+                    </li>
+                  ) : posts.length === 0 ? (
                     <li className="px-4 py-8 text-center text-gray-400 text-sm">
                       <i className="fas fa-inbox block mb-2" />게시글이 없습니다.
                     </li>
                   ) : posts.map(p => (
-                    <li key={p.id} className="px-4 py-3 hover:bg-gray-50 transition flex items-start justify-between gap-2">
-                      <Link to={`${base}/board`} className="text-sm font-medium hover:underline leading-snug flex-1 min-w-0 line-clamp-1">
+                    <li
+                      key={p.id}
+                      onClick={() => navigate(`/post/${p.id}`)}
+                      className="px-4 py-3 hover:bg-gray-50 transition flex items-start justify-between gap-2 cursor-pointer"
+                    >
+                      <span className="text-sm font-medium hover:underline leading-snug flex-1 min-w-0 line-clamp-1">
                         {p.title}
-                      </Link>
+                      </span>
                       <span className="text-xs text-gray-400 flex-shrink-0 whitespace-nowrap">
                         <i className="fas fa-heart text-red-400 mr-0.5" />{p.likes}
                       </span>

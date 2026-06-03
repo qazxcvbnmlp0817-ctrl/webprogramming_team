@@ -9,7 +9,7 @@ import type { NoticeDto } from '../types/notice'
 import type { PostDto } from '../types/post'
 import type { ScheduleDto } from '../types/schedule'
 import AdminBanner from '../components/common/AdminBanner'
-import { isLoggedIn } from '../utils/accessCheck'
+import { isLoggedIn, isSameDept } from '../utils/accessCheck'
 import { getAuthItem } from '../utils/authStorage'
 import { loadSchedules, type LocalSchedule } from '../utils/localSchedule'
 import { fetchSchedules, fetchFacultySchedules, fetchUnivSchedules } from '../api/schedules'
@@ -63,24 +63,19 @@ export default function MainPage() {
 
   useEffect(() => {
     if (!selectedDeptId) return
-    let cancelled = false
     fetchMainData(selectedDeptId)
       .then(data => {
-        if (!cancelled) {
-          setNotices(data.notices)
-          setPosts(data.posts)
-          setDeptSchedules(data.schedules)
-          setToday(data.today)
-        }
+        setNotices(data.notices)
+        setPosts(data.posts)
+        setDeptSchedules(data.schedules)
+        setToday(data.today)
       })
       .catch(() => {})
-    return () => { cancelled = true }
   }, [selectedDeptId])
 
   // 로그인 시 개인 일정 + 소속 학교·학부·학과 일정 로드
   useEffect(() => {
     if (!loggedIn) return
-    let cancelled = false
     setPersonalSchedules(loadSchedules())
 
     const deptId    = getAuthItem('deptId')
@@ -112,18 +107,15 @@ export default function MainPage() {
 
     Promise.all(fetches)
       .then(results => {
-        if (!cancelled) {
-          const seen = new Set<string>()
-          const merged: ScheduleDto[] = []
-          results.flat().forEach(s => {
-            const key = `${s.title}|${s.date}`
-            if (!seen.has(key)) { seen.add(key); merged.push(s) }
-          })
-          setAffiliatedSchedules(merged)
-        }
+        const seen = new Set<string>()
+        const merged: ScheduleDto[] = []
+        results.flat().forEach(s => {
+          const key = `${s.title}|${s.date}`
+          if (!seen.has(key)) { seen.add(key); merged.push(s) }
+        })
+        setAffiliatedSchedules(merged)
       })
       .catch(() => {})
-    return () => { cancelled = true }
   }, [loggedIn, selectedDeptId])
 
   const handleFilterChange = (tab: string) => {
@@ -131,10 +123,11 @@ export default function MainPage() {
     localStorage.setItem(FILTER_KEY, tab)
   }
 
-  // 백엔드가 deptId 기준으로 이미 필터링해서 반환하므로
-  // 프론트엔드는 로그인 여부만 판단한다.
+  const memberType = sessionStorage.getItem('memberType') ?? localStorage.getItem('auth_memberType') ?? ''
+  const isMember   = memberType === 'admin' || isSameDept(selectedDeptId, selectedDeptName)
+
   function canViewNotice(n: NoticeDto): boolean {
-    if (loggedIn) return true
+    if (isMember) return true
     return n.isPublicToOutsiders === true
   }
 

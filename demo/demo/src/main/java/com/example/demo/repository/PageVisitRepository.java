@@ -21,10 +21,6 @@ public interface PageVisitRepository extends JpaRepository<PageVisit, Long> {
     long countByScopeTypeAndScopeIdAndVisitedAtBetween(String scopeType, Long scopeId,
                                                         LocalDateTime start, LocalDateTime end);
 
-    // Monthly range query for multiple scope IDs
-    long countByScopeTypeAndScopeIdInAndVisitedAtBetween(String scopeType, List<Long> scopeIds,
-                                                          LocalDateTime start, LocalDateTime end);
-
     @Query(value = "SELECT COUNT(*) FROM PAGE_VISITS pv " +
                    "JOIN DEPTS d ON pv.scope_type = 'dept' AND pv.scope_id = d.id " +
                    "JOIN FACULTY_GROUPS fg ON d.faculty_id = fg.id " +

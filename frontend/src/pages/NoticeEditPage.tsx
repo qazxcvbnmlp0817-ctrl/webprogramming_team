@@ -13,6 +13,7 @@ export default function NoticeEditPage() {
   const [category, setCategory] = useState('학사')
   const [content, setContent]   = useState('')
   const [targetGrades, setTargetGrades] = useState<number[]>([1, 2, 3, 4])
+  const [isPublicToOutsiders, setIsPublicToOutsiders] = useState(false)
   const [loading, setLoading]   = useState(true)
 
   useEffect(() => {
@@ -34,6 +35,7 @@ export default function NoticeEditPage() {
       setCategory(data.category)
       setContent(data.content ?? '')
       setTargetGrades(data.targetGrades ?? [1, 2, 3, 4])
+      setIsPublicToOutsiders(data.isPublicToOutsiders ?? false)
       setLoading(false)
     }
     load()
@@ -48,7 +50,7 @@ export default function NoticeEditPage() {
     const res = await fetch(`/api/notices/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, content, category, targetGrades }),
+      body: JSON.stringify({ title, content, category, targetGrades, isPublicToOutsiders }),
     })
     if (res.ok) navigate(`/notice/${id}`)
     else alert('수정에 실패했습니다. 다시 시도해주세요.')
@@ -134,6 +136,20 @@ export default function NoticeEditPage() {
                 </label>
               ))}
             </div>
+          </div>
+
+          {/* 외부인 공개 */}
+          <div className="flex items-center gap-2 py-2">
+            <input
+              id="publicToOutsiders"
+              type="checkbox"
+              className="accent-black w-4 h-4"
+              checked={isPublicToOutsiders}
+              onChange={e => setIsPublicToOutsiders(e.target.checked)}
+            />
+            <label htmlFor="publicToOutsiders" className="text-sm font-medium cursor-pointer">
+              외부인 공개 <span className="text-gray-400 font-normal">(비소속 학생/비로그인 유저도 열람 가능)</span>
+            </label>
           </div>
 
           <div className="flex gap-2 justify-end mt-2">

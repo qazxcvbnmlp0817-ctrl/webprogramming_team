@@ -35,6 +35,13 @@ public class NoticeDto {
 
     public NoticeDto(Long id, String title, String date, String author,
                      String category, int viewCount, boolean featured,
+                     List<Integer> targetGrades, boolean isPublicToOutsiders) {
+        this(id, title, date, author, category, viewCount, featured,
+             targetGrades, null, null, null, 0, isPublicToOutsiders, null, null, false);
+    }
+
+    public NoticeDto(Long id, String title, String date, String author,
+                     String category, int viewCount, boolean featured,
                      List<Integer> targetGrades, String content, List<PostAttachmentDto> attachments) {
         this(id, title, date, author, category, viewCount, featured,
              targetGrades, content, attachments, null, 0, false, null, null, false);
@@ -101,7 +108,7 @@ public class NoticeDto {
     public List<PostAttachmentDto> getAttachments() { return attachments; }
     public String getAuthorUsername()               { return authorUsername; }
     public int getCommentCount()                    { return commentCount; }
-    public boolean isPublicToOutsiders()            { return isPublicToOutsiders; }
+    public boolean getIsPublicToOutsiders()         { return isPublicToOutsiders; }
     public String getScopeType()                    { return scopeType; }
     public Long getScopeId()                        { return scopeId; }
     public boolean isHidden()                       { return hidden; }

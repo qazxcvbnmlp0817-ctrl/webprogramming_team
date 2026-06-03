@@ -7,7 +7,6 @@ import com.example.demo.entity.Notice;
 import com.example.demo.entity.NoticeAttachment;
 import com.example.demo.repository.NoticeAttachmentRepository;
 import com.example.demo.repository.NoticeRepository;
-import com.example.demo.util.DummyDataHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,21 +38,18 @@ public class NoticeService {
     }
 
     public List<NoticeDto> getNoticesByDept(Long deptId) {
-        List<Notice> notices = noticeRepository.findVisibleByScopeTypeAndScopeId("dept", deptId);
-        if (notices.isEmpty()) return DummyDataHelper.getNoticesByDept(deptId);
-        return notices.stream().map(this::toDto).collect(Collectors.toList());
+        return noticeRepository.findVisibleByScopeTypeAndScopeId("dept", deptId)
+                .stream().map(this::toDto).collect(Collectors.toList());
     }
 
     public List<NoticeDto> getNoticesByFaculty(Long facultyId) {
-        List<Notice> notices = noticeRepository.findVisibleByScopeTypeAndScopeId("faculty", facultyId);
-        if (notices.isEmpty()) return DummyDataHelper.getNoticesByFaculty(facultyId);
-        return notices.stream().map(this::toDto).collect(Collectors.toList());
+        return noticeRepository.findVisibleByScopeTypeAndScopeId("faculty", facultyId)
+                .stream().map(this::toDto).collect(Collectors.toList());
     }
 
     public List<NoticeDto> getNoticesByUniv(Long univId) {
-        List<Notice> notices = noticeRepository.findVisibleByScopeTypeAndScopeId("univ", univId);
-        if (notices.isEmpty()) return DummyDataHelper.getUniversityNotices(univId);
-        return notices.stream().map(this::toDto).collect(Collectors.toList());
+        return noticeRepository.findVisibleByScopeTypeAndScopeId("univ", univId)
+                .stream().map(this::toDto).collect(Collectors.toList());
     }
 
     public Optional<NoticeDto> findById(Long id) {
@@ -157,6 +153,9 @@ public class NoticeService {
         notice.setContent(req.getContent());
         notice.setCategory(req.getCategory());
         notice.setTargetGrades(gradesToString(req.getTargetGrades()));
+        if (req.getIsPublicToOutsiders() != null) {
+            notice.setIsPublicToOutsiders(req.getIsPublicToOutsiders());
+        }
         noticeRepository.save(notice);
     }
 
