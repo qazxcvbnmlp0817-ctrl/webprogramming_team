@@ -1091,22 +1091,30 @@ SuperAdminPage
 
 > `CalendarRouter`는 `loginChanged` / `storage` 이벤트를 구독하여 탭 간 로그인/로그아웃 시에도 즉각 반응합니다.
 
-### 17.2 CalendarPage 확장 — 교수 학과 이벤트 공유
+### 17.2 CalendarPage — 권한별 일정 표시 (2026-06-03 개선)
 
-**교수/조교 전용 기능:**
-- "수업 일정 등록" 버튼으로 `ProfEventModal` 열기
-- 과목 선택 → 제목·날짜·카테고리(시험/과제/기타) 입력 → `POST /api/professor/dept-schedules` (DB 저장)
-- DB 저장 실패 시 localStorage 폴백 (`sharedCourseEvents.ts`, key: `class_course_events_v1`)
-- 등록한 이벤트는 같은 학과 학생의 캘린더에 자동 반영 (`dept-event-*` 접두사)
+로그인한 사용자의 `memberType`에 따라 표시되는 일정과 작성 가능한 일정 유형이 다릅니다.
 
-**학생 캘린더에 표시되는 일정 종류:**
-1. `course-*` — 반복 수업 시간표 (교수 등록, ±3개월 확장, 읽기 전용)
-2. `prof-event-*` — 수강 과목 교수가 등록한 이벤트 (시험/과제, 읽기 전용)
-3. `dept-event-*` — DB 저장된 학과 전체 교수 이벤트 (읽기 전용)
-4. `ce-*` — localStorage 공유 이벤트 (DB 폴백, 같은 브라우저 세션 동기화)
-5. 개인 일정 — localStorage 직접 등록 (`my_schedules_v1`)
+**표시 일정 소스:**
+- DB 일정 (`GET /api/schedules/my`) — 사용자가 직접 등록한 통합 일정
+- 시간표 이벤트 (`fetchMyTimetable`) — 수강 중인 강좌의 반복 수업 (읽기 전용)
+- 학과 이벤트 (`fetchStudentDeptEvents`) — 학과 공지성 일정 (읽기 전용)
+- 담당 과목 이벤트 (`fetchStudentCourseEvents`) — 교수가 등록한 시험·과제 이벤트
 
-**StorageEvent 실시간 동기화**: 교수가 같은 브라우저에서 이벤트를 등록하면 학생 탭이 `storage` 이벤트를 받아 `ce-*` 항목만 갱신합니다 (`dept-event-*` 등 기존 항목 보존).
+**권한별 일정 작성 가능 유형:**
+
+| 권한 | 작성 가능한 일정 유형 |
+|------|----------------------|
+| 학생 | 개인 일정, 학과 공지, 학교 공지 |
+| 교수 | 개인 일정, 과목 이벤트(시험·과제), 학과 공지, 학년 공지, 학교 공지 |
+| 조교 | 학생과 유사 + 과목 선택 가능 |
+| 관리자 | 전체 유형 |
+
+**ScheduleCalendarView 컴포넌트 기능 (2026-06-03 대폭 개선):**
+- 월간 / 주간 / 일간 뷰 전환
+- 실시간 검색 + 카테고리 필터
+- 오늘의 일정 전용 섹션
+- 권한 기반 수정·삭제 제어 (작성자 본인 + 관리자만 가능, 수업 시간표는 읽기 전용)
 
 ### 17.3 MainPage — 로그인 여부에 따른 일정 표시
 
@@ -1257,9 +1265,36 @@ SuperAdminPage
 - `CurriculumForm.tsx` — 교육과정 편집
 - `ProfessorForm.tsx` — 교수 정보 편집
 
-### 21.3 통합 시간표 페이지 (TimetablePage)
+### 21.3 통합 시간표 페이지 (TimetablePage) — 2026-06-03 대폭 개선
 
-`/timetable` 경로에 학생·교수·관리자 통합 시간표 페이지가 추가되었습니다. 수업 시간표·개인 일정·학과 이벤트를 한 화면에서 확인할 수 있습니다.
+`/timetable` 경로. 비로그인 시 접근 안내 표시. 로그인 권한별로 3가지 뷰로 분기됩니다.
+
+**학생 뷰:**
+- 강좌 검색 + 수강신청 (시간 충돌 자동 감지)
+- 시간표 표시: ClassSchedule 우선 → 없으면 LectureOffering.lectureTime 파싱 폴백
+- 개인 일정 병합 표시
+
+**교수 뷰:**
+- 담당 강좌 목록 조회 (`fetchProfessorAssignments`)
+- 강좌별 수업 시간표 등록·수정·삭제
+
+**관리자 뷰:**
+- 학과 범위 선택 후 배정 강좌 시간 관리
+- 교수-강좌 배정별 시간 편집 (생성/수정/삭제)
+- 검색·상태·정렬 필터 제공
+
+**classSchedules.ts 주요 API 함수:**
+
+| 함수 | 설명 | 대상 |
+|------|------|------|
+| `fetchStudentClassSchedules` | 학생 수업 시간표 | 학생 |
+| `fetchStudentCourseEvents` | 담당 과목 이벤트(시험·과제) | 학생 |
+| `fetchStudentDeptEvents` | 학과 공지 일정 | 학생 |
+| `fetchProfessorAssignedCourses` | 교수 배정 과목 목록 | 교수 |
+| `fetchProfessorClassSchedules` | 교수 등록 시간표 | 교수 |
+| `createClassSchedule` / `updateClassSchedule` / `deleteClassSchedule` | 교수 시간표 CRUD | 교수 |
+| `fetchAdminClassSchedules` | 관리자 범위 시간표 | 관리자 |
+| `fetchAssistantCourses` | 조교 소속 학과 과목 | 조교 |
 
 ---
 

@@ -358,7 +358,7 @@ cd demo/demo
 - **가입 승인 흐름**: 모든 유형의 신규 가입자는 `status=PENDING_APPROVAL`로 시작하며 승인 전 로그인 불가. 관리자(`admin`) 신청은 SUPER_ADMIN이 SuperAdminPage에서 역할 선택 후 승인. 일반 사용자(학생·교수 등)는 소속 학교·학과·학부 관리자가 각 대시보드의 "가입 승인" 탭에서 승인 처리.
 - **교수-로그인 계정 연결**: `APP_USERS.PROFESSOR_ENTITY_ID` 컬럼으로 PROFESSORS 테이블 레코드와 연결. 교수 시간표 CRUD 시 해당 FK로 소유권 검증.
 - **수업 시간표 자동 동기화**: `CLASS_SCHEDULES`에 교수가 CRUD를 수행하면 학생 조회 시 즉시 반영. 별도 캐시/알림 없이 Enrollment → ClassSchedule DB 조인으로 구현.
-- **개인 캘린더 (`/calendar`)**: `CalendarRouter`가 로그인 여부를 reactive하게 감지해 분기. **로그인 시** — 개인 일정 + 수업 시간표 + 교수 등록 학과 이벤트 통합 표시. 교수/조교는 "수업 일정 등록" 버튼으로 학과 전체에 공유되는 이벤트(시험·과제 등) 등록 가능. **비로그인 시** — 현재 선택된 학과의 SchedulePage 표시. Navbar의 "일정" 링크도 동일 분기 적용.
+- **개인 캘린더 (`/calendar`)**: `CalendarRouter`가 로그인 여부를 reactive하게 감지해 분기. **로그인 시** — 권한별 일정 표시: 학생(개인·수업·학과 이벤트), 교수(개인·과목 이벤트·공지 작성), 관리자(전체). `ScheduleCalendarView`를 공유 컴포넌트로 사용하며 월간/주간/일간 뷰 전환·검색·필터 지원. **비로그인 시** — 현재 선택된 학과의 SchedulePage 표시.
 - **일정 공개 범위**: `personal`(개인, ownerId 기준 본인만) / `dept`(학과, departmentId 기준) / `faculty`(학부) / `university`(학교, universityId 기준) / `course`(과목, 수강·담당 기준) / `announcement`(교수·조교 학과 공지, 소속 학과 학생만). 교수/조교는 과목 없이도 공지성 일정 등록 가능.
 - **일정 수정·삭제 권한**: 일정 클릭 시 상세 보기 모달. 작성자 본인에게만 수정·삭제 버튼 표시. 백엔드에서도 ownerId 검증(권한 없으면 403).
 - **마이페이지 학번/교번 표시**: 학생은 학번, 교수·조교는 교번을 "내 정보" 탭에서 표시. 로그인 응답 또는 `GET /api/auth/me`의 `studentId` 필드에서 조회.
@@ -374,7 +374,7 @@ cd demo/demo
 - **Oracle 데이터 영속성**: `ddl-auto=update` + Oracle 23ai Free — 서버 재시작 후에도 데이터 유지. DataInitializer는 최초 1회만 시딩하고 이후에는 마이그레이션만 수행.
 - **MainPage 공지 표시 일관성**: 비소속·비로그인 사용자는 `isPublicToOutsiders=true` 공지만 표시 (MainPage/NoticePage 동일 기준 적용). 로그인 시 학과 일정·공개 공지만 표시, 게시글 잠금. 로그인 시 개인 일정+소속 학과·학부·학교 일정 통합 표시, 전체 공지·게시글 표시.
 - **학교·학과 페이지 편집**: SCHOOL_ADMIN 이상이 SchoolInfoPage에서 학교 소개·시설·FAQ 등 섹션을 인라인 편집 가능. DepartmentPage에 커뮤니티·교육과정·교수 편집 폼 추가.
-- **통합 시간표 (TimetablePage)**: 학생·교수·관리자 수업 시간표 + 개인 일정 + 학과 이벤트 통합 페이지.
+- **통합 시간표 (`/timetable`)**: 권한별 3가지 뷰 — 학생(강좌검색·수강신청·시간충돌감지), 교수(담당강좌·시간표 CRUD), 관리자(학과범위 배정강좌 시간 편집). 비로그인 시 접근 안내 표시.
 - **가입 승인 탭**: SchoolAdminPage·DeptAdminPage·FacultyAdminPage에 각각 소속 범위의 `PENDING_APPROVAL` 사용자를 표시하고 승인/거절하는 "가입 승인" 탭 추가.
 - **교수 배정 타 소속 지원**: 학과·학교 관리 페이지 교수 배정 폼에 "다른 소속 교수" 버튼 추가. 같은 학교의 전체 교수를 이름 검색으로 찾아 배정 가능. 백엔드 교수 소속 검증 제거.
 - **MyPage 확장**: 학생 전용 "수업 선택" 탭(수강신청·취소) 추가. 내가 쓴 글·댓글에 인라인 수정·삭제 기능 추가.
