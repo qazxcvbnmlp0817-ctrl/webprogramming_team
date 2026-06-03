@@ -10,7 +10,7 @@
 
 **목적:** 국립목포대학교 등 여러 대학교의 학과 공지사항, 게시판, 일정, 학과정보를 하나의 웹 포털로 통합하여 학생과 교직원이 편리하게 접근할 수 있도록 합니다.
 
-**현재 단계:** 프론트엔드 UI + REST API + Oracle DB 연동 완성. 로그인·회원가입·인증, 관리자 시스템(3단계 역할), 교수 수업 시간표 CRUD, 학생 수강신청·시간표 자동 동기화, SUPER_ADMIN 학교 계층 CRUD, 가입 승인 시스템(학교·학부·학과 단위), 교수 학과 일정 공유, 개인 캘린더 + 소속 일정 통합 표시, 게시글/공지 숨김 처리, 관리자 직접 숨김/삭제 버튼까지 구현 완료. Mock 교수/학생 계정이 앱 시작 시 자동 시딩됩니다.
+**현재 단계:** 프론트엔드 UI + REST API + Oracle DB 연동 완성. 로그인·회원가입·인증, 관리자 시스템(3단계 역할), 교수 수업 시간표 CRUD, 학생 수강신청·시간표 자동 동기화, SUPER_ADMIN 학교 계층 CRUD, 가입 승인 시스템(학교·학부·학과 단위), 교수 학과 일정 공유, 개인 캘린더 + 소속 일정 통합 표시, 게시글/공지 숨김 처리, 관리자 직접 숨김/삭제 버튼, **학교·학과 페이지 콘텐츠 편집(SchoolInfoPage/DepartmentPage 인라인 편집)**, **통합 시간표 페이지(TimetablePage)** 구현 완료. 더미 데이터 완전 제거 — 모든 데이터는 실 DB에서 조회됩니다. Mock 교수/학생 계정이 앱 시작 시 자동 시딩됩니다.
 
 ---
 
@@ -266,11 +266,11 @@ webprogramming_team-main/
 │       │   │   │   ├── FindIdRequestDto.java
 │       │   │   │   └── FindPasswordRequestDto.java
 │       │   │   └── util/
-│       │   │       ├── DummyDataHelper.java             ← 더미 데이터 폴백
 │       │   │       ├── AdminUserInitializer.java        ← SUPER_ADMIN 시드 (@Order 3)
 │       │   │       ├── DataInitializer.java             ← 대학·학과 시드 + 마이그레이션 (@Order 4)
 │       │   │       ├── ProfessorAccountInitializer.java ← 교수/학생 Mock 시드 (@Order 5)
-│       │   │       └── StatusMigrationRunner.java       ← STATUS 컬럼 마이그레이션
+│       │   │       ├── StatusMigrationRunner.java       ← STATUS 컬럼 마이그레이션
+│       │   │       └── GradeStatusMigrationRunner.java  ← 학년/재학상태 마이그레이션
 │       │   └── resources/
 │       │       ├── application.properties
 │       │       └── static/                       ← npm run build 결과물 (자동 생성)
@@ -425,17 +425,12 @@ UniversityDto
 
 ---
 
-## 9. 더미 데이터 구조
+## 9. 더미 데이터 ~~구조~~ → 제거 완료
 
-모든 더미 데이터는 `DummyDataHelper.java` 한 곳에 집중되어 있습니다.
+`DummyDataHelper.java`는 **삭제**되었습니다 (2026-06-03). 공지·게시글은 DB가 비어 있으면 빈 목록을 반환합니다. 모든 데이터는 실 DB(Oracle)에서 직접 조회됩니다.
 
-- **대학 트리:** 목포대학교(18개 학과, 6개 단과대), 순천대학교(4개 학과) 하드코딩
-- **학과별 데이터:** `deptId`를 받아 학과명 기반으로 공지·게시글·일정을 동적 생성
-- **대학별 데이터:** `univId`를 받아 대학명 기반으로 공지·게시글·일정을 동적 생성
-- **학부별 데이터:** `facultyId`를 받아 공지(8개)·게시글(10개)·일정(8개)을 동적 생성. ID 충돌 방지를 위해 `facultyId × 300/400/500` 오프셋 사용
-- **학과 상세:** `deptId`로 교수진(3명)·교육과정(6개)·연락정보를 생성
-
-> DB 연동 시: 각 컨트롤러에서 `DummyDataHelper` 호출 부분을 Service 호출로 교체하면 됩니다.
+- 대학 계층 구조는 `DataInitializer`가 최초 실행 시 시딩합니다.
+- 교수·학생 Mock 계정은 `ProfessorAccountInitializer`가 시딩합니다.
 
 ---
 
@@ -624,7 +619,7 @@ return '/universities'
 | `User.java` | 회원 엔티티. DB 연동 시 JPA 어노테이션 주석 해제 |
 | `UserRepository.java` | 회원 저장소 인터페이스 |
 | `UserRepositoryImpl.java` | 인메모리 구현체. DB 연동 시 이 파일 삭제 |
-| `DummyDataHelper.java` | 모든 더미 데이터 집중 관리 (DB 연동 전 임시) |
+| `GlobalExceptionHandler.java` | 전역 예외 처리 (400/403/404/500 공통 응답 포맷) |
 | `UniversityController.java` | `GET /api/universities[/:id]` 응답 |
 | `DepartmentController.java` | `GET /api/departments/:id` 응답 |
 | `SchoolController.java` | `GET /api/school/*` 응답 |
@@ -1169,3 +1164,43 @@ SuperAdminPage
 |-----------|------|
 | `GET /api/admin/dept/univ-professors` | 해당 학과가 속한 대학의 전체 교수 목록 (DeptAdminPage용) |
 | `GET /api/admin/school/professors` | 학교 전체 교수 목록 (SchoolAdminPage용, 기존 엔드포인트) |
+
+---
+
+## 21. 학교·학과 페이지 콘텐츠 편집 (2026-06-03 추가)
+
+### 21.1 SchoolInfoPage 편집
+
+`SchoolInfoPage`에 인라인 편집 기능이 추가되었습니다. SCHOOL_ADMIN 이상 권한을 가진 사용자는 학교 소개·시설·FAQ·빠른링크 등 각 섹션을 직접 편집할 수 있습니다.
+
+**구조:**
+- `SchoolEditContext.tsx` — 편집 모드 상태 + `saveSection(section, value)` 제공
+- `SchoolEditableSection.tsx` — 편집/미리보기 토글 래퍼
+- `SchoolHeroForm`, `SchoolContactForm`, `SchoolFacilitiesForm`, `SchoolFaqsForm`, `SchoolGuideCardsForm`, `SchoolQuickLinksForm` — 섹션별 편집 폼
+
+**백엔드:**
+- `SchoolPageContent` 엔티티 (`SCHOOL_PAGE_CONTENT` 테이블) — univId를 PK로 학교별 콘텐츠 JSON 저장
+- `SchoolContentService.java` — DB 저장/조회 로직
+- `SchoolAdminController` — `PUT /api/admin/school/content/{section}` 엔드포인트
+
+### 21.2 DepartmentPage 편집 폼 추가
+
+- `CommunityTopicsForm.tsx` — 커뮤니티 태그 편집
+- `CurriculumForm.tsx` — 교육과정 편집
+- `ProfessorForm.tsx` — 교수 정보 편집
+
+### 21.3 통합 시간표 페이지 (TimetablePage)
+
+`/timetable` 경로에 학생·교수·관리자 통합 시간표 페이지가 추가되었습니다. 수업 시간표·개인 일정·학과 이벤트를 한 화면에서 확인할 수 있습니다.
+
+---
+
+## 22. 비로그인 공지 표시 일관성 수정 (2026-06-03)
+
+`MainPage`의 공지 표시 기준을 `NoticePage`와 통일했습니다.
+
+| 이전 | 수정 후 |
+|------|--------|
+| `loggedIn` → 로그인만 되면 모든 공지 표시 | `isMember` → 해당 학과 소속 로그인만 모든 공지 표시 |
+
+비소속 로그인 사용자도 비로그인과 동일하게 `isPublicToOutsiders=true` 공지만 표시됩니다.

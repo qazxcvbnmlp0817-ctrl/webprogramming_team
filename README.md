@@ -131,7 +131,8 @@ webprogramming_team-main/
             ├── AdminUserInitializer.java      # SUPER_ADMIN 시드 계정 생성
             ├── ProfessorAccountInitializer.java # 교수/학생 Mock 계정 + 수강신청 + 시간표 시딩 (@Order(5))
             ├── StatusMigrationRunner.java     # APPROVED → STATUS 컬럼 마이그레이션
-            └── DummyDataHelper.java           # DB 비어 있을 때 폴백 더미 데이터
+            ├── GradeStatusMigrationRunner.java # 학년/재학상태 마이그레이션
+            └── LectureOfferingClassScheduleSyncInitializer.java # 강의-수업 동기화
 ```
 
 ---
@@ -362,10 +363,12 @@ cd demo/demo
 - **학년 필터**: 학생 게시글에 대상 학년(1~4학년) 태그 설정 가능
 - **AdminBanner**: 일반 페이지에 떠 있는 "관리자 페이지" 진입 버튼. 역할별로 다른 어드민 대시보드로 라우팅
 - **임베디드 모드**: `<DepartmentPage embedded />` / `<FacultyPage embedded />`로 어드민 대시보드의 "학과/학부 페이지" 탭 안에 일반 페이지를 표시 (Navbar/AdminBanner 숨김)
-- **DummyDataHelper**: DB에 공지·게시글·일정이 없을 경우 더미 데이터로 폴백
+- **더미 데이터 제거**: `DummyDataHelper.java` 삭제 완료. 모든 데이터는 실 DB에서 직접 조회 (2026-06-03)
 - **SPA 라우팅**: SpaController가 모든 프론트엔드 경로를 `index.html`로 포워딩
 - **Oracle 데이터 영속성**: `ddl-auto=update` + Oracle 23ai Free — 서버 재시작 후에도 데이터 유지. DataInitializer는 최초 1회만 시딩하고 이후에는 마이그레이션만 수행.
-- **MainPage 로그인 분기**: 비로그인 시 학과 일정·공개 공지만 표시, 게시글 잠금. 로그인 시 개인 일정+소속 학과·학부·학교 일정 통합 표시, 전체 공지·게시글 표시.
+- **MainPage 공지 표시 일관성**: 비소속·비로그인 사용자는 `isPublicToOutsiders=true` 공지만 표시 (MainPage/NoticePage 동일 기준 적용). 로그인 시 학과 일정·공개 공지만 표시, 게시글 잠금. 로그인 시 개인 일정+소속 학과·학부·학교 일정 통합 표시, 전체 공지·게시글 표시.
+- **학교·학과 페이지 편집**: SCHOOL_ADMIN 이상이 SchoolInfoPage에서 학교 소개·시설·FAQ 등 섹션을 인라인 편집 가능. DepartmentPage에 커뮤니티·교육과정·교수 편집 폼 추가.
+- **통합 시간표 (TimetablePage)**: 학생·교수·관리자 수업 시간표 + 개인 일정 + 학과 이벤트 통합 페이지.
 - **가입 승인 탭**: SchoolAdminPage·DeptAdminPage·FacultyAdminPage에 각각 소속 범위의 `PENDING_APPROVAL` 사용자를 표시하고 승인/거절하는 "가입 승인" 탭 추가.
 - **교수 배정 타 소속 지원**: 학과·학교 관리 페이지 교수 배정 폼에 "다른 소속 교수" 버튼 추가. 같은 학교의 전체 교수를 이름 검색으로 찾아 배정 가능. 백엔드 교수 소속 검증 제거.
 - **MyPage 확장**: 학생 전용 "수업 선택" 탭(수강신청·취소) 추가. 내가 쓴 글·댓글에 인라인 수정·삭제 기능 추가.
