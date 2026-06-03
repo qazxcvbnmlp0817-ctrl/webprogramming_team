@@ -82,6 +82,7 @@ export default function LoginPage() {
         if (result.adminRole)        setAuthItem('adminRole',        result.adminRole,               rememberMe)
         if (result.deptId)           setAuthItem('deptId',           String(result.deptId),          rememberMe)
         if (result.facultyId)        setAuthItem('facultyId',        String(result.facultyId),        rememberMe)
+        if (result.studentId)        setAuthItem('studentId',        String(result.studentId),        rememberMe)
 
         if (result.department || result.universityId) {
           setDept({

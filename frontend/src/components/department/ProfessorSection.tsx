@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react'
 import type { ProfessorDto } from '../../types/department'
 import type { ProfessorEnhancement } from '../../data/departmentExtras'
 import { fetchLectureOfferings, type LectureOfferingDto } from '../../api/timetable'
+import { fetchDeptClassSchedules, type ClassScheduleDto } from '../../api/classSchedules'
 import SourceBadge from './SourceBadge'
 
 interface ProfessorSectionProps {
   professors: ProfessorDto[]
   enhancements: ProfessorEnhancement[]
+  deptId?: number | null
 }
 
 interface SelectedProfessor {
@@ -25,10 +27,29 @@ function mailtoHref(professor: ProfessorDto) {
   return `mailto:${professor.email}?subject=${subject}`
 }
 
-export default function ProfessorSection({ professors, enhancements }: ProfessorSectionProps) {
+function specialtyToKeywords(specialty: string | null | undefined): string[] {
+  if (!specialty) return ['전공 분야']
+  const tokens = specialty.split(/[,、·/]\s*/).map(s => s.trim()).filter(Boolean)
+  return tokens.length > 0 ? tokens : ['전공 분야']
+}
+
+function resolveDetail(
+  professor: ProfessorDto,
+  enhancements: ProfessorEnhancement[],
+): ProfessorEnhancement {
+  const match = enhancements.find(e => e.name && e.name.trim() === professor.name.trim())
+  return {
+    lab: match?.lab && match.lab.trim() ? match.lab : '공식 미공개',
+    courses: match?.courses && match.courses.length > 0
+      ? match.courses
+      : specialtyToKeywords(professor.specialty),
+  }
+}
+
+export default function ProfessorSection({ professors, enhancements, deptId }: ProfessorSectionProps) {
   const [selected, setSelected] = useState<SelectedProfessor | null>(null)
   const [offerings, setOfferings] = useState<LectureOfferingDto[]>([])
-  const defaultDetail: ProfessorEnhancement = { lab: '공식 미공개', courses: ['전공 분야'] }
+  const [classSchedules, setClassSchedules] = useState<ClassScheduleDto[]>([])
   const effectiveProfessors = professors.filter(professor => !isInvalidProfessorName(professor.name))
 
   useEffect(() => {
@@ -36,6 +57,13 @@ export default function ProfessorSection({ professors, enhancements }: Professor
       .then(setOfferings)
       .catch(err => console.error('[ProfessorSection] 개설강좌 로드 실패:', err))
   }, [])
+
+  useEffect(() => {
+    if (!deptId) return
+    fetchDeptClassSchedules(deptId, '2026-1')
+      .then(setClassSchedules)
+      .catch(err => console.error('[ProfessorSection] 수업 시간표 로드 실패:', err))
+  }, [deptId])
 
   useEffect(() => {
     if (!selected) return
@@ -47,9 +75,15 @@ export default function ProfessorSection({ professors, enhancements }: Professor
   }, [selected])
 
   function getProfessorOfferings(name: string) {
+    // LectureOffering has no professor FK, so the existing opened-course list
+    // remains a professorName string-match fallback.
     return offerings.filter(o =>
       o.professorName.split(',').map(s => s.trim()).includes(name)
     )
+  }
+
+  function getProfessorSchedules(professorId: number) {
+    return classSchedules.filter(schedule => schedule.professorId === professorId)
   }
 
   return (
@@ -75,8 +109,8 @@ export default function ProfessorSection({ professors, enhancements }: Professor
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {effectiveProfessors.map((professor, index) => {
-            const detail = enhancements.length > 0 ? enhancements[index % enhancements.length] : defaultDetail
+          {effectiveProfessors.map(professor => {
+            const detail = resolveDetail(professor, enhancements)
             return (
               <article key={professor.id} className="border-2 border-black p-5 hover:bg-gray-50 transition">
                 <div className="flex items-start gap-4">
@@ -103,6 +137,11 @@ export default function ProfessorSection({ professors, enhancements }: Professor
 
                 <div className="mt-5 border-t border-gray-200 pt-3 text-sm">
                   <p className="font-bold flex items-center gap-1">
+                    <i className="fas fa-flask text-xs" />
+                    연구실
+                  </p>
+                  <p className="text-sm text-gray-600 mt-1 break-keep">{detail.lab}</p>
+                  <p className="font-bold flex items-center gap-1 mt-3">
                     <i className="fas fa-tags text-xs" />
                     관련 전공 키워드
                   </p>
@@ -179,6 +218,27 @@ export default function ProfessorSection({ professors, enhancements }: Professor
                         <div key={o.id}>
                           <span className="font-medium text-gray-800">{o.courseName}</span>
                           <span className="ml-2 text-xs text-gray-500">{o.completionType} · {o.targetYear} · {o.lectureTime}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                })()}
+              </div>
+              <div className="grid grid-cols-[96px_1fr] gap-3 border-b border-gray-200 pb-3 text-sm">
+                <p className="font-black">수업 시간표</p>
+                {(() => {
+                  const profSchedules = getProfessorSchedules(selected.professor.id)
+                  if (profSchedules.length === 0) {
+                    return <p className="text-gray-400">등록된 수업 시간표 없음</p>
+                  }
+                  return (
+                    <div className="flex flex-col gap-1.5">
+                      {profSchedules.map(schedule => (
+                        <div key={schedule.id}>
+                          <span className="font-medium text-gray-800">{schedule.courseName}</span>
+                          <span className="ml-2 text-xs text-gray-500">
+                            {schedule.dayOfWeek} {schedule.startTime}~{schedule.endTime} · {schedule.room || '강의실 미정'}
+                          </span>
                         </div>
                       ))}
                     </div>

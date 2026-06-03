@@ -286,7 +286,7 @@ public class AdminService {
     public List<Map<String, Object>> getSchoolMonthlyStats(Long univId) {
         String univIdStr = String.valueOf(univId);
         List<Long> facultyIds = getFacultyIds(univId);
-        List<Long> deptIds    = getDeptIds(facultyIds);
+        List<Long> deptIds = getDeptIds(facultyIds);
         List<Map<String, Object>> result = new ArrayList<>();
         YearMonth now = YearMonth.now();
         for (int i = 5; i >= 0; i--) {
@@ -297,16 +297,20 @@ public class AdminService {
             long signups  = userRepository.countByUniversityIdAndCreatedDateBetween(univIdStr, start, end);
 
             long posts = postRepository.countByScopeTypeAndScopeIdAndCreatedDateBetween("univ", univId, start, end);
-            if (!facultyIds.isEmpty())
+            if (!facultyIds.isEmpty()) {
                 posts += postRepository.countByScopeTypeAndScopeIdInAndCreatedDateBetween("faculty", facultyIds, start, end);
-            if (!deptIds.isEmpty())
+            }
+            if (!deptIds.isEmpty()) {
                 posts += postRepository.countByScopeTypeAndScopeIdInAndCreatedDateBetween("dept", deptIds, start, end);
+            }
 
             long visitors = pageVisitRepository.countByScopeTypeAndScopeIdAndVisitedAtBetween("univ", univId, start, end);
-            if (!facultyIds.isEmpty())
+            if (!facultyIds.isEmpty()) {
                 visitors += pageVisitRepository.countByScopeTypeAndScopeIdInAndVisitedAtBetween("faculty", facultyIds, start, end);
-            if (!deptIds.isEmpty())
+            }
+            if (!deptIds.isEmpty()) {
                 visitors += pageVisitRepository.countByScopeTypeAndScopeIdInAndVisitedAtBetween("dept", deptIds, start, end);
+            }
 
             Map<String, Object> m = new HashMap<>();
             m.put("month",    ym.toString());

@@ -8,6 +8,8 @@ import java.util.List;
 public interface ProfessorCourseAssignmentRepository extends JpaRepository<ProfessorCourseAssignment, Long> {
     List<ProfessorCourseAssignment> findByDeptId(Long deptId);
     List<ProfessorCourseAssignment> findByDeptIdIn(List<Long> deptIds);
+    List<ProfessorCourseAssignment> findByProfessorId(Long professorId);
     boolean existsByProfessorIdAndCourseId(Long professorId, Long courseId);
     void deleteByDeptId(Long deptId);
+    void deleteByProfessorId(Long professorId);
 }

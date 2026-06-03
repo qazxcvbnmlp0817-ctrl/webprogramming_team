@@ -5,7 +5,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
+import com.example.demo.repository.PageVisitRepository;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -14,6 +17,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class SpaControllerTest {
 
     @Autowired MockMvc mockMvc;
+
+    @MockitoBean PageVisitRepository pageVisitRepository;
 
     @ParameterizedTest
     @DisplayName("SPA 경로 → index.html 포워딩")

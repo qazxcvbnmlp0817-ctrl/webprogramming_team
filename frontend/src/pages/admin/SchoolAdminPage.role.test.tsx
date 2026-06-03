@@ -36,11 +36,16 @@ vi.mock('../../api/adminSchool', () => ({
   ]),
   fetchAdminLogs: vi.fn().mockResolvedValue([]),
   fetchSchoolPosts: vi.fn().mockResolvedValue({ posts: [], totalPages: 1 }),
+  fetchSchoolAdminNotices: vi.fn().mockResolvedValue({ notices: [], totalPages: 1 }),
   fetchSchoolProfessors: vi.fn().mockResolvedValue([]),
   fetchSchoolCourses: vi.fn().mockResolvedValue([]),
   fetchSchoolAssignments: vi.fn().mockResolvedValue([]),
+  fetchSchoolDepts: vi.fn().mockResolvedValue([]),
   updateSchoolUserRole: mockUpdateRole,
   deleteSchoolPost: vi.fn(),
+  deleteSchoolAdminNotice: vi.fn(),
+  hideSchoolPost: vi.fn(),
+  hideSchoolNotice: vi.fn(),
   updateUserStatus: vi.fn().mockResolvedValue(undefined),
   createSchoolAssignment: vi.fn(),
   deleteSchoolAssignment: vi.fn(),
@@ -117,9 +122,9 @@ describe('SchoolAdminPage — 역할 관리 모달', () => {
     ).toBeInTheDocument()
   })
 
-  it('"관리자 계정" 탭에 memberType 뱃지가 adminRole과 함께 표시된다', async () => {
+  it('"전체 사용자" 탭에 memberType 뱃지가 adminRole과 함께 표시된다', async () => {
     renderPage()
-    fireEvent.click(await screen.findByText('관리자 계정'))
+    fireEvent.click(await screen.findByText('전체 사용자'))
     expect(await screen.findByText('assistant')).toBeInTheDocument()
     expect(screen.getByText('DEPT_ADMIN')).toBeInTheDocument()
   })

@@ -137,20 +137,8 @@ public class DummyDataHelper {
         );
     }
 
-    /** univId 기반 대학 전체 일정 */
-    public static List<ScheduleDto> getUniversitySchedules(Long univId) {
-        long base = univId * 1000;
-        return List.of(
-            new ScheduleDto(base+1, "1학기 중간고사",          "2026-05-12",  1, "시험"),
-            new ScheduleDto(base+2, "수강신청 정정기간",        "2026-05-19",  8, "학사"),
-            new ScheduleDto(base+3, "대학 축제 목포제",         "2026-05-28", 17, "행사"),
-            new ScheduleDto(base+4, "1학기 기말고사",           "2026-06-16", 36, "시험"),
-            new ScheduleDto(base+5, "하계 방학 시작",           "2026-06-27", 47, "학사"),
-            new ScheduleDto(base+6, "계절학기 수강신청",        "2026-07-01", 51, "학사"),
-            new ScheduleDto(base+7, "졸업논문 최종 제출 마감",  "2026-07-10", 60, "학사"),
-            new ScheduleDto(base+8, "2학기 수강신청 시작",      "2026-07-21", 71, "학사")
-        );
-    }
+    /** 대학 전체 일정 — DB 연결 후 ScheduleService 사용 */
+    public static List<Object> getUniversitySchedules(Long univId) { return List.of(); }
 
     /** 학부 ID로 학부명을 조회한다 */
     public static String findFacultyName(Long facultyId) {
@@ -179,21 +167,8 @@ public class DummyDataHelper {
         );
     }
 
-    /** facultyId 기반 일정 목록 생성 */
-    public static List<ScheduleDto> getSchedulesByFaculty(Long facultyId) {
-        String faculty = findFacultyName(facultyId);
-        long base = facultyId * 500;
-        return List.of(
-            new ScheduleDto(base+1, faculty + " 중간고사 시작",      "2026-05-12",  1, "시험"),
-            new ScheduleDto(base+2, faculty + " 학부 프로젝트 발표", "2026-05-20",  9, "학사"),
-            new ScheduleDto(base+3, faculty + " 수강신청 변경기간",  "2026-05-25", 14, "학사"),
-            new ScheduleDto(base+4, faculty + " 학부 연합 행사",     "2026-06-01", 21, "행사"),
-            new ScheduleDto(base+5, faculty + " 기말고사 시작",      "2026-06-16", 36, "시험"),
-            new ScheduleDto(base+6, faculty + " 기말고사 종료",      "2026-06-20", 40, "시험"),
-            new ScheduleDto(base+7, faculty + " 여름 방학 시작",     "2026-06-27", 47, "학사"),
-            new ScheduleDto(base+8, faculty + " 졸업논문 제출 마감", "2026-07-15", 65, "학사")
-        );
-    }
+    /** 학부 일정 — DB 연결 후 ScheduleService 사용 */
+    public static List<Object> getSchedulesByFaculty(Long facultyId) { return List.of(); }
 
     /** facultyId 기반 게시글 목록 생성 */
     public static List<PostDto> getPostsByFaculty(Long facultyId) {
@@ -257,21 +232,8 @@ public class DummyDataHelper {
         );
     }
 
-    /** deptId 기반 일정 목록 생성 */
-    public static List<ScheduleDto> getSchedulesByDept(Long deptId) {
-        String dept = findDeptName(deptId);
-        long base = deptId * 100;
-        return List.of(
-            new ScheduleDto(base+1, dept + " 중간고사 시작",      "2026-05-12",  1, "시험"),
-            new ScheduleDto(base+2, dept + " 프로젝트 발표",      "2026-05-20",  9, "학사"),
-            new ScheduleDto(base+3, dept + " 수강신청 변경기간",   "2026-05-25", 14, "학사"),
-            new ScheduleDto(base+4, dept + " 학과 축제",          "2026-06-01", 21, "행사"),
-            new ScheduleDto(base+5, dept + " 기말고사 시작",      "2026-06-16", 36, "시험"),
-            new ScheduleDto(base+6, dept + " 기말고사 종료",      "2026-06-20", 40, "시험"),
-            new ScheduleDto(base+7, dept + " 여름 방학 시작",     "2026-06-27", 47, "학사"),
-            new ScheduleDto(base+8, dept + " 졸업논문 제출 마감", "2026-07-15", 65, "학사")
-        );
-    }
+    /** 학과 일정 — DB 연결 후 ScheduleService 사용 */
+    public static List<Object> getSchedulesByDept(Long deptId) { return List.of(); }
 
     /** 학과 ID로 DepartmentDetailDto를 반환한다 (더미 데이터) */
     public static DepartmentDetailDto findDepartmentDetail(Long id) {

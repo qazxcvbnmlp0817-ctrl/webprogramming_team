@@ -1,40 +1,73 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 
 const STEP_LABELS = ['본인 확인', '아이디 확인', '완료']
-
-const COLLEGES: Record<string, string[]> = {
-  mokpo: ['공과대학', '인문사회과학대학', '자연과학대학', '경영대학'],
-  suncheon: ['공과대학', '인문예술대학', '자연과학대학', '농업생명과학대학'],
-}
 
 const EMPLOYEE_OFFICES = [
   '교무처', '학생취업처', '기획처', '산학연구처', '입학처',
   '국제협력처', '행정실', '사무국', '지역인재부총장', '직속위원회(사업단, 기관)',
 ]
 
+interface UnivOption { id: number; name: string }
+interface UnivDetail {
+  id: number; name: string
+  schools: { id: number; name: string; faculties: { id: number; name: string; depts: { id: number; name: string }[] }[] }[]
+}
+
 export default function FindIdPage() {
   const navigate = useNavigate()
-  const [step, setStep] = useState(1)
+  const [step, setStep]           = useState(1)
   const [memberType, setMemberType] = useState<'student' | 'staff' | 'admin'>('student')
   const [staffRole, setStaffRole] = useState<'professor' | 'employee' | 'assistant' | ''>('')
-  const [name, setName] = useState('')
-  const [univ, setUniv] = useState('')
-  const [college, setCollege] = useState('')
-  const [studentId, setStudentId] = useState('')
-  const [employeeId, setEmployeeId] = useState('')
+  const [name, setName]           = useState('')
+
+  // 대학→단과대→학과 계단식
+  const [univList, setUnivList]         = useState<UnivOption[]>([])
+  const [univDetail, setUnivDetail]     = useState<UnivDetail | null>(null)
+  const [selectedUnivId, setSelectedUnivId] = useState<number | null>(null)
+  const [college, setCollege]           = useState('')
+  const [department, setDepartment]     = useState('')
+
+  const [studentId, setStudentId]       = useState('')
+  const [employeeId, setEmployeeId]     = useState('')
   const [employeeOffice, setEmployeeOffice] = useState('')
-  const [grade, setGrade] = useState('')
-  const [foundId, setFoundId] = useState('')
-  const [error, setError] = useState('')
+  const [grade, setGrade]               = useState('')
+  const [foundId, setFoundId]           = useState('')
+  const [error, setError]               = useState('')
+
+  // 대학 목록 로드
+  useEffect(() => {
+    fetch('/api/universities')
+      .then(r => r.ok ? r.json() : [])
+      .then((data: UnivOption[]) => setUnivList(data))
+      .catch(() => {})
+  }, [])
+
+  // 대학 선택 시 상세(단과대·학과) 로드
+  useEffect(() => {
+    if (!selectedUnivId) { setUnivDetail(null); return }
+    fetch(`/api/universities/${selectedUnivId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then((data: UnivDetail | null) => setUnivDetail(data))
+      .catch(() => {})
+    setCollege(''); setDepartment('')
+  }, [selectedUnivId])
+
+  // 단과대 목록
+  const collegeOptions = univDetail?.schools.map(s => s.name) ?? []
+  // 학과 목록 (선택한 단과대 하위)
+  const deptOptions = college
+    ? (univDetail?.schools.find(s => s.name === college)?.faculties
+        .flatMap(f => f.depts.map(d => d.name)) ?? [])
+    : []
 
   const isAdmin    = memberType === 'admin'
   const isEmployee = memberType === 'staff' && staffRole === 'employee'
   const isStaffNonEmployee = memberType === 'staff' && (staffRole === 'professor' || staffRole === 'assistant')
 
   const reset = () => {
-    setStaffRole(''); setGrade(''); setUniv(''); setCollege('')
+    setStaffRole(''); setGrade(''); setSelectedUnivId(null); setCollege(''); setDepartment('')
     setStudentId(''); setEmployeeId(''); setEmployeeOffice(''); setError('')
   }
 
@@ -42,7 +75,7 @@ export default function FindIdPage() {
     if (!name) { setError('이름을 입력해주세요.'); return }
     if (memberType === 'staff' && !staffRole) { setError('교직원 구분을 선택해주세요.'); return }
     if (isEmployee && (!employeeId || !employeeOffice)) { setError('교번과 소속 부서를 입력해주세요.'); return }
-    if (!isAdmin && !isEmployee && (!univ || !college || !studentId)) { setError('소속 대학, 단과대, 학번/교번을 모두 입력해주세요.'); return }
+    if (!isAdmin && !isEmployee && !studentId) { setError('학번/교번을 입력해주세요.'); return }
 
     try {
       const res = await fetch('/api/auth/find-id', {
@@ -50,10 +83,11 @@ export default function FindIdPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name,
-          universityId: isAdmin || isEmployee ? null : univ,
-          college: isAdmin || isEmployee ? null : college,
-          studentId: isEmployee ? employeeId : (isAdmin ? null : studentId),
-          grade: memberType === 'student' ? grade : null,
+          universityId: isAdmin || isEmployee ? null : (selectedUnivId ? String(selectedUnivId) : null),
+          college:      isAdmin || isEmployee ? null : (college || null),
+          department:   isAdmin || isEmployee ? null : (department || null),
+          studentId:    isEmployee ? employeeId : (isAdmin ? null : studentId),
+          grade:        memberType === 'student' ? (grade || null) : null,
         }),
       })
       const result = await res.json()
@@ -90,7 +124,7 @@ export default function FindIdPage() {
                 <h2 className="text-lg font-bold">01. 본인 확인</h2>
                 <p className="text-sm text-gray-500 -mt-2">회원가입 시 등록한 정보를 입력해주세요.</p>
 
-                {/* 회원 유형 선택 */}
+                {/* 회원 유형 */}
                 <div>
                   <p className="text-sm font-medium mb-2">회원 유형</p>
                   <div className="flex gap-2">
@@ -109,7 +143,7 @@ export default function FindIdPage() {
                   </div>
                 </div>
 
-                {/* 교직원 구분 드롭다운 */}
+                {/* 교직원 구분 */}
                 {memberType === 'staff' && (
                   <div>
                     <label className="block text-sm font-medium mb-1">교직원 구분</label>
@@ -132,35 +166,60 @@ export default function FindIdPage() {
                     className="w-full border-2 border-black px-3 py-2 text-sm outline-none focus:bg-gray-50" />
                 </div>
 
-                {/* 학생 / 교수 / 조교: 소속 대학, 단과대, 학번 */}
+                {/* 학생·교수·조교: 소속 정보 계단식 */}
                 {(memberType === 'student' || isStaffNonEmployee) && (
                   <>
+                    {/* 소속 대학 */}
                     <div>
                       <label className="block text-sm font-medium mb-1">소속 대학</label>
-                      <select value={univ} onChange={e => { setUniv(e.target.value); setCollege(''); setError('') }}
+                      <select value={selectedUnivId ?? ''}
+                        onChange={e => { setSelectedUnivId(e.target.value ? Number(e.target.value) : null); setError('') }}
                         className="w-full border-2 border-black px-3 py-2 text-sm outline-none bg-white">
                         <option value="">선택해주세요</option>
-                        <option value="mokpo">국립목포대학교</option>
-                        <option value="suncheon">국립순천대학교</option>
+                        {univList.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                       </select>
                     </div>
+
+                    {/* 소속 단과대 / 학부 */}
                     <div>
                       <label className="block text-sm font-medium mb-1">소속 단과대 / 학부</label>
-                      <select value={college} onChange={e => { setCollege(e.target.value); setError('') }} disabled={!univ}
+                      <select value={college}
+                        onChange={e => { setCollege(e.target.value); setDepartment(''); setError('') }}
+                        disabled={!selectedUnivId}
                         className="w-full border-2 border-black px-3 py-2 text-sm outline-none bg-white disabled:opacity-40">
                         <option value="">선택해주세요</option>
-                        {univ && COLLEGES[univ]?.map(c => <option key={c} value={c}>{c}</option>)}
+                        {collegeOptions.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
                     </div>
+
+                    {/* 소속 학과 */}
                     <div>
-                      <label className="block text-sm font-medium mb-1">학번 / 교번</label>
-                      <input type="text" placeholder="학번 또는 교번 입력" value={studentId}
+                      <label className="block text-sm font-medium mb-1">소속 학과</label>
+                      <select value={department}
+                        onChange={e => { setDepartment(e.target.value); setError('') }}
+                        disabled={!college}
+                        className="w-full border-2 border-black px-3 py-2 text-sm outline-none bg-white disabled:opacity-40">
+                        <option value="">선택해주세요</option>
+                        {deptOptions.map(d => <option key={d} value={d}>{d}</option>)}
+                      </select>
+                    </div>
+
+                    {/* 학번 / 교번 */}
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        {memberType === 'student' ? '학번' : '교번'} <span className="text-red-500">*</span>
+                      </label>
+                      <input type="text"
+                        placeholder={memberType === 'student' ? '학번 입력' : '교번 입력'}
+                        value={studentId}
                         onChange={e => { setStudentId(e.target.value); setError('') }}
                         className="w-full border-2 border-black px-3 py-2 text-sm outline-none focus:bg-gray-50" />
                     </div>
+
+                    {/* 학년 (학생만) */}
                     {memberType === 'student' && (
                       <div>
-                        <label className="block text-sm font-medium mb-1">학년</label>
+                        <label className="block text-sm font-medium mb-1">학년 <span className="text-gray-400 text-xs">(선택)</span></label>
                         <select value={grade} onChange={e => setGrade(e.target.value)}
                           className="w-full border-2 border-black px-3 py-2 text-sm outline-none bg-white">
                           <option value="">선택해주세요</option>
@@ -174,7 +233,7 @@ export default function FindIdPage() {
                   </>
                 )}
 
-                {/* 직원: 교번 + 소속 부서 드롭다운 */}
+                {/* 직원: 교번 + 소속 부서 */}
                 {isEmployee && (
                   <>
                     <div>
@@ -235,7 +294,7 @@ export default function FindIdPage() {
             <p className="font-medium text-gray-700 mb-2">💡 아이디 찾기 이용 안내</p>
             <ul className="list-disc list-inside space-y-1">
               <li>관리자는 이름만으로 아이디를 찾을 수 있습니다.</li>
-              <li>학생/교수/조교는 소속 대학, 단과대, 학번/교번이 일치해야 합니다.</li>
+              <li>학생/교수/조교는 소속 학과와 학번/교번이 일치해야 합니다.</li>
               <li>직원은 교번과 소속 부서가 일치해야 합니다.</li>
             </ul>
           </div>

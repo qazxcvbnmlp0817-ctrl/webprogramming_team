@@ -1,4 +1,5 @@
 import type { SchoolDraft } from '../types/schoolDraft'
+import { readError } from './_error'
 
 const headers = (): HeadersInit => ({
   'Content-Type': 'application/json',
@@ -138,7 +139,7 @@ export async function approveAdmin(
 export async function fetchSchoolTree(id: number): Promise<SchoolDraft> {
   const res = await fetch(`/api/admin/super/schools/${id}/tree`, { headers: headers() })
   handle403(res)
-  if (!res.ok) throw new Error(await res.text())
+  if (!res.ok) throw new Error(await readError(res, '학교 정보를 불러오지 못했습니다.'))
   return res.json()
 }
 
@@ -149,7 +150,7 @@ export async function createSchool(draft: SchoolDraft): Promise<{ id: number }> 
     body: JSON.stringify(draft),
   })
   handle403(res)
-  if (!res.ok) throw new Error(await res.text())
+  if (!res.ok) throw new Error(await readError(res, '학교 생성에 실패했습니다.'))
   return res.json()
 }
 
@@ -160,7 +161,7 @@ export async function updateSchool(id: number, draft: SchoolDraft): Promise<void
     body: JSON.stringify(draft),
   })
   handle403(res)
-  if (!res.ok) throw new Error(await res.text())
+  if (!res.ok) throw new Error(await readError(res, '학교 수정에 실패했습니다.'))
 }
 
 export async function deleteSchool(id: number): Promise<void> {
@@ -169,5 +170,5 @@ export async function deleteSchool(id: number): Promise<void> {
     headers: headers(),
   })
   handle403(res)
-  if (!res.ok) throw new Error(await res.text())
+  if (!res.ok) throw new Error(await readError(res, '학교 삭제에 실패했습니다.'))
 }

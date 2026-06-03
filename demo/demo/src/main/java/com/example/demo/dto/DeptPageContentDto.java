@@ -23,7 +23,10 @@ public class DeptPageContentDto {
     public List<FaqItem> faqs;
     public List<StudentLifeItem> studentLife;
     public List<ProfessorEnhancement> professorEnhancements;
+    public List<ProfessorEditItem> professors;
     public List<RequirementItem> requirements;
+    public List<CurriculumEditItem> curriculumItems;
+    public List<CommunityTopic> communityTopics;
     public OverviewCounts overviewCounts;
 
     public static class GuideCard {
@@ -80,12 +83,36 @@ public class DeptPageContentDto {
         public List<String> courses;
     }
 
+    public static class ProfessorEditItem {
+        public Long id;
+        public String name;
+        public String specialty;
+        public String email;
+        public String lab;
+        public List<String> courses;
+    }
+
     public static class RequirementItem {
         public String id;
         public String label;
         public String description;
         public String href;
         public String kind;
+    }
+
+    public static class CurriculumEditItem {
+        public Long id;
+        public String name;
+        public String year;
+        public String semester;
+        public String category;
+        public Boolean required;
+        public Integer credit;
+    }
+
+    public static class CommunityTopic {
+        public String label;
+        public String slug;
     }
 
     public static class OverviewCounts {

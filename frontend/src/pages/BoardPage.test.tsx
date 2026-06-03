@@ -13,6 +13,11 @@ vi.mock('../hooks/useDeptFetch', () => ({
   useDeptFetch: () => ({ data: { posts: mockPosts }, loading: false, error: null }),
 }))
 
+vi.mock('../utils/accessCheck', () => ({
+  isLoggedIn: () => true,
+  isSameDept: () => true,
+}))
+
 function renderPage() {
   return render(
     <MemoryRouter>

@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -64,6 +65,12 @@ public class AuthController {
     @GetMapping("/notification-settings")
     public ResponseEntity<Map<String, Object>> getNotificationSettings(@RequestParam String username) {
         return ResponseEntity.ok(authService.getNotificationSettings(username));
+    }
+
+    // GET /api/auth/me — 현재 로그인 사용자 프로필 조회 (학번/교번 포함)
+    @GetMapping("/me")
+    public ResponseEntity<Map<String, Object>> getMe(@RequestHeader("X-Username") String username) {
+        return ResponseEntity.ok(authService.getMyProfile(username));
     }
 
     @PostMapping("/notification-settings")

@@ -1,6 +1,7 @@
 package com.example.demo.dto;
 
 public class CurriculumItemDto {
+    private final Long id;
     private final String name;
     private final String year;
     private final String semester;
@@ -9,10 +10,15 @@ public class CurriculumItemDto {
     private final int credit;
 
     public CurriculumItemDto(String name, String year, boolean required, int credit) {
-        this(name, year, null, null, required, credit);
+        this(null, name, year, null, null, required, credit);
     }
 
     public CurriculumItemDto(String name, String year, String semester, String category, boolean required, int credit) {
+        this(null, name, year, semester, category, required, credit);
+    }
+
+    public CurriculumItemDto(Long id, String name, String year, String semester, String category, boolean required, int credit) {
+        this.id = id;
         this.name = name;
         this.year = year;
         this.semester = semester;
@@ -21,6 +27,7 @@ public class CurriculumItemDto {
         this.credit = credit;
     }
 
+    public Long getId()       { return id; }
     public String getName()     { return name; }
     public String getYear()     { return year; }
     public String getSemester() { return semester; }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { getAuthItem } from '../utils/authStorage'
 
 /**
  * UI 분기 전용. sessionStorage를 직접 읽으므로 실제 권한 보안이 아니다.
@@ -8,8 +9,8 @@ export type AdminRole = 'SUPER_ADMIN' | 'SCHOOL_ADMIN' | 'DEPT_ADMIN' | null
 
 function readAdminRole(): AdminRole {
   if (typeof window === 'undefined') return null
-  if (sessionStorage.getItem('isLoggedIn') !== 'true') return null
-  const raw = sessionStorage.getItem('adminRole') ?? ''
+  if (getAuthItem('isLoggedIn') !== 'true') return null
+  const raw = getAuthItem('adminRole') ?? ''
   if (raw === 'SUPER_ADMIN') return 'SUPER_ADMIN'
   if (raw === 'SCHOOL_ADMIN') return 'SCHOOL_ADMIN'
   if (raw === 'DEPT_ADMIN') return 'DEPT_ADMIN'

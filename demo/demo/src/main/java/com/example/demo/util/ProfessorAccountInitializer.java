@@ -32,10 +32,10 @@ import java.util.Optional;
  *  stu_park1   | 박학생 | 전기전자공학과  | 1
  */
 @Component
-@Order(5)
+@Order(7)
 public class ProfessorAccountInitializer implements CommandLineRunner {
 
-    private static final String SEMESTER = "2025-1";
+    private static final String SEMESTER = "2026-1";
     private static final String PROF_PW  = "prof1234";
     private static final String STU_PW   = "stu1234";
 
@@ -77,8 +77,6 @@ public class ProfessorAccountInitializer implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        if (userRepo.existsByUsername("prof_kim")) return; // 이미 시딩됨
-
         // 목포대학교 찾기
         University mokpo = univRepo.findAll().stream()
                 .filter(u -> u.getName().contains("목포"))
@@ -183,7 +181,21 @@ public class ProfessorAccountInitializer implements CommandLineRunner {
 
     private void createProfUser(String username, String rawPw, String name,
                                  String univId, String dept, Professor profEntity) {
-        if (userRepo.existsByUsername(username)) return;
+        Optional<User> existing = userRepo.findByUsername(username);
+        if (existing.isPresent()) {
+            User u = existing.get();
+            boolean changed = false;
+            if (profEntity != null && u.getProfessorEntityId() == null) {
+                u.setProfessorEntityId(profEntity.getId());
+                changed = true;
+            }
+            if (u.getStatus() == null) {
+                u.setStatus("ACTIVE");
+                changed = true;
+            }
+            if (changed) userRepo.save(u);
+            return;
+        }
         User u = new User();
         u.setUsername(username);
         u.setPassword(encoder.encode(rawPw));
@@ -238,6 +250,12 @@ public class ProfessorAccountInitializer implements CommandLineRunner {
 
     private void saveSchedule(Long profId, Long courseId, Long deptId,
                                String day, String start, String end, String room) {
+        boolean exists = scheduleRepo.findByProfessorIdAndSemester(profId, SEMESTER).stream()
+                .anyMatch(cs -> courseId.equals(cs.getCourseId())
+                        && day.equals(cs.getDayOfWeek())
+                        && start.equals(cs.getStartTime())
+                        && end.equals(cs.getEndTime()));
+        if (exists) return;
         ClassSchedule cs = new ClassSchedule();
         cs.setProfessorId(profId);
         cs.setCourseId(courseId);

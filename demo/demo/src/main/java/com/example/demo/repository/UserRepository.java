@@ -2,6 +2,8 @@ package com.example.demo.repository;
 
 import com.example.demo.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -73,4 +75,26 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // Find PW: admin lookup by username + name
     Optional<User> findByUsernameAndName(String username, String name);
+
+    // Find ID: lookup by name + studentId + department (학과 기준)
+    Optional<User> findByNameAndStudentIdAndDepartment(
+            String name, String studentId, String department);
+
+    // Find PW (개선): username + name + studentId + department (학과 기준)
+    Optional<User> findByUsernameAndNameAndStudentIdAndDepartment(
+            String username, String name, String studentId, String department);
+
+    // Find PW (대학 없이): username + name + studentId
+    Optional<User> findByUsernameAndNameAndStudentId(
+            String username, String name, String studentId);
+
+    // 학번/교번 중복 확인 (같은 대학 내 동일 회원 유형 중복 방지)
+    boolean existsByStudentIdAndUniversityId(String studentId, String universityId);
+    boolean existsByStudentIdAndUniversityIdAndMemberType(String studentId, String universityId, String memberType);
+
+    // 마이그레이션: 비학생 계정의 grade·enrollmentStatus를 null로 정리
+    @Modifying
+    @Query("UPDATE User u SET u.grade = null, u.enrollmentStatus = null " +
+           "WHERE u.memberType <> 'student' AND (u.grade IS NOT NULL OR u.enrollmentStatus IS NOT NULL)")
+    int clearNonStudentGradeAndStatus();
 }

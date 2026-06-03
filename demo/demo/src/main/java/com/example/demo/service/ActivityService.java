@@ -75,6 +75,7 @@ public class ActivityService {
                 return Collections.emptyList();
         }
 
+        // Normalize: keep a minimum denominator even when every metric is zero.
         long maxV = Math.max(1, result.stream().mapToLong(ActivityDto::getWeeklyVisitors).max().orElse(0));
         long maxP = Math.max(1, result.stream().mapToLong(ActivityDto::getNewPosts).max().orElse(0));
         long maxC = Math.max(1, result.stream().mapToLong(ActivityDto::getNewComments).max().orElse(0));

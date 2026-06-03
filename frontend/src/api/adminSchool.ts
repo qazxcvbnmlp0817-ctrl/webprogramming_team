@@ -1,3 +1,6 @@
+import { readError } from './_error'
+import type { SchoolPageContentDto } from '../types/schoolInfo'
+
 const headers = (): HeadersInit => ({
   'Content-Type': 'application/json',
   'X-Username': sessionStorage.getItem('username') ?? '',
@@ -151,6 +154,37 @@ export async function fetchSchoolMonthlyStats(univId?: number): Promise<MonthlyS
   return res.json()
 }
 
+export async function fetchSchoolContent(univId?: number): Promise<SchoolPageContentDto> {
+  const res = await fetch('/api/admin/school/content' + qs(univParam(univId)), { headers: headers() })
+  handle403(res)
+  if (!res.ok) throw new Error('학교 페이지 콘텐츠를 불러오지 못했습니다.')
+  return res.json()
+}
+
+export async function updateSchoolContent(body: SchoolPageContentDto, univId?: number): Promise<void> {
+  const res = await fetch('/api/admin/school/content' + qs(univParam(univId)), {
+    method: 'PUT',
+    headers: headers(),
+    body: JSON.stringify(body),
+  })
+  handle403(res)
+  if (!res.ok) throw new Error(await readError(res, '학교 페이지 콘텐츠 저장에 실패했습니다.'))
+}
+
+export async function updateSchoolContentSection(
+  section: string,
+  body: SchoolPageContentDto,
+  univId?: number,
+): Promise<void> {
+  const res = await fetch('/api/admin/school/content/section/' + section + qs(univParam(univId)), {
+    method: 'PUT',
+    headers: headers(),
+    body: JSON.stringify(body),
+  })
+  handle403(res)
+  if (!res.ok) throw new Error(await readError(res, '학교 페이지 콘텐츠 저장에 실패했습니다.'))
+}
+
 export interface NoticeItem {
   id: number
   title: string
@@ -265,8 +299,7 @@ export async function createSchoolAssignment(
   })
   if (!res.ok) {
     // 배정 실패는 비즈니스 오류 — 리다이렉트 없이 메시지만 throw
-    const text = await res.text()
-    throw new Error(text || '배정 추가에 실패했습니다.')
+    throw new Error(await readError(res, '배정 추가에 실패했습니다.'))
   }
   return res.json()
 }

@@ -2,6 +2,8 @@ package com.example.demo.dto;
 
 public class ClassScheduleRequestDto {
     private Long courseId;
+    private Long professorId;
+    private Long deptId;
     private String dayOfWeek;  // 월|화|수|목|금
     private String startTime;  // HH:mm
     private String endTime;    // HH:mm
@@ -11,6 +13,10 @@ public class ClassScheduleRequestDto {
 
     public Long getCourseId() { return courseId; }
     public void setCourseId(Long courseId) { this.courseId = courseId; }
+    public Long getProfessorId() { return professorId; }
+    public void setProfessorId(Long professorId) { this.professorId = professorId; }
+    public Long getDeptId() { return deptId; }
+    public void setDeptId(Long deptId) { this.deptId = deptId; }
     public String getDayOfWeek() { return dayOfWeek; }
     public void setDayOfWeek(String dayOfWeek) { this.dayOfWeek = dayOfWeek; }
     public String getStartTime() { return startTime; }

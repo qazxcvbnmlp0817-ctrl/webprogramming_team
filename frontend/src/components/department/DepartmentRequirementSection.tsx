@@ -26,10 +26,10 @@ export default function DepartmentRequirementSection({ requirements }: Departmen
       </div>
 
       <div className="mb-5 border-2 border-black p-5">
-        <p className="font-black">최종 기준은 공식 공지와 학사 안내입니다</p>
+        <p className="font-black">이 페이지에서 졸업 준비 흐름을 먼저 확인하세요</p>
         <p className="mt-2 text-sm text-gray-600 leading-relaxed break-keep">
-          이 영역은 개인 완료 여부를 저장하지 않습니다. 졸업학점, 전공필수, 졸업작품, 자격증 기준은 학과 공지와 학사 안내에서 최종 확인하고,
-          애매한 내용은 학과 사무실 또는 게시판 질문으로 이어지도록 구성했습니다.
+          이 영역은 개인 완료 여부를 저장하지 않습니다. 졸업학점, 전공필수, 졸업작품, 자격증 기준을 먼저 훑어보고,
+          변경 가능성이 있는 일정이나 애매한 조건은 학과 공지와 게시판 질문으로 이어지도록 구성했습니다.
         </p>
       </div>
 

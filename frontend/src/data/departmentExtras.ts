@@ -39,8 +39,14 @@ export interface StudentLifeItem {
 }
 
 export interface ProfessorEnhancement {
+  name?: string
   lab: string
   courses: string[]
+}
+
+export interface CommunityTopic {
+  label: string
+  slug: string
 }
 
 export interface RequirementItem {
@@ -75,12 +81,28 @@ export interface DepartmentExtra {
   studentLife: StudentLifeItem[]
   professorEnhancements: ProfessorEnhancement[]
   requirements: RequirementItem[]
+  communityTopics: CommunityTopic[]
   introHighlights?: IntroHighlight[]
 }
 
-type ExtraTemplate = Omit<DepartmentExtra, 'deptId'>
+type ExtraTemplate = Omit<DepartmentExtra, 'deptId' | 'communityTopics'>
 
 // ── 공통 기본값 ──────────────────────────────────────────────────────────────
+
+const defaultCommunityTopics: CommunityTopic[] = [
+  { label: '학부생 안내',   slug: 'undergraduate-guide' },
+  { label: '복학생',        slug: 'returning-student' },
+  { label: '수강신청',      slug: 'course-registration' },
+  { label: '시험',          slug: 'exam' },
+  { label: '과제',          slug: 'assignment' },
+  { label: '팀플',          slug: 'team-project' },
+  { label: '졸업준비',      slug: 'graduation-prep' },
+  { label: '자격증',        slug: 'certification' },
+  { label: '진로',          slug: 'career' },
+  { label: '취업',          slug: 'employment' },
+  { label: '오류제보',      slug: 'error-report' },
+  { label: '정보수정요청',  slug: 'info-update-request' },
+]
 
 const defaultStudentLife: StudentLifeItem[] = [
   { title: '학사일정', description: '수강신청, 시험, 휴보강 일정을 한 번에 확인합니다.', href: '/dept/schedule' },
@@ -98,7 +120,7 @@ const defaultGuideCards: GuideCard[] = [
 
 const defaultRequirements: RequirementItem[] = [
   { id: 'curriculum', label: '교육과정 확인하기', description: '학년별 과목과 전공 분류를 먼저 확인합니다.', href: '#curriculum', kind: 'anchor' },
-  { id: 'notice', label: '졸업 공지 확인하기', description: '졸업 기준과 제출 일정은 학과 공지에서 최종 확인합니다.', href: '/dept/notice', kind: 'route' },
+  { id: 'notice', label: '졸업 공지 확인하기', description: '졸업 기준과 제출 일정을 학과 공지에서 이어서 확인합니다.', href: '/dept/notice', kind: 'route' },
   { id: 'contact', label: '상담/문의 확인하기', description: '학과 사무실 연락처와 문의 동선을 확인합니다.', href: '#contact', kind: 'anchor' },
   { id: 'careers', label: '진로·자격증 보기', description: '전공별 진로와 준비 항목을 학생용 가이드로 확인합니다.', href: '#careers', kind: 'anchor' },
   { id: 'board', label: '질문 남기기', description: '확실하지 않은 정보는 게시판에서 질문하거나 제보합니다.', href: '/dept/board', kind: 'route' },
@@ -167,7 +189,7 @@ const computerTemplate: ExtraTemplate = {
   faqs: [
     { category: '수강', question: '프로그래밍을 처음 배워도 따라갈 수 있나요?', answer: '1학년 기초 과목부터 시작하도록 구성되어 있습니다. 입학 전에는 파이썬이나 웹 기초를 가볍게 익히면 도움이 됩니다.' },
     { category: '졸업', question: '졸업작품은 어떻게 준비하나요?', answer: '보통 팀 단위 프로젝트로 준비하며, 주제 선정부터 설계, 구현, 발표까지 단계적으로 진행합니다.' },
-    { category: '학사', question: '전공필수 과목은 어디서 확인하나요?', answer: '학과 교육과정 표와 수강신청 안내를 함께 확인하는 것이 안전합니다. 이 페이지는 공식 기준을 확인할 위치로 이동하는 안내 허브입니다.' },
+    { category: '학사', question: '전공필수 과목은 어디서 확인하나요?', answer: '학과 교육과정 표에서 먼저 확인하고, 수강신청 기간에는 학과 공지와 안내를 함께 보면 놓치는 과목을 줄일 수 있습니다.' },
     { category: '진로', question: '취업 준비는 언제부터 시작하면 좋나요?', answer: '2학년부터 Git, 포트폴리오, 기본 프로젝트를 쌓고 3학년 이후 인턴과 캡스톤을 연결하는 흐름을 권장합니다.' },
   ],
   studentLife: defaultStudentLife,
@@ -777,8 +799,8 @@ const defaultTemplate: ExtraTemplate = {
   ],
   faqs: [
     { question: '학과 사무실에는 언제 문의하면 되나요?', answer: '운영시간 내 전화 또는 방문 문의가 가능합니다. 수강, 졸업, 행정 서류는 여유 있게 확인하는 것이 좋습니다.' },
-    { question: '교수 상담은 어떻게 신청하나요?', answer: '지도교수 배정 여부와 학과 안내에 따라 신청합니다. 구체적인 신청 방식은 학과 공지나 학과 사무실 안내를 최종 확인하세요.' },
-    { question: '졸업요건은 이 페이지 내용만 보면 되나요?', answer: '아니요. 이 페이지는 개인 점검용 허브이며, 최종 기준은 학과 공지와 학사 안내를 함께 확인해야 합니다.' },
+    { question: '교수 상담은 어떻게 신청하나요?', answer: '지도교수 배정 여부와 학과 안내에 따라 신청합니다. 신청 방식이 애매하면 학과 공지에서 먼저 확인하고 학과 게시판이나 사무실 문의로 이어가세요.' },
+    { question: '졸업요건은 이 페이지 내용만 보면 되나요?', answer: '이 페이지에서 졸업 준비 흐름을 먼저 확인하고, 변경 가능성이 있는 기준이나 제출 일정은 학과 공지와 함께 확인하세요.' },
   ],
   studentLife: defaultStudentLife,
   professorEnhancements: [
@@ -861,6 +883,7 @@ function withDeptContext(template: ExtraTemplate, deptId: number): DepartmentExt
   return {
     ...template,
     deptId,
+    communityTopics: defaultCommunityTopics,
     ...(override && {
       slogan: override.slogan,
       keywords: override.keywords,

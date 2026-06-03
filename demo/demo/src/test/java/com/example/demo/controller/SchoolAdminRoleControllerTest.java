@@ -4,6 +4,7 @@ import com.example.demo.entity.User;
 import com.example.demo.repository.PageVisitRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.service.AdminService;
+import com.example.demo.service.SchoolContentService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,9 @@ class SchoolAdminRoleControllerTest {
 
     @MockitoBean
     PageVisitRepository pageVisitRepository;
+
+    @MockitoBean
+    SchoolContentService schoolContentService;
 
     @BeforeEach
     void setUp() {

@@ -7,5 +7,6 @@ import java.util.List;
 
 public interface StudentTimetableEntryRepository extends JpaRepository<StudentTimetableEntry, Long> {
     List<StudentTimetableEntry> findByStudentUsernameAndSemester(String studentUsername, String semester);
+    List<StudentTimetableEntry> findBySemester(String semester);
     boolean existsByStudentUsernameAndOfferingIdAndSemester(String studentUsername, Long offeringId, String semester);
 }

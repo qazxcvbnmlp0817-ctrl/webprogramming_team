@@ -124,14 +124,28 @@ export default function MyPage() {
 
   const name             = getAuthItem('name')             || '사용자'
   const username         = getAuthItem('username')         || ''
-  const memberType       = getAuthItem('memberType')       || 'student'
+  const memberType       = (getAuthItem('memberType') || 'student').toLowerCase()
   const department       = getAuthItem('department')       || ''
   const grade            = getAuthItem('grade')
   const enrollmentStatus = getAuthItem('enrollmentStatus')
+  const [studentId, setStudentId] = useState<string|null>(getAuthItem('studentId'))
   const isStudent        = memberType === 'student'
+
+  // 마운트 시 /api/auth/me 로 최신 프로필(학번/교번 포함) 조회
+  useEffect(() => {
+    if (!username) return
+    fetch('/api/auth/me', { headers: { 'X-Username': username } })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.studentId) setStudentId(data.studentId)
+      })
+      .catch(() => {})
+  }, [username])
 
   const memberTypeLabel  = memberType==='student'?'학생':memberType==='professor'?'교수':memberType==='employee'?'직원':memberType==='assistant'?'조교':memberType==='admin'?'관리자':'회원'
   const enrollmentLabel  = enrollmentStatus==='freshman'?'신입생':enrollmentStatus==='enrolled'?'재학생':enrollmentStatus==='graduated'?'졸업생':''
+  // 로그인 유형에 따라 학번/교번 라벨 결정
+  const studentIdLabel   = memberType === 'student' ? '학번' : (['professor','assistant','employee'].includes(memberType)) ? '교번' : null
 
   const handleLogout = () => { clearAuthStorage(); window.dispatchEvent(new Event('loginChanged')); navigate('/login') }
 
@@ -171,10 +185,19 @@ export default function MyPage() {
   const [pwMsg, setPwMsg]               = useState<{ type: 'success'|'error'; text: string }|null>(null)
   const [pwLoading, setPwLoading]       = useState(false)
 
+  const validateNewPw = (pw: string): string | null => {
+    if (pw.length < 8) return '비밀번호는 8자 이상이어야 합니다.'
+    if (!/[a-zA-Z]/.test(pw)) return '영문자를 포함해야 합니다.'
+    if (!/[0-9]/.test(pw)) return '숫자를 포함해야 합니다.'
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pw)) return '특수문자(!@#$% 등)를 포함해야 합니다.'
+    return null
+  }
+
   const handleChangePassword = async () => {
     if (!currentPw||!newPw||!newPwConfirm) { setPwMsg({type:'error',text:'모든 항목을 입력해주세요.'}); return }
     if (newPw!==newPwConfirm) { setPwMsg({type:'error',text:'새 비밀번호가 일치하지 않습니다.'}); return }
-    if (newPw.length<8) { setPwMsg({type:'error',text:'비밀번호는 8자 이상이어야 합니다.'}); return }
+    const pwErr = validateNewPw(newPw)
+    if (pwErr) { setPwMsg({type:'error',text:pwErr}); return }
     setPwLoading(true)
     try {
       const vr = await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password:currentPw,memberType})})
@@ -556,6 +579,7 @@ export default function MyPage() {
                   {label:'이름',      value:name},
                   {label:'아이디',    value:username},
                   {label:'회원 유형', value:memberTypeLabel},
+                  ...(studentIdLabel && studentId ? [{label: studentIdLabel, value: studentId}] : []),
                   ...(department?[{label:'소속 학과',value:department}]:[]),
                   ...(grade?[{label:'학년',value:`${grade}학년`}]:[]),
                   ...(enrollmentLabel?[{label:'재학 상태',value:enrollmentLabel}]:[]),
@@ -586,15 +610,42 @@ export default function MyPage() {
               <div className="mt-6 pt-5 border-t border-gray-200">
                 <h3 className="text-sm font-bold mb-3">비밀번호 변경</h3>
                 <div className="flex flex-col gap-3">
-                  {[{label:'현재 비밀번호',val:currentPw,set:setCurrentPw},{label:'새 비밀번호',val:newPw,set:setNewPw},{label:'새 비밀번호 확인',val:newPwConfirm,set:setNewPwConfirm}]
-                    .map(({label,val,set}) => (
-                    <div key={label}>
-                      <label className="block text-xs text-gray-500 mb-1">{label}</label>
-                      <input type="password" value={val} onChange={e=>{set(e.target.value);setPwMsg(null)}}
-                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-blue-500"/>
-                    </div>
-                  ))}
-                  {newPw&&newPwConfirm&&newPw!==newPwConfirm&&<p className="text-xs text-red-500">비밀번호가 일치하지 않습니다.</p>}
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">현재 비밀번호</label>
+                    <input type="password" value={currentPw} onChange={e=>{setCurrentPw(e.target.value);setPwMsg(null)}}
+                      placeholder="현재 비밀번호 입력"
+                      className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-blue-500"/>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">새 비밀번호</label>
+                    <input type="password" value={newPw} onChange={e=>{setNewPw(e.target.value);setPwMsg(null)}}
+                      placeholder="8자 이상, 영문+숫자+특수문자 필수"
+                      className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-blue-500"/>
+                    {newPw && validateNewPw(newPw) && (
+                      <p className="text-xs text-red-500 mt-1">{validateNewPw(newPw)}</p>
+                    )}
+                    {newPw && !validateNewPw(newPw) && (
+                      <p className="text-xs text-green-600 mt-1">✅ 사용 가능한 비밀번호입니다.</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">새 비밀번호 확인</label>
+                    <input type="password" value={newPwConfirm} onChange={e=>{setNewPwConfirm(e.target.value);setPwMsg(null)}}
+                      placeholder="새 비밀번호 다시 입력"
+                      className="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:border-blue-500"/>
+                    {newPw&&newPwConfirm&&newPw!==newPwConfirm&&(
+                      <p className="text-xs text-red-500 mt-1">비밀번호가 일치하지 않습니다.</p>
+                    )}
+                  </div>
+                  <div className="bg-gray-50 border border-gray-200 rounded px-3 py-2.5 text-xs text-gray-500">
+                    <p className="font-semibold text-gray-700 mb-1">비밀번호 조건 (필수)</p>
+                    <ul className="list-disc list-inside space-y-0.5">
+                      <li className={newPw.length>=8?'text-green-600':'text-gray-400'}>8자 이상</li>
+                      <li className={/[a-zA-Z]/.test(newPw)?'text-green-600':'text-gray-400'}>영문자 포함</li>
+                      <li className={/[0-9]/.test(newPw)?'text-green-600':'text-gray-400'}>숫자 포함</li>
+                      <li className={/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPw)?'text-green-600':'text-gray-400'}>특수문자 포함 (!@#$% 등)</li>
+                    </ul>
+                  </div>
                   {pwMsg&&<p className={`text-xs px-3 py-2 rounded border ${pwMsg.type==='success'?'bg-green-50 border-green-200 text-green-700':'bg-red-50 border-red-200 text-red-600'}`}>{pwMsg.text}</p>}
                   <button onClick={handleChangePassword} disabled={pwLoading}
                     className="w-full bg-gray-900 text-white rounded py-2.5 text-sm font-semibold hover:opacity-90 mt-1 disabled:opacity-50">

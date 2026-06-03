@@ -56,7 +56,7 @@ public class UniversityService {
                     .collect(Collectors.toList());
             List<CurriculumItemDto> curriculum = curriculumRepo.findByDeptId(deptId).stream()
                     .map(c -> new CurriculumItemDto(
-                            c.getName(), c.getYear(), c.getSemester(), c.getCategory(),
+                            c.getId(), c.getName(), c.getYear(), c.getSemester(), c.getCategory(),
                             c.isRequired(), c.getCredits()))
                     .collect(Collectors.toList());
             DeptPageContent pageContentEntity = contentRepo.findById(deptId).orElse(null);

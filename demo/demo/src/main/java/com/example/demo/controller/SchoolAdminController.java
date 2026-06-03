@@ -2,7 +2,9 @@ package com.example.demo.controller;
 
 import com.example.demo.entity.User;
 import com.example.demo.repository.UserRepository;
+import com.example.demo.dto.SchoolPageContentDto;
 import com.example.demo.service.AdminService;
+import com.example.demo.service.SchoolContentService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,11 +18,14 @@ import java.util.Map;
 public class SchoolAdminController {
 
     private final AdminService adminService;
+    private final SchoolContentService schoolContentService;
     private final UserRepository userRepository;
 
     public SchoolAdminController(AdminService adminService,
+                                  SchoolContentService schoolContentService,
                                   UserRepository userRepository) {
         this.adminService = adminService;
+        this.schoolContentService = schoolContentService;
         this.userRepository = userRepository;
     }
 
@@ -174,6 +179,35 @@ public class SchoolAdminController {
             @RequestParam(required = false) Long univId) {
         Long id = resolveUnivId(username, univId);
         return ResponseEntity.ok(adminService.getSchoolMonthlyStats(id));
+    }
+
+    @GetMapping("/content")
+    public ResponseEntity<SchoolPageContentDto> getContent(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @RequestParam(required = false) Long univId) {
+        Long id = resolveUnivId(username, univId);
+        return ResponseEntity.ok(schoolContentService.getContent(id));
+    }
+
+    @PutMapping("/content")
+    public ResponseEntity<Void> saveContent(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @RequestParam(required = false) Long univId,
+            @RequestBody SchoolPageContentDto dto) {
+        Long id = resolveUnivId(username, univId);
+        schoolContentService.saveContent(id, dto, resolveActor(username));
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/content/section/{section}")
+    public ResponseEntity<Void> saveContentSection(
+            @RequestHeader(value = "X-Username", required = false) String username,
+            @RequestParam(required = false) Long univId,
+            @PathVariable String section,
+            @RequestBody SchoolPageContentDto dto) {
+        Long id = resolveUnivId(username, univId);
+        schoolContentService.saveSection(id, section, dto, resolveActor(username));
+        return ResponseEntity.ok().build();
     }
 
     @PutMapping("/users/{id}/role")

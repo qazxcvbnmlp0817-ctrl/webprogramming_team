@@ -1,7 +1,10 @@
 import { renderHook, act } from '@testing-library/react'
 import { useAdminRole } from './useAdminRole'
 
-beforeEach(() => sessionStorage.clear())
+beforeEach(() => {
+  sessionStorage.clear()
+  localStorage.clear()
+})
 
 test('로그인 안 된 상태에서 null 반환', () => {
   const { result } = renderHook(() => useAdminRole())
@@ -27,6 +30,15 @@ test('SCHOOL_ADMIN 반환', () => {
   sessionStorage.setItem('adminRole', 'SCHOOL_ADMIN')
   const { result } = renderHook(() => useAdminRole())
   expect(result.current).toBe('SCHOOL_ADMIN')
+})
+
+test('remembered auth storage is used', () => {
+  localStorage.setItem('auth_isLoggedIn', 'true')
+  localStorage.setItem('auth_adminRole', 'DEPT_ADMIN')
+
+  const { result } = renderHook(() => useAdminRole())
+
+  expect(result.current).toBe('DEPT_ADMIN')
 })
 
 test('DEPT_ADMIN 반환', () => {

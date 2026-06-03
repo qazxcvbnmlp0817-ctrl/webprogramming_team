@@ -1,7 +1,7 @@
 import type { NoticeDto } from '../types/notice'
 import type { PostDto } from '../types/post'
 import type { ScheduleDto } from '../types/schedule'
-import type { UniversityDto } from '../types/university'
+import type { SchoolInfoDto } from '../types/schoolInfo'
 
 export async function fetchFacultyMainData(facultyId: number): Promise<{
   notices: NoticeDto[]
@@ -46,7 +46,7 @@ export async function fetchSchoolSchedules(univId: number): Promise<ScheduleDto[
   return res.json()
 }
 
-export async function fetchSchoolInfo(univId: number): Promise<UniversityDto> {
+export async function fetchSchoolInfo(univId: number): Promise<SchoolInfoDto> {
   const res = await fetch(`/api/school/info?univId=${univId}`)
   if (!res.ok) throw new Error('학교 정보 로딩 실패')
   return res.json()

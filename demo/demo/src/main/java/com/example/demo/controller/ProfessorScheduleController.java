@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 // 교수 전용 수업 시간표 CRUD
 @RestController
@@ -18,6 +19,13 @@ public class ProfessorScheduleController {
 
     public ProfessorScheduleController(ProfessorScheduleService service) {
         this.service = service;
+    }
+
+    // 내 담당 강좌 배정 조회
+    @GetMapping("/assignments")
+    public ResponseEntity<List<Map<String, Object>>> getMyAssignments(
+            @RequestHeader("X-Username") String username) {
+        return ResponseEntity.ok(service.getProfessorAssignments(username));
     }
 
     // 내 수업 시간표 전체 조회

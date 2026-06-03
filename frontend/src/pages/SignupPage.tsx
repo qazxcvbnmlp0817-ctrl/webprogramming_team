@@ -96,9 +96,20 @@ export default function SignupPage() {
     return true
   }
 
+  const pwError = (): string | null => {
+    if (!pw) return null
+    if (pw.length < 8) return '비밀번호는 8자 이상이어야 합니다.'
+    if (!/[a-zA-Z]/.test(pw)) return '영문자를 포함해야 합니다.'
+    if (!/[0-9]/.test(pw)) return '숫자를 포함해야 합니다.'
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pw))
+      return '특수문자(!@#$% 등)를 포함해야 합니다.'
+    return null
+  }
+
   const step3Valid = () => {
     if (!userId || !idChecked) return false
     if (!pw || pw !== pwConfirm) return false
+    if (pwError() !== null) return false
     if (!inputName) return false
     if (isEmployee) {
       if (!employeeId || !employeeOffice) return false
@@ -269,8 +280,10 @@ export default function SignupPage() {
                 {/* 공통: 비밀번호 */}
                 <div>
                   <label className="block text-sm font-medium mb-1">비밀번호</label>
-                  <input type="password" placeholder="비밀번호 입력" value={pw} onChange={e => setPw(e.target.value)}
+                  <input type="password" placeholder="8자 이상, 영문+숫자+특수문자 필수" value={pw} onChange={e => setPw(e.target.value)}
                     className="w-full border-2 border-black px-3 py-2 text-sm outline-none focus:bg-gray-50" />
+                  {pw && pwError() && <p className="text-xs text-red-600 mt-1">{pwError()}</p>}
+                  {pw && !pwError() && <p className="text-xs text-green-600 mt-1">✅ 사용 가능한 비밀번호입니다.</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">비밀번호 확인</label>

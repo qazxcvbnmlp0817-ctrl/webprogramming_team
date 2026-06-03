@@ -20,7 +20,9 @@ export default function UniversityListPage() {
 
   useEffect(() => {
     let cancelled = false
-    fetchUniversities().then(data => { if (!cancelled) setUniversities(data) })
+    fetchUniversities().then(data => {
+      if (!cancelled) setUniversities(data)
+    })
     fetchActivityRanking('univ').then(list => {
       if (!cancelled) setActivityMap(new Map(list.map(a => [a.scopeId, a])))
     })

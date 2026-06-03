@@ -25,6 +25,8 @@ public class DeptPageContent {
     @Lob private String studentLifeJson;
     @Lob private String professorEnhancementsJson;
     @Lob private String requirementsJson;
+    @Lob private String curriculumItemsJson;
+    @Lob private String communityTopicsJson;
 
     private Integer overviewNotices;
     private Integer overviewSchedules;
@@ -57,6 +59,10 @@ public class DeptPageContent {
     public void setProfessorEnhancementsJson(String professorEnhancementsJson) { this.professorEnhancementsJson = professorEnhancementsJson; }
     public String getRequirementsJson() { return requirementsJson; }
     public void setRequirementsJson(String requirementsJson) { this.requirementsJson = requirementsJson; }
+    public String getCurriculumItemsJson() { return curriculumItemsJson; }
+    public void setCurriculumItemsJson(String curriculumItemsJson) { this.curriculumItemsJson = curriculumItemsJson; }
+    public String getCommunityTopicsJson() { return communityTopicsJson; }
+    public void setCommunityTopicsJson(String communityTopicsJson) { this.communityTopicsJson = communityTopicsJson; }
     public Integer getOverviewNotices() { return overviewNotices; }
     public void setOverviewNotices(Integer overviewNotices) { this.overviewNotices = overviewNotices; }
     public Integer getOverviewSchedules() { return overviewSchedules; }

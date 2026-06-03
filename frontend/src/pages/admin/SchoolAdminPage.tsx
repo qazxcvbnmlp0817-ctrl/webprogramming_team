@@ -8,6 +8,9 @@ import {
 import { Line, Doughnut, Bar } from 'react-chartjs-2'
 import Navbar from '../../components/Navbar'
 import RoleManageModal from '../../components/admin/RoleManageModal'
+import SchoolInfoPage from '../SchoolInfoPage'
+import { SchoolEditProvider } from '../../context/SchoolEditContext'
+import { getAuthItem } from '../../utils/authStorage'
 import {
   fetchSchoolStats, fetchSchoolVisitors, fetchSchoolPosts,
   deleteSchoolPost, updateSchoolUserRole,
@@ -28,8 +31,8 @@ ChartJS.register(
   BarElement, ArcElement, Title, Tooltip, Legend, Filler
 )
 
-type Tab = '개요' | '게시글 관리' | '공지 관리' | '전체 사용자' | '가입 승인' | '교수 배정'
-const TABS: Tab[] = ['개요', '게시글 관리', '공지 관리', '전체 사용자', '가입 승인', '교수 배정']
+type Tab = '개요' | '학교 페이지' | '게시글 관리' | '공지 관리' | '전체 사용자' | '가입 승인' | '교수 배정'
+const TABS: Tab[] = ['개요', '학교 페이지', '게시글 관리', '공지 관리', '전체 사용자', '가입 승인', '교수 배정']
 
 export default function SchoolAdminPage() {
   const navigate = useNavigate()
@@ -37,8 +40,15 @@ export default function SchoolAdminPage() {
   const adminRole = sessionStorage.getItem('adminRole')
   const isSuperAdmin = adminRole === 'SUPER_ADMIN'
   const univId = isSuperAdmin ? Number(id) : undefined
+  const ownUniversityId = getAuthItem('universityId')
+  const schoolPageUnivId = isSuperAdmin
+    ? Number(id)
+    : ownUniversityId
+      ? Number(ownUniversityId)
+      : undefined
 
   const [tab, setTab]               = useState<Tab>('개요')
+  const [schoolPageRefresh, setSchoolPageRefresh] = useState(0)
   const [stats, setStats]           = useState<SchoolStats | null>(null)
   const [visitors, setVisitors]     = useState<VisitorPoint[]>([])
   const [monthly, setMonthly]       = useState<MonthlyStats[]>([])
@@ -287,6 +297,21 @@ export default function SchoolAdminPage() {
               <Bar data={barData} options={barOptions} />
             </div>
           </>
+        )}
+
+        {tab === '학교 페이지' && (
+          <div className="border-2 border-black p-4">
+            <div className="mb-4 border-b-2 border-black pb-3">
+              <p className="text-xs font-bold uppercase tracking-widest text-gray-500">School Page Editor</p>
+              <h2 className="text-xl font-black mt-1">학교정보 페이지 편집</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                학생이 보는 학교정보 허브를 미리 보면서 섹션별로 수정합니다.
+              </p>
+            </div>
+            <SchoolEditProvider univId={univId} onSaved={() => setSchoolPageRefresh(k => k + 1)}>
+              <SchoolInfoPage embedded univIdOverride={schoolPageUnivId} refreshKey={schoolPageRefresh} />
+            </SchoolEditProvider>
+          </div>
         )}
 
         {tab === '게시글 관리' && (
@@ -698,4 +723,3 @@ function StatusBadge({ status }: { status: string }) {
     </span>
   )
 }
-

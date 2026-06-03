@@ -6,8 +6,6 @@ interface Props {
 }
 
 export default function OverviewForm({ value, onChange }: Props) {
-  const counts = value.overviewCounts ?? {}
-
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
@@ -18,26 +16,9 @@ export default function OverviewForm({ value, onChange }: Props) {
           onChange={e => onChange({ ...value, description: e.target.value })}
         />
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-black uppercase tracking-wide">공지 수</label>
-          <input
-            type="number"
-            className="border-2 border-black px-3 py-2 text-sm"
-            value={counts.notices ?? ''}
-            onChange={e => onChange({ ...value, overviewCounts: { ...counts, notices: Number(e.target.value) } })}
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-black uppercase tracking-wide">일정 수</label>
-          <input
-            type="number"
-            className="border-2 border-black px-3 py-2 text-sm"
-            value={counts.schedules ?? ''}
-            onChange={e => onChange({ ...value, overviewCounts: { ...counts, schedules: Number(e.target.value) } })}
-          />
-        </div>
-      </div>
+      <p className="text-xs text-gray-500 leading-relaxed">
+        공지/일정 카운트는 실제 학과 공지·일정 데이터에서 자동으로 계산됩니다.
+      </p>
     </div>
   )
 }

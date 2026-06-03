@@ -4,7 +4,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
+import com.example.demo.repository.PageVisitRepository;
+import com.example.demo.service.AuthService;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -14,6 +18,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AuthControllerTest {
 
     @Autowired MockMvc mockMvc;
+
+    @MockitoBean AuthService authService;
+    @MockitoBean PageVisitRepository pageVisitRepository;
 
     @Test
     @DisplayName("GET /login → SPA index.html 포워딩")

@@ -3,10 +3,12 @@ package com.example.demo.controller;
 import com.example.demo.dto.NoticeDto;
 import com.example.demo.dto.PostDto;
 import com.example.demo.dto.ScheduleDto;
+import com.example.demo.dto.SchoolInfoDto;
 import com.example.demo.dto.UniversityDto;
 import com.example.demo.service.NoticeService;
 import com.example.demo.service.PostService;
 import com.example.demo.service.ScheduleService;
+import com.example.demo.service.SchoolContentService;
 import com.example.demo.service.UniversityService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,13 +22,17 @@ public class SchoolController {
     private final NoticeService noticeService;
     private final PostService postService;
     private final ScheduleService scheduleService;
+    private final SchoolContentService schoolContentService;
     private final UniversityService universityService;
 
     public SchoolController(NoticeService noticeService, PostService postService,
-                            ScheduleService scheduleService, UniversityService universityService) {
+                            ScheduleService scheduleService,
+                            SchoolContentService schoolContentService,
+                            UniversityService universityService) {
         this.noticeService    = noticeService;
         this.postService      = postService;
         this.scheduleService  = scheduleService;
+        this.schoolContentService = schoolContentService;
         this.universityService = universityService;
     }
 
@@ -50,9 +56,7 @@ public class SchoolController {
     }
 
     @GetMapping("/api/school/info")
-    public ResponseEntity<UniversityDto> schoolInfo(@RequestParam(required = false) Long univId) {
-        return universityService.findById(univId != null ? univId : 1L)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<SchoolInfoDto> schoolInfo(@RequestParam(required = false) Long univId) {
+        return ResponseEntity.ok(schoolContentService.getSchoolInfo(univId != null ? univId : 1L));
     }
 }

@@ -1,3 +1,5 @@
+import { readError } from './_error'
+
 export interface ClassScheduleDto {
   id: number
   courseId: number
@@ -11,6 +13,27 @@ export interface ClassScheduleDto {
   room: string
   semester: string
   memo: string
+}
+
+export interface ProfessorAssignmentDto {
+  id: number
+  professorId: number
+  courseId: number
+  deptId: number
+  courseName: string
+  professorName?: string
+}
+
+export interface ClassSchedulePayload {
+  courseId: number
+  professorId?: number
+  deptId?: number
+  dayOfWeek: string
+  startTime: string
+  endTime: string
+  room?: string
+  semester: string
+  memo?: string
 }
 
 export interface CourseEventDto {
@@ -84,6 +107,119 @@ export async function fetchProfessorCourses(username: string): Promise<ClassSche
     if (!res.ok) return []
     return res.json()
   } catch { return [] }
+}
+
+export async function fetchProfessorClassSchedules(
+  username: string,
+  semester: string,
+): Promise<ClassScheduleDto[]> {
+  const res = await fetch(
+    `/api/professor/class-schedules?semester=${encodeURIComponent(semester)}`,
+    { headers: { 'X-Username': username } },
+  )
+  if (!res.ok) throw new Error(await readError(res, '교수 시간표를 불러오지 못했습니다.'))
+  return res.json()
+}
+
+export async function fetchProfessorAssignments(username: string): Promise<ProfessorAssignmentDto[]> {
+  const res = await fetch('/api/professor/assignments', {
+    headers: { 'X-Username': username },
+  })
+  if (!res.ok) throw new Error(await readError(res, '담당 강좌를 불러오지 못했습니다.'))
+  return res.json()
+}
+
+export async function createClassSchedule(
+  username: string,
+  payload: ClassSchedulePayload,
+): Promise<ClassScheduleDto> {
+  const res = await fetch('/api/professor/class-schedules', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Username': username },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) throw new Error(await readError(res, '수업 시간표 등록에 실패했습니다.'))
+  return res.json()
+}
+
+export async function updateClassSchedule(
+  username: string,
+  id: number,
+  payload: ClassSchedulePayload,
+): Promise<ClassScheduleDto> {
+  const res = await fetch(`/api/professor/class-schedules/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'X-Username': username },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) throw new Error(await readError(res, '수업 시간표 수정에 실패했습니다.'))
+  return res.json()
+}
+
+export async function deleteClassSchedule(username: string, id: number): Promise<void> {
+  const res = await fetch(`/api/professor/class-schedules/${id}`, {
+    method: 'DELETE',
+    headers: { 'X-Username': username },
+  })
+  if (!res.ok) throw new Error(await readError(res, '수업 시간표 삭제에 실패했습니다.'))
+}
+
+export async function fetchDeptClassSchedules(
+  deptId: number,
+  semester: string,
+): Promise<ClassScheduleDto[]> {
+  const res = await fetch(`/api/dept/${deptId}/class-schedules?semester=${encodeURIComponent(semester)}`)
+  if (!res.ok) return []
+  return res.json()
+}
+
+export async function fetchAdminClassSchedules(
+  username: string,
+  semester: string,
+  deptId?: number,
+): Promise<ClassScheduleDto[]> {
+  const qs = new URLSearchParams({ semester })
+  if (deptId != null) qs.set('deptId', String(deptId))
+  const res = await fetch(`/api/admin/class-schedules?${qs.toString()}`, {
+    headers: { 'X-Username': username },
+  })
+  if (!res.ok) throw new Error(await readError(res, '관리 범위의 수업 시간표를 불러오지 못했습니다.'))
+  return res.json()
+}
+
+export async function createAdminClassSchedule(
+  username: string,
+  payload: ClassSchedulePayload,
+): Promise<ClassScheduleDto> {
+  const res = await fetch('/api/admin/class-schedules', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Username': username },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) throw new Error(await readError(res, '관리자 수업 시간표 등록에 실패했습니다.'))
+  return res.json()
+}
+
+export async function updateAdminClassSchedule(
+  username: string,
+  id: number,
+  payload: ClassSchedulePayload,
+): Promise<ClassScheduleDto> {
+  const res = await fetch(`/api/admin/class-schedules/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'X-Username': username },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) throw new Error(await readError(res, '관리자 수업 시간표 수정에 실패했습니다.'))
+  return res.json()
+}
+
+export async function deleteAdminClassSchedule(username: string, id: number): Promise<void> {
+  const res = await fetch(`/api/admin/class-schedules/${id}`, {
+    method: 'DELETE',
+    headers: { 'X-Username': username },
+  })
+  if (!res.ok) throw new Error(await readError(res, '관리자 수업 시간표 삭제에 실패했습니다.'))
 }
 
 // 학과별 과목 목록 (수업 선택 탭)

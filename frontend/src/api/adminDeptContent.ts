@@ -1,4 +1,5 @@
 import type { DeptPageContentDto } from '../types/department'
+import { readError } from './_error'
 
 const headers = (): HeadersInit => ({
   'Content-Type': 'application/json',
@@ -35,7 +36,7 @@ export async function updateDeptContent(body: DeptPageContentDto, deptId?: numbe
     body: JSON.stringify(body),
   })
   handle403(res)
-  if (!res.ok) throw new Error(await res.text())
+  if (!res.ok) throw new Error(await readError(res, '학과 콘텐츠 저장에 실패했습니다.'))
 }
 
 export async function updateDeptContentSection(
@@ -52,5 +53,5 @@ export async function updateDeptContentSection(
     },
   )
   handle403(res)
-  if (!res.ok) throw new Error(await res.text())
+  if (!res.ok) throw new Error(await readError(res, '학과 콘텐츠 저장에 실패했습니다.'))
 }

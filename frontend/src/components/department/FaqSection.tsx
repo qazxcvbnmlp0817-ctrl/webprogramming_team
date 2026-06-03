@@ -23,7 +23,7 @@ export default function FaqSection({ faqs, onReportClick }: FaqSectionProps) {
           <h2 className="text-3xl font-black">자주 묻는 질문</h2>
           <SourceBadge type="guide" />
         </div>
-        <p className="text-sm text-gray-500 mt-2">학과 생활에서 자주 막히는 질문을 아코디언으로 바로 펼쳐볼 수 있습니다.</p>
+        <p className="text-sm text-gray-500 mt-2">수강, 졸업, 상담처럼 자주 묻는 내용을 먼저 확인하고 필요한 경우 질문이나 수정 요청으로 이어집니다.</p>
       </div>
       <div className="mb-4 flex flex-col md:flex-row gap-3">
         <label className="flex-1 border-2 border-black flex items-center">
@@ -54,7 +54,7 @@ export default function FaqSection({ faqs, onReportClick }: FaqSectionProps) {
         {filteredFaqs.length === 0 && (
           <div className="border-2 border-black p-8 text-center">
             <p className="font-black">검색 결과가 없습니다.</p>
-            <p className="text-sm text-gray-500 mt-2">Q&A 게시판을 이용해 주세요.</p>
+            <p className="text-sm text-gray-500 mt-2">검색어를 바꾸거나 학과 게시판에 질문을 남겨 주세요.</p>
           </div>
         )}
         {filteredFaqs.map((faq, index) => {

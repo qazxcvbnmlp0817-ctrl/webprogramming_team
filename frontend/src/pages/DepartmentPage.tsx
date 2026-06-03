@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import Navbar from '../components/Navbar'
 import DepartmentHero from '../components/department/DepartmentHero'
@@ -12,6 +12,7 @@ import CareerSection from '../components/department/CareerSection'
 import DepartmentRequirementSection from '../components/department/DepartmentRequirementSection'
 import DepartmentCommunityTags from '../components/department/DepartmentCommunityTags'
 import ContactSection from '../components/department/ContactSection'
+import StudentLifeQuickLinks from '../components/department/StudentLifeQuickLinks'
 import FaqSection from '../components/department/FaqSection'
 import InfoReportModal from '../components/department/InfoReportModal'
 import SourceBadge from '../components/department/SourceBadge'
@@ -19,20 +20,23 @@ import RoleActionBar from '../components/common/RoleActionBar'
 import EditableSection from '../components/department/edit/EditableSection'
 import HeroForm from '../components/department/edit/forms/HeroForm'
 import ContactForm from '../components/department/edit/forms/ContactForm'
-import OverviewForm from '../components/department/edit/forms/OverviewForm'
 import GuideCardsForm from '../components/department/edit/forms/GuideCardsForm'
 import IntroForm from '../components/department/edit/forms/IntroForm'
 import CareersForm from '../components/department/edit/forms/CareersForm'
 import FaqsForm from '../components/department/edit/forms/FaqsForm'
 import StudentLifeForm from '../components/department/edit/forms/StudentLifeForm'
-import ProfessorEnhancementsForm from '../components/department/edit/forms/ProfessorEnhancementsForm'
+import ProfessorForm from '../components/department/edit/forms/ProfessorForm'
 import RequirementsForm from '../components/department/edit/forms/RequirementsForm'
+import CurriculumForm from '../components/department/edit/forms/CurriculumForm'
+import CommunityTopicsForm from '../components/department/edit/forms/CommunityTopicsForm'
 import { useCurrentRole } from '../hooks/useCurrentRole'
 import { fetchDepartmentDetail } from '../api/departments'
 import { useDept } from '../context/DeptContext'
 import { getDepartmentExtra } from '../data/departmentExtras'
 import { mergeExtra } from '../utils/deptContentMerge'
 import { useDeptFetch } from '../hooks/useDeptFetch'
+import { useDeptOverviewCounts } from '../hooks/useDeptOverviewCounts'
+import { fetchLectureOfferings, type LectureOfferingDto } from '../api/timetable'
 import AdminBanner from '../components/common/AdminBanner'
 import type { DeptPageContentDto } from '../types/department'
 
@@ -47,6 +51,14 @@ export default function DepartmentPage({ embedded = false, deptIdOverride }: Dep
   const { data: dept, loading, error } = useDeptFetch(fetchDepartmentDetail, resolvedDeptId)
   const [reportOpen, setReportOpen] = useState(false)
   const role = useCurrentRole()
+  const liveCounts = useDeptOverviewCounts(resolvedDeptId)
+  const [lectureOfferings, setLectureOfferings] = useState<LectureOfferingDto[]>([])
+
+  useEffect(() => {
+    fetchLectureOfferings()
+      .then(setLectureOfferings)
+      .catch(err => console.error('[DepartmentPage] 개설강좌 로드 실패:', err))
+  }, [])
 
   const Frame = ({ children }: { children: ReactNode }) =>
     embedded ? <>{children}</> : (
@@ -75,7 +87,7 @@ export default function DepartmentPage({ embedded = false, deptIdOverride }: Dep
           <i className="fas fa-triangle-exclamation text-4xl text-gray-400 mb-4 block" />
           <h1 className="text-2xl font-black">학과 정보를 불러올 수 없습니다</h1>
           <p className="text-gray-500 text-sm mt-3">
-            {error ?? '공식 페이지에서 확인 가능한 정보가 없습니다.'}
+            {error ?? '표시할 학과 정보가 없습니다.'}
           </p>
           <button
             type="button"
@@ -90,12 +102,16 @@ export default function DepartmentPage({ embedded = false, deptIdOverride }: Dep
   }
 
   const extra = mergeExtra(dept.pageContent, getDepartmentExtra(dept.id, dept.name))
+  const curriculumOverride = dept.pageContent?.curriculumItems
+  const effectiveCurriculum = curriculumOverride && curriculumOverride.length > 0
+    ? curriculumOverride
+    : dept.curriculum
 
   const hubFeatures = [
     { title: '학과 소개 읽기', description: '공식 소개와 핵심 키워드로 학과 방향을 빠르게 파악합니다.' },
     { title: '교육과정 훑기', description: '학년별 과목과 전공 분류를 필터로 확인합니다.' },
     { title: '진로 연결하기', description: '직무, 준비 항목, 포트폴리오 예시를 함께 봅니다.' },
-    { title: '졸업·자격증 동선', description: '학점, 졸업작품, 자격증 기준을 공식 공지와 문의 메뉴로 연결합니다.' },
+    { title: '졸업·자격증 동선', description: '학점, 졸업작품, 자격증 준비 흐름을 공지와 문의 메뉴로 연결합니다.' },
   ]
 
   const heroPayload = (): DeptPageContentDto => ({ slogan: extra.slogan, keywords: extra.keywords })
@@ -107,10 +123,6 @@ export default function DepartmentPage({ embedded = false, deptIdOverride }: Dep
     email: dept.email,
     hours: dept.hours,
     homepage: extra.homepage,
-  })
-  const overviewPayload = (): DeptPageContentDto => ({
-    description: dept.description,
-    overviewCounts: extra.overviewCounts,
   })
 
   return (
@@ -131,7 +143,7 @@ export default function DepartmentPage({ embedded = false, deptIdOverride }: Dep
         </EditableSection>
 
         {!embedded && <AdminBanner scope="dept" targetId={selectedDeptId ?? undefined} />}
-        {!embedded && <RoleActionBar role={role} scope="department" />}
+        {!embedded && <RoleActionBar role={role} scope="department" targetId={resolvedDeptId ?? undefined} />}
         <DepartmentSectionNav />
 
         <EditableSection
@@ -143,14 +155,12 @@ export default function DepartmentPage({ embedded = false, deptIdOverride }: Dep
           <DepartmentGuideCards guideCards={extra.guideCards} />
         </EditableSection>
 
-        <EditableSection
-          sectionKey="overview"
-          title="한눈에 보기 편집"
-          value={overviewPayload()}
-          renderForm={(v, onChange) => <OverviewForm value={v} onChange={onChange} />}
-        >
-          <DepartmentOverview dept={dept} extra={extra} />
-        </EditableSection>
+        <DepartmentOverview
+          dept={dept}
+          extra={extra}
+          liveCounts={liveCounts}
+          curriculumCount={effectiveCurriculum.length}
+        />
 
         <section id="intro" className="max-w-6xl mx-auto px-4 py-12 scroll-mt-32">
           <div className="grid lg:grid-cols-[1fr_360px] gap-8 items-start">
@@ -169,7 +179,7 @@ export default function DepartmentPage({ embedded = false, deptIdOverride }: Dep
                   </div>
                 </div>
                 <p className="text-gray-700 leading-8 whitespace-pre-line break-keep">
-                  {dept.description || '공식 페이지에서 확인 가능한 학과 소개 정보가 없습니다.'}
+                  {dept.description || '등록된 학과 소개 정보가 없습니다.'}
                 </p>
                 <div className="mt-6 flex flex-wrap gap-2">
                   {extra.keywords.map(keyword => (
@@ -210,16 +220,45 @@ export default function DepartmentPage({ embedded = false, deptIdOverride }: Dep
           </div>
         </section>
 
-        <EditableSection
-          sectionKey="professorEnhancements"
-          title="교수진 보강 정보 편집"
-          value={{ professorEnhancements: extra.professorEnhancements }}
-          renderForm={(v, onChange) => <ProfessorEnhancementsForm value={v} onChange={onChange} />}
-        >
-          <ProfessorSection professors={dept.professors} enhancements={extra.professorEnhancements} />
-        </EditableSection>
+        {(() => {
+          const liveEnhancements = dept.pageContent?.professorEnhancements ?? []
+          const mergedProfs = dept.professors.map(p => {
+            const enh = liveEnhancements.find(e => e.name && e.name.trim() === p.name.trim())
+            const autoCourses = Array.from(new Set(
+              lectureOfferings
+                .filter(o => o.professorName.split(',').map(s => s.trim()).includes(p.name.trim()))
+                .map(o => o.courseName)
+            ))
+            const hasManualCourses = enh?.courses && enh.courses.length > 0
+            return {
+              id: p.id,
+              name: p.name,
+              specialty: p.specialty ?? '',
+              email: p.email ?? '',
+              lab: enh?.lab ?? '',
+              courses: hasManualCourses ? enh!.courses : autoCourses,
+            }
+          })
+          return (
+            <EditableSection
+              sectionKey="professors"
+              title="교수진 편집"
+              value={{ professors: mergedProfs }}
+              renderForm={(v, onChange) => <ProfessorForm value={v} onChange={onChange} />}
+            >
+              <ProfessorSection professors={dept.professors} enhancements={liveEnhancements} deptId={resolvedDeptId} />
+            </EditableSection>
+          )
+        })()}
 
-        <CurriculumSection curriculum={dept.curriculum} />
+        <EditableSection
+          sectionKey="curriculumItems"
+          title="2026 교육과정 편집"
+          value={{ curriculumItems: curriculumOverride ?? dept.curriculum }}
+          renderForm={(v, onChange) => <CurriculumForm value={v} onChange={onChange} />}
+        >
+          <CurriculumSection curriculum={effectiveCurriculum} />
+        </EditableSection>
 
         <EditableSection
           sectionKey="careers"
@@ -239,21 +278,31 @@ export default function DepartmentPage({ embedded = false, deptIdOverride }: Dep
           <DepartmentRequirementSection requirements={extra.requirements} />
         </EditableSection>
 
-        <DepartmentCommunityTags />
+        <EditableSection
+          sectionKey="communityTopics"
+          title="학과 커뮤니티 주제 편집"
+          value={{ communityTopics: extra.communityTopics }}
+          renderForm={(v, onChange) => <CommunityTopicsForm value={v} onChange={onChange} />}
+        >
+          <DepartmentCommunityTags topics={extra.communityTopics} />
+        </EditableSection>
+
+        <EditableSection
+          sectionKey="studentLife"
+          title="학과 생활 빠른링크 편집"
+          value={{ studentLife: extra.studentLife }}
+          renderForm={(v, onChange) => <StudentLifeForm value={v} onChange={onChange} />}
+        >
+          <StudentLifeQuickLinks studentLife={extra.studentLife} />
+        </EditableSection>
 
         <EditableSection
           sectionKey="contact"
-          title="연락처 / 학생생활 편집"
-          value={{ ...contactPayload(), studentLife: extra.studentLife }}
-          renderForm={(v, onChange) => (
-            <div className="flex flex-col gap-6">
-              <ContactForm value={v} onChange={onChange} />
-              <hr className="border-black" />
-              <StudentLifeForm value={v} onChange={onChange} />
-            </div>
-          )}
+          title="연락처 편집"
+          value={contactPayload()}
+          renderForm={(v, onChange) => <ContactForm value={v} onChange={onChange} />}
         >
-          <ContactSection dept={dept} studentLife={extra.studentLife} />
+          <ContactSection dept={dept} />
         </EditableSection>
 
         <EditableSection

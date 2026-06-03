@@ -1,3 +1,5 @@
+import { readError } from './_error'
+
 const headers = (): HeadersInit => ({
   'Content-Type': 'application/json',
   'X-Username': sessionStorage.getItem('username') ?? '',
@@ -225,8 +227,7 @@ export async function createDeptAssignment(
   })
   if (!res.ok) {
     // 배정 실패는 비즈니스 오류 — 리다이렉트 없이 메시지만 throw
-    const text = await res.text()
-    throw new Error(text || '배정 추가에 실패했습니다.')
+    throw new Error(await readError(res, '배정 추가에 실패했습니다.'))
   }
   return res.json()
 }

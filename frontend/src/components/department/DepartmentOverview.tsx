@@ -4,14 +4,19 @@ import type { DepartmentExtra } from '../../data/departmentExtras'
 interface DepartmentOverviewProps {
   dept: DepartmentDetailDto
   extra: DepartmentExtra
+  liveCounts: { notices: number; schedules: number } | null
+  curriculumCount: number
 }
 
-export default function DepartmentOverview({ dept, extra }: DepartmentOverviewProps) {
+export default function DepartmentOverview({ dept, extra, liveCounts, curriculumCount }: DepartmentOverviewProps) {
+  const noticesValue = liveCounts?.notices ?? extra.overviewCounts.notices
+  const schedulesValue = liveCounts?.schedules ?? extra.overviewCounts.schedules
+
   const cards = [
     { label: '교수진', value: dept.professors.length, unit: '명', icon: 'fa-user-tie', description: '상담과 전공 지도를 맡는 교수진' },
-    { label: '전공과목', value: dept.curriculum.length, unit: '개', icon: 'fa-book-open', description: '학년별로 확인하는 교육과정' },
-    { label: '공지사항', value: extra.overviewCounts.notices, unit: '건', icon: 'fa-bullhorn', description: '학생이 놓치기 쉬운 학과 소식' },
-    { label: '다가오는 일정', value: extra.overviewCounts.schedules, unit: '건', icon: 'fa-calendar-check', description: '수업·행사·학사 일정 요약' },
+    { label: '전공과목', value: curriculumCount, unit: '개', icon: 'fa-book-open', description: '학년별로 확인하는 교육과정' },
+    { label: '공지사항', value: noticesValue, unit: '건', icon: 'fa-bullhorn', description: '학생이 놓치기 쉬운 학과 소식' },
+    { label: '다가오는 일정', value: schedulesValue, unit: '건', icon: 'fa-calendar-check', description: '수업·행사·학사 일정 요약' },
   ]
 
   return (

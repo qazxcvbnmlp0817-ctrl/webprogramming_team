@@ -6,6 +6,7 @@ import MainPage from './MainPage'
 
 // vi.hoisted: vi.mock 호이스팅 이전에 변수를 안전하게 초기화
 const mockNavigate = vi.hoisted(() => vi.fn())
+const mockLoggedIn = vi.hoisted(() => ({ value: false }))
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom')
@@ -15,8 +16,8 @@ vi.mock('react-router-dom', async () => {
 vi.mock('../api/universities', () => ({
   fetchMainData: () => Promise.resolve({
     notices: [
-      { id: 1, title: '공지사항 제목1', date: '2026-05-10', author: '학과', category: '학사', viewCount: 10, featured: false, targetGrades: [1,2,3,4] },
-      { id: 2, title: '장학금 안내',    date: '2026-05-09', author: '학과', category: '장학', viewCount: 5,  featured: false, targetGrades: [1,2,3,4] },
+      { id: 1, title: '공지사항 제목1', date: '2026-05-10', author: '학과', category: '학사', viewCount: 10, featured: false, targetGrades: [1,2,3,4], isPublicToOutsiders: true },
+      { id: 2, title: '장학금 안내',    date: '2026-05-09', author: '학과', category: '장학', viewCount: 5,  featured: false, targetGrades: [1,2,3,4], isPublicToOutsiders: true },
     ],
     posts: [
       { id: 10, title: '인기글 제목1', date: '2026-05-10', author: '홍길동', likes: 45, category: '자유게시판', viewCount: 100, featured: false, commentCount: 5, targetGrades: [1,2,3,4], visibility: 'public' },
@@ -30,13 +31,37 @@ vi.mock('../api/universities', () => ({
   }),
 }))
 
+vi.mock('../utils/accessCheck', () => ({
+  isLoggedIn: () => mockLoggedIn.value,
+}))
+
+vi.mock('../utils/authStorage', () => ({
+  getAuthItem: () => null,
+}))
+
+vi.mock('../utils/localSchedule', () => ({
+  loadSchedules: () => [],
+}))
+
+vi.mock('../api/schedules', () => ({
+  fetchSchedules: () => Promise.resolve([]),
+  fetchFacultySchedules: () => Promise.resolve([]),
+  fetchUnivSchedules: () => Promise.resolve([]),
+}))
+
+vi.mock('../api/classSchedules', () => ({
+  fetchStudentDeptEvents: () => Promise.resolve([]),
+}))
+
 vi.mock('../context/DeptContext', () => ({
   useDept: () => ({ selectedDeptId: 1, selectedDeptName: '컴퓨터공학과' }),
   DeptProvider: ({ children }: { children: React.ReactNode }) => children,
 }))
 
 beforeEach(() => {
+  mockLoggedIn.value = false
   localStorage.clear()
+  sessionStorage.clear()
   mockNavigate.mockClear()
 })
 
@@ -60,6 +85,7 @@ test('공지사항 섹션이 렌더링된다', async () => {
 })
 
 test('인기 게시글 섹션이 렌더링된다', async () => {
+  mockLoggedIn.value = true
   renderPage()
   await waitFor(() => {
     expect(screen.getByText('인기글 제목1')).toBeInTheDocument()
@@ -124,6 +150,7 @@ test('공지사항 아이템 클릭 시 /notice/:id로 이동한다', async () =
 })
 
 test('인기 게시글 아이템 클릭 시 /post/:id로 이동한다', async () => {
+  mockLoggedIn.value = true
   renderPage()
   await waitFor(() => screen.getByText('인기글 제목1'))
 

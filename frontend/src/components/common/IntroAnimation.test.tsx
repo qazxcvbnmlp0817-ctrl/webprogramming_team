@@ -8,22 +8,22 @@ afterEach(() => {
 
 test('서비스 이름이 렌더링된다', () => {
   render(<IntroAnimation onComplete={vi.fn()} />)
-  expect(screen.getByText('학과정보통합서비스')).toBeInTheDocument()
+  expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('학과정보통합서비스')
 })
 
-test('3000ms 후 onComplete가 호출된다', async () => {
+test('애니메이션 완료 후 onComplete가 호출된다', async () => {
   vi.useFakeTimers()
   const onComplete = vi.fn()
   render(<IntroAnimation onComplete={onComplete} />)
-  await act(async () => { vi.advanceTimersByTime(3000) })
+  await act(async () => { vi.advanceTimersByTime(3045) })
   expect(onComplete).toHaveBeenCalledTimes(1)
 })
 
-test('2999ms 시점에는 onComplete가 호출되지 않는다', async () => {
+test('애니메이션 완료 직전에는 onComplete가 호출되지 않는다', async () => {
   vi.useFakeTimers()
   const onComplete = vi.fn()
   render(<IntroAnimation onComplete={onComplete} />)
-  await act(async () => { vi.advanceTimersByTime(2999) })
+  await act(async () => { vi.advanceTimersByTime(3044) })
   expect(onComplete).not.toHaveBeenCalled()
 })
 

@@ -1,16 +1,23 @@
 import { Link } from 'react-router-dom'
 import SourceBadge from '../department/SourceBadge'
 import type { UserRole } from '../../hooks/useCurrentRole'
+import { getAuthItem } from '../../utils/authStorage'
 
 interface RoleActionBarProps {
   role: UserRole
   scope: 'department' | 'school'
+  targetId?: number
 }
 
-export default function RoleActionBar({ role, scope }: RoleActionBarProps) {
+export default function RoleActionBar({ role, scope, targetId }: RoleActionBarProps) {
   const boardLink = scope === 'department' ? '/dept/board' : '/school/board'
   const noticeLink = scope === 'department' ? '/dept/notice' : '/school/notice'
   const reportLink = `${boardLink}?tag=${encodeURIComponent('정보수정요청')}`
+  const fallbackTarget = scope === 'department' ? getAuthItem('deptId') : getAuthItem('universityId')
+  const adminTargetId = targetId ?? (fallbackTarget ? Number(fallbackTarget) : undefined)
+  const adminHomeLink = adminTargetId
+    ? (scope === 'department' ? `/admin/dept/${adminTargetId}` : `/admin/school/${adminTargetId}`)
+    : '/admin/super'
 
   if (role === 'GUEST') {
     return (
@@ -33,27 +40,54 @@ export default function RoleActionBar({ role, scope }: RoleActionBarProps) {
   }
 
   if (role === 'ADMIN') {
+    const adminItems = scope === 'department'
+      ? [
+          { to: adminHomeLink, icon: 'fa-gauge-high', label: '학과 관리자', description: '학과 페이지, 사용자, 공지, 교수 배정을 관리합니다.' },
+          { to: '/dept/board/write', icon: 'fa-pen-to-square', label: '학과 글쓰기', description: '학과 게시판에 안내 글을 작성합니다.' },
+          { to: '/dept/notice/write', icon: 'fa-bullhorn', label: '공지 작성', description: '학과 공지를 작성하고 공개합니다.' },
+          { to: '/dept/timetable', icon: 'fa-calendar-days', label: '시간표 관리', description: '교수별 배정 강좌와 수업 시간을 확인합니다.' },
+        ]
+      : [
+          { to: adminHomeLink, icon: 'fa-gauge-high', label: '학교 관리자', description: '학교 페이지, 사용자, 공지, 교수 배정을 관리합니다.' },
+          { to: '/school/board/write', icon: 'fa-pen-to-square', label: '학교 글쓰기', description: '학교 게시판에 안내 글을 작성합니다.' },
+          { to: '/school/notice/write', icon: 'fa-bullhorn', label: '공지 작성', description: '학교 공지를 작성하고 공개합니다.' },
+          { to: '/school/schedule', icon: 'fa-calendar-days', label: '학교 일정', description: '학교 전체 일정을 확인합니다.' },
+        ]
+
     return (
       <section className="max-w-6xl mx-auto px-4 py-6">
-        <div className="border-2 border-gray-300 p-5">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="border-2 border-black p-5">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
             <div>
-              <span className="inline-flex items-center gap-1 border border-gray-400 px-2 py-0.5 text-xs font-bold text-gray-500 mb-2">
+              <span className="inline-flex items-center gap-1 border-2 border-black px-2 py-0.5 text-xs font-black mb-2">
                 <i className="fas fa-shield-halved text-[10px]" />
                 관리자
               </span>
-              <p className="font-black text-gray-700 break-keep">관리자 전용 메뉴는 준비 중입니다</p>
-              <p className="text-sm text-gray-500 mt-1 break-keep">
-                임시로 수정 요청 게시판을 통해 정보 오류를 제보해 주세요.
-              </p>
+              <p className="font-black break-keep">관리자 메뉴</p>
+              <p className="text-sm text-gray-500 mt-1 break-keep">바로 필요한 관리 화면으로 이동합니다.</p>
             </div>
             <Link
               to={reportLink}
-              className="shrink-0 border-2 border-gray-400 px-5 py-2 font-black text-sm text-gray-600 hover:border-black hover:text-black transition text-center"
+              className="shrink-0 border-2 border-black px-4 py-2 font-black text-sm hover:bg-black hover:text-white transition text-center"
             >
-              <i className="fas fa-pen-to-square mr-2" />
-              수정 요청 게시판
+              <i className="fas fa-tags mr-2" />
+              수정 요청 보기
             </Link>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {adminItems.map(item => (
+              <Link
+                key={item.to}
+                to={item.to}
+                className="border-2 border-black p-4 flex items-start gap-3 hover:bg-black hover:text-white transition"
+              >
+                <i className={`fas ${item.icon} mt-0.5 shrink-0`} />
+                <div>
+                  <p className="font-black text-sm">{item.label}</p>
+                  <p className="text-xs mt-0.5 opacity-80 break-keep">{item.description}</p>
+                </div>
+              </Link>
+            ))}
           </div>
         </div>
       </section>
